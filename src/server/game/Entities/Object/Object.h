@@ -245,8 +245,10 @@ private:
 
 struct Position
 {
-    Position(float x = 0, float y = 0, float z = 0, float o = 0)
-        : m_positionX(x), m_positionY(y), m_positionZ(z), m_orientation(NormalizeOrientation(o)) { }
+    Position(float x = 0, float y = 0, float z = 0, float o = 0) : m_positionX(x), m_positionY(y), m_positionZ(z)
+    {
+        SetOrientation(NormalizeOrientation(o));
+    }
 
     Position(Position const& loc) { Relocate(loc); }
     /* requried as of C++ 11 */
@@ -307,25 +309,25 @@ struct Position
         m_positionX = x;
         m_positionY = y;
         m_positionZ = z;
-        m_orientation = orientation;
+        SetOrientation(orientation);
     }
     void Relocate(const Position& pos)
     {
         m_positionX = pos.m_positionX;
         m_positionY = pos.m_positionY;
         m_positionZ = pos.m_positionZ;
-        m_orientation = pos.m_orientation;
+        SetOrientation(pos.m_orientation);
     }
     void Relocate(const Position* pos)
     {
         m_positionX = pos->m_positionX;
         m_positionY = pos->m_positionY;
         m_positionZ = pos->m_positionZ;
-        m_orientation = pos->m_orientation;
+        SetOrientation(pos->m_orientation);
     }
     void RelocatePolarOffset(float angle, float dist, float z = 0.0f);
     void RelocateOffset(const Position& offset);
-    void SetOrientation(float orientation)
+    virtual void SetOrientation(float orientation)
     {
         m_orientation = orientation;
     }

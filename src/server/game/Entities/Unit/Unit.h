@@ -1418,6 +1418,8 @@ private:
 class Unit : public WorldObject
 {
 public:
+
+
     typedef std::unordered_set<Unit*> AttackerSet;
     typedef std::set<Unit*> ControlSet;
 

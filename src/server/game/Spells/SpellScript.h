@@ -475,6 +475,9 @@ public:
     void Cancel(); // pussywizard
 
     void SetCustomCastResultMessage(SpellCustomErrors result);
+
+    // NEW
+    void ForceAttack(){Position tempPoint = GetCaster()->GetWorldLocation(); GetCaster()->CastSpell(tempPoint.GetPositionX(), tempPoint.GetPositionY(), tempPoint.GetPositionZ(), 89998, false);}
 };
 
 // AuraScript interface - enum used for runtime checks of script function calls

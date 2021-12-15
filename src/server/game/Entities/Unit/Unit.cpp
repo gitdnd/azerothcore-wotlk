@@ -69,6 +69,8 @@
 #include "WorldPacket.h"
 #include "WorldSession.h"
 #include <math.h>
+// ADDED BY ME
+#include "SmartAI.h"
 
 float baseMoveSpeed[MAX_MOVE_TYPE] =
 {
@@ -589,7 +591,7 @@ void Unit::UpdateSplinePosition()
         pos.m_positionX = loc.x;
         pos.m_positionY = loc.y;
         pos.m_positionZ = loc.z;
-        pos.m_orientation = loc.orientation;
+        pos.SetOrientation(loc.orientation);
 
         if (TransportBase* transport = GetDirectTransport())
             transport->CalculatePassengerPosition(loc.x, loc.y, loc.z, &loc.orientation);
@@ -2330,39 +2332,13 @@ void Unit::AttackerStateUpdate(Unit* victim, WeaponAttackType attType, bool extr
             meleeSpell->cast(true);
         }
     }
-    if (meleeAttack)
+    if (meleeAttack && !this->HasUnitState(UNIT_STATE_CANNOT_AUTOATTACK))
     {
-        // attack can be redirected to another target
-        victim = GetMeleeHitRedirectTarget(victim);
-        CalcDamageInfo damageInfo;
-        CalculateMeleeDamage(victim, 0, &damageInfo, attType, sittingVictim);
-
-        // Send log damage message to client
-        Unit::DealDamageMods(victim, damageInfo.damage, &damageInfo.absorb);
-        SendAttackStateUpdate(&damageInfo);
-
-        //TriggerAurasProcOnEvent(damageInfo);
-
-        DealMeleeDamage(&damageInfo, true);
-
-        DamageInfo dmgInfo(damageInfo);
-        ProcDamageAndSpell(damageInfo.target, damageInfo.procAttacker, damageInfo.procVictim, damageInfo.procEx, damageInfo.damage,
-            damageInfo.attackType, nullptr, nullptr, -1, nullptr, &dmgInfo);
-
-        if (GetTypeId() == TYPEID_PLAYER)
-            LOG_DEBUG("entities.unit", "AttackerStateUpdate: (Player) %s attacked %s for %u dmg, absorbed %u, blocked %u, resisted %u.",
-                                 GetGUID().ToString().c_str(), victim->GetGUID().ToString().c_str(), damageInfo.damage, damageInfo.absorb, damageInfo.blocked_amount, damageInfo.resist);
-        else
-            LOG_DEBUG("entities.unit", "AttackerStateUpdate: (NPC) %s attacked %s for %u dmg, absorbed %u, blocked %u, resisted %u.",
-                                 GetGUID().ToString().c_str(), victim->GetGUID().ToString().c_str(), damageInfo.damage, damageInfo.absorb, damageInfo.blocked_amount, damageInfo.resist);
-
-        // Let the pet know we've started attacking someting. Handles melee attacks only
-        // Spells such as auto-shot and others handled in WorldSession::HandleCastSpellOpcode
-        if (GetTypeId() == TYPEID_PLAYER && !m_Controlled.empty())
-            for (Unit::ControlSet::iterator itr = m_Controlled.begin(); itr != m_Controlled.end(); ++itr)
-                if (Unit* pet = *itr)
-                    if (pet->IsAlive() && pet->GetTypeId() == TYPEID_UNIT)
-                        pet->ToCreature()->AI()->OwnerAttacked(victim);
+        // Get All enemies around victim within a 90 degree angle of the caster, check max distance = const * unit scale * weapon const (eg daggers are short, claymores long).
+        if (!this->IsPlayer())
+        {
+            CastSpell(victim, 90000, false);
+        }
     }
 }
 

@@ -267,6 +267,7 @@ public:
     void EventInform(uint32 eventId) override;
     void SpellHit(Unit* unit, const SpellInfo* spellInfo) override;
 
+
 protected:
     SmartScript mScript;
 };
