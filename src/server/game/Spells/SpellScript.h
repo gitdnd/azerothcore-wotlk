@@ -18,6 +18,8 @@
 #ifndef __SPELL_SCRIPT_H
 #define __SPELL_SCRIPT_H
 
+#include "DBCStores.h"
+#include "Player.h"
 #include "SharedDefines.h"
 #include "Spell.h"
 #include "SpellAuraDefines.h"
@@ -477,7 +479,58 @@ public:
     void SetCustomCastResultMessage(SpellCustomErrors result);
 
     // NEW
-    void ForceAttack(){Position tempPoint = GetCaster()->GetWorldLocation(); GetCaster()->CastSpell(tempPoint.GetPositionX(), tempPoint.GetPositionY(), tempPoint.GetPositionZ(), 89998, false);}
+    void ForceAttack()
+	{
+        Position tempPoint = GetCaster()->GetWorldLocation();
+    Unit*    tempUnit  = GetCaster();
+    const SpellInfo* tempSpellInfo = GetSpellInfo();
+    tempUnit->CastSpell(tempPoint.GetPositionX(), tempPoint.GetPositionY(), tempPoint.GetPositionZ(), 89998, false);
+
+    int32 tempInt1 = tempUnit->GetAttackTime(BASE_ATTACK);
+    tempInt1 *= tempUnit->m_modAttackSpeedPct[BASE_ATTACK];
+    int32 tempCD;
+    if (tempUnit->haveOffhandWeapon() == true)
+    {
+        int32 tempInt2 = tempUnit->GetAttackTime(OFF_ATTACK);
+        tempInt2 *= tempUnit->m_modAttackSpeedPct[OFF_ATTACK];
+        tempCD   = (tempInt1 + tempInt2) / 2;
+    }
+    else
+    {
+        tempCD = tempInt1;
+    }
+    uint32 tempCategory = tempSpellInfo->GetCategory();
+
+    tempUnit->_AddSpellCooldown(tempSpellInfo->Id, tempCategory, 0, tempCD, true, true);
+    if (tempUnit->GetTypeId() == TYPEID_PLAYER)
+        {
+            WorldPacket data;
+            Player*     tempPlayer = dynamic_cast<Player*>(tempUnit);
+            tempPlayer->BuildCooldownPacket(data, SPELL_COOLDOWN_FLAG_NONE, tempSpellInfo->Id, tempCD);
+            tempPlayer->SendDirectMessage(&data);
+        }
+
+        SpellCategoryStore::const_iterator i_scstore = sSpellsByCategoryStore.find(tempCategory);
+        if (i_scstore != sSpellsByCategoryStore.end())
+        {
+            for (SpellCategorySet::const_iterator i_scset = i_scstore->second.begin(); i_scset != i_scstore->second.end(); ++i_scset)
+            {
+                if (i_scset->second == tempSpellInfo->Id) // skip main spell, already handled above
+                {
+                    continue;
+                }
+
+                // Only within the same spellfamily
+                SpellInfo const* categorySpellInfo = sSpellMgr->GetSpellInfo(i_scset->second);
+                if (!categorySpellInfo || categorySpellInfo->SpellFamilyName != tempSpellInfo->SpellFamilyName)
+                {
+                    continue;
+                }
+
+                tempUnit->_AddSpellCooldown(i_scset->second, tempCategory, 0, tempCD, true);
+            }
+        }
+    }
 };
 
 // AuraScript interface - enum used for runtime checks of script function calls

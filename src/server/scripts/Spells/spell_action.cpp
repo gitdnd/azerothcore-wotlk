@@ -45,7 +45,12 @@ class spell_action_deflect : public AuraScript
         Unit* tempVictim = dmgInfo.GetAttacker();
 
         tempVictim->ModifyPower(POWER_ENERGY, -10);
-        tempCaster->PlayDirectSound();
+        if (tempCaster)
+        {
+            Player* tempPlayer = dynamic_cast<Player*>(tempCaster);
+            tempCaster->PlayDirectSound(3261);
+        }
+        dmgInfo.BlockDamage(dmgInfo.GetDamage());
     }
 
 
