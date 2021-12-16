@@ -83,13 +83,6 @@ typedef void(*bgZoneRef)(Battleground*, WorldPacket&);
 #define SKILL_PERM_BONUS(x)    int16(PAIR32_HIPART(x))
 #define MAKE_SKILL_BONUS(t, p) MAKE_PAIR32(t, p)
 
-// Note: SPELLMOD_* values is aura types in fact
-enum SpellModType
-{
-    SPELLMOD_FLAT         = 107,                            // SPELL_AURA_ADD_FLAT_MODIFIER
-    SPELLMOD_PCT          = 108                             // SPELL_AURA_ADD_PCT_MODIFIER
-};
-
 // 2^n values, Player::m_isunderwater is a bitmask. These are Trinity internal values, they are never send to any client
 enum PlayerUnderwaterState
 {
@@ -110,98 +103,14 @@ enum BuyBankSlotResult
     ERR_BANKSLOT_OK                 = 3
 };
 
-enum PlayerSpellState
-{
-    PLAYERSPELL_UNCHANGED = 0,
-    PLAYERSPELL_CHANGED   = 1,
-    PLAYERSPELL_NEW       = 2,
-    PLAYERSPELL_REMOVED   = 3,
-    PLAYERSPELL_TEMPORARY = 4
-};
-
-struct PlayerSpell
-{
-    PlayerSpellState State : 7; // UPPER CASE TO CAUSE CONSOLE ERRORS (CHECK EVERY USAGE)!
-    bool Active            : 1; // UPPER CASE TO CAUSE CONSOLE ERRORS (CHECK EVERY USAGE)! lower rank of a spell are not useable, but learnt
-    uint8 specMask         : 8;
-    bool IsInSpec(uint8 spec) { return (specMask & (1 << spec)); }
-};
-
-struct PlayerTalent
-{
-    PlayerSpellState State : 8; // UPPER CASE TO CAUSE CONSOLE ERRORS (CHECK EVERY USAGE)!
-    uint8 specMask         : 8;
-    uint32 talentID;
-    bool inSpellBook;
-    bool IsInSpec(uint8 spec) { return (specMask & (1 << spec)); }
-};
-
-enum TalentTree // talent tabs
-{
-    TALENT_TREE_WARRIOR_ARMS = 161,
-    TALENT_TREE_WARRIOR_FURY = 164,
-    TALENT_TREE_WARRIOR_PROTECTION = 163,
-    TALENT_TREE_PALADIN_HOLY = 382,
-    TALENT_TREE_PALADIN_PROTECTION = 383,
-    TALENT_TREE_PALADIN_RETRIBUTION = 381,
-    TALENT_TREE_HUNTER_BEAST_MASTERY = 361,
-    TALENT_TREE_HUNTER_MARKSMANSHIP = 363,
-    TALENT_TREE_HUNTER_SURVIVAL = 362,
-    TALENT_TREE_ROGUE_ASSASSINATION = 182,
-    TALENT_TREE_ROGUE_COMBAT = 181,
-    TALENT_TREE_ROGUE_SUBTLETY = 183,
-    TALENT_TREE_PRIEST_DISCIPLINE = 201,
-    TALENT_TREE_PRIEST_HOLY = 202,
-    TALENT_TREE_PRIEST_SHADOW = 203,
-    TALENT_TREE_DEATH_KNIGHT_BLOOD = 398,
-    TALENT_TREE_DEATH_KNIGHT_FROST = 399,
-    TALENT_TREE_DEATH_KNIGHT_UNHOLY = 400,
-    TALENT_TREE_SHAMAN_ELEMENTAL = 261,
-    TALENT_TREE_SHAMAN_ENHANCEMENT = 263,
-    TALENT_TREE_SHAMAN_RESTORATION = 262,
-    TALENT_TREE_MAGE_ARCANE = 81,
-    TALENT_TREE_MAGE_FIRE = 41,
-    TALENT_TREE_MAGE_FROST = 61,
-    TALENT_TREE_WARLOCK_AFFLICTION = 302,
-    TALENT_TREE_WARLOCK_DEMONOLOGY = 303,
-    TALENT_TREE_WARLOCK_DESTRUCTION = 301,
-    TALENT_TREE_DRUID_BALANCE = 283,
-    TALENT_TREE_DRUID_FERAL_COMBAT = 281,
-    TALENT_TREE_DRUID_RESTORATION = 282
-};
 
 #define SPEC_MASK_ALL 255
 
-// Spell modifier (used for modify other spells)
-struct SpellModifier
-{
-    SpellModifier(Aura* _ownerAura = nullptr) : op(SPELLMOD_DAMAGE), type(SPELLMOD_FLAT), charges(0),  mask(),  ownerAura(_ownerAura) {}
-    SpellModOp   op   : 8;
-    SpellModType type : 8;
-    int16 charges     : 16;
-    int32 value{0};
-    flag96 mask;
-    uint32 spellId{0};
-    Aura* const ownerAura;
-};
 
-typedef std::unordered_map<uint32, PlayerTalent*> PlayerTalentMap;
-typedef std::unordered_map<uint32, PlayerSpell*> PlayerSpellMap;
-typedef std::list<SpellModifier*> SpellModList;
 
 typedef GuidList WhisperListContainer;
 
-struct SpellCooldown
-{
-    uint32 end;
-    uint16 category;
-    uint32 itemid;
-    uint32 maxduration;
-    bool sendToSpectator: 1;
-    bool needSendToClient: 1;
-};
 
-typedef std::map<uint32, SpellCooldown> SpellCooldowns;
 typedef std::unordered_map<uint32 /*instanceId*/, time_t/*releaseTime*/> InstanceTimeMap;
 
 enum TrainerSpellState
@@ -1634,7 +1543,6 @@ public:
     void PossessSpellInitialize();
     void VehicleSpellInitialize();
     void SendRemoveControlBar();
-    [[nodiscard]] bool HasSpell(uint32 spell) const override;
     [[nodiscard]] bool HasActiveSpell(uint32 spell) const;            // show in spellbook
     TrainerSpellState GetTrainerSpellState(TrainerSpell const* trainer_spell) const;
     [[nodiscard]] bool IsSpellFitByClassAndRace(uint32 spell_id) const;
@@ -1711,56 +1619,46 @@ public:
     void SetFreePrimaryProfessions(uint16 profs) { SetUInt32Value(PLAYER_CHARACTER_POINTS2, profs); }
     void InitPrimaryProfessions();
 
-    [[nodiscard]] PlayerSpellMap const& GetSpellMap() const { return m_spells; }
-    PlayerSpellMap&       GetSpellMap()       { return m_spells; }
-
     [[nodiscard]] SpellCooldowns const& GetSpellCooldownMap() const { return m_spellCooldowns; }
     SpellCooldowns&       GetSpellCooldownMap()       { return m_spellCooldowns; }
 
-    void AddSpellMod(SpellModifier* mod, bool apply);
-    bool IsAffectedBySpellmod(SpellInfo const* spellInfo, SpellModifier* mod, Spell* spell = nullptr);
-    bool HasSpellMod(SpellModifier* mod, Spell* spell);
-    template <class T> T ApplySpellMod(uint32 spellId, SpellModOp op, T& basevalue, Spell* spell = nullptr, bool temporaryPet = false);
-    void RemoveSpellMods(Spell* spell);
-    void RestoreSpellMods(Spell* spell, uint32 ownerAuraId = 0, Aura* aura = nullptr);
-    void RestoreAllSpellMods(uint32 ownerAuraId = 0, Aura* aura = nullptr);
-    void DropModCharge(SpellModifier* mod, Spell* spell);
-    void SetSpellModTakingSpell(Spell* spell, bool apply);
 
-    [[nodiscard]] bool HasSpellCooldown(uint32 spell_id) const override
-    {
-        SpellCooldowns::const_iterator itr = m_spellCooldowns.find(spell_id);
-        return itr != m_spellCooldowns.end() && itr->second.end > World::GetGameTimeMS();
-    }
-    [[nodiscard]] bool HasSpellItemCooldown(uint32 spell_id, uint32 itemid) const override
-    {
-        SpellCooldowns::const_iterator itr = m_spellCooldowns.find(spell_id);
-        return itr != m_spellCooldowns.end() && itr->second.end > World::GetGameTimeMS() && itr->second.itemid == itemid;
-    }
+    
+    void                 AddSpellMod(SpellModifier* mod, bool apply) override;
+    bool                 IsAffectedBySpellmod(SpellInfo const* spellInfo, SpellModifier* mod, Spell* spell = nullptr) override;
+    bool                 HasSpellMod(SpellModifier* mod, Spell* spell) override;
+
+    void                 RemoveSpellMods(Spell* spell) override;
+    void                 RestoreSpellMods(Spell* spell, uint32 ownerAuraId = 0, Aura* aura = nullptr) override;
+    void                 RestoreAllSpellMods(uint32 ownerAuraId = 0, Aura* aura = nullptr) override;
+    void                 DropModCharge(SpellModifier* mod, Spell* spell) override;
+    void                 SetSpellModTakingSpell(Spell* spell, bool apply) override;
+
+
     [[nodiscard]] uint32 GetSpellCooldownDelay(uint32 spell_id) const
     {
         SpellCooldowns::const_iterator itr = m_spellCooldowns.find(spell_id);
         return uint32(itr != m_spellCooldowns.end() && itr->second.end > World::GetGameTimeMS() ? itr->second.end - World::GetGameTimeMS() : 0);
     }
-    void AddSpellAndCategoryCooldowns(SpellInfo const* spellInfo, uint32 itemId, Spell* spell = nullptr, bool infinityCooldown = false);
+    void AddSpellAndCategoryCooldowns(SpellInfo const* spellInfo, uint32 itemId, Spell* spell = nullptr, bool infinityCooldown = false) override;
     void AddSpellCooldown(uint32 spell_id, uint32 itemid, uint32 end_time, bool needSendToClient = false, bool forceSendToSpectator = false) override;
-    void _AddSpellCooldown(uint32 spell_id, uint16 categoryId, uint32 itemid, uint32 end_time, bool needSendToClient = false, bool forceSendToSpectator = false);
-    void ModifySpellCooldown(uint32 spellId, int32 cooldown);
-    void SendCooldownEvent(SpellInfo const* spellInfo, uint32 itemId = 0, Spell* spell = nullptr, bool setCooldown = true);
+    void _AddSpellCooldown(uint32 spell_id, uint16 categoryId, uint32 itemid, uint32 end_time, bool needSendToClient = false, bool forceSendToSpectator = false) override;
+    void ModifySpellCooldown(uint32 spellId, int32 cooldown) override;
+    void SendCooldownEvent(SpellInfo const* spellInfo, uint32 itemId = 0, Spell* spell = nullptr, bool setCooldown = true) override;
     void ProhibitSpellSchool(SpellSchoolMask idSchoolMask, uint32 unTimeMs) override;
-    void RemoveSpellCooldown(uint32 spell_id, bool update = false);
-    void SendClearCooldown(uint32 spell_id, Unit* target);
+    void RemoveSpellCooldown(uint32 spell_id, bool update = false) override;
+    void SendClearCooldown(uint32 spell_id, Unit* target) override;
 
-    GlobalCooldownMgr& GetGlobalCooldownMgr() { return m_GlobalCooldownMgr; }
+    void   RemoveCategoryCooldown(uint32 cat) override;
+    void   RemoveArenaSpellCooldowns(bool removeActivePetCooldowns = false) override;
+    void   RemoveAllSpellCooldown() override;
+    void   _LoadSpellCooldowns(PreparedQueryResult result) override;
+    void   _SaveSpellCooldowns(CharacterDatabaseTransaction trans, bool logout) override;
 
-    void RemoveCategoryCooldown(uint32 cat);
-    void RemoveArenaSpellCooldowns(bool removeActivePetCooldowns = false);
-    void RemoveAllSpellCooldown();
-    void _LoadSpellCooldowns(PreparedQueryResult result);
-    void _SaveSpellCooldowns(CharacterDatabaseTransaction trans, bool logout);
-    uint32 GetLastPotionId() { return m_lastPotionId; }
-    void SetLastPotionId(uint32 item_id) { m_lastPotionId = item_id; }
-    void UpdatePotionCooldown(Spell* spell = nullptr);
+
+
+
+
 
     void setResurrectRequestData(ObjectGuid guid, uint32 mapId, float X, float Y, float Z, uint32 health, uint32 mana)
     {
@@ -2509,7 +2407,6 @@ public:
 
     [[nodiscard]] uint32 GetChampioningFaction() const { return m_ChampioningFaction; }
     void SetChampioningFaction(uint32 faction) { m_ChampioningFaction = faction; }
-    Spell* m_spellModTakingSpell;
 
     float GetAverageItemLevel();
     float GetAverageItemLevelForDF();
@@ -2758,11 +2655,8 @@ public:
     uint32 m_ArenaTeamIdInvited;
 
     PlayerMails m_mail;
-    PlayerSpellMap m_spells;
     PlayerTalentMap m_talents;
-    uint32 m_lastPotionId;                              // last used health/mana potion in combat, that block next potion use
 
-    GlobalCooldownMgr m_GlobalCooldownMgr;
 
     uint8 m_activeSpec;
     uint8 m_specsCount;
@@ -2779,7 +2673,6 @@ public:
     uint32 m_baseHealthRegen;
     int32 m_spellPenetrationItemMod;
 
-    SpellModList m_spellMods[MAX_SPELLMOD];
     //uint32 m_pad;
     //        Spell* m_spellModTakingSpell;  // Spell for which charges are dropped in spell::finish
 
@@ -2926,7 +2819,6 @@ private:
     AchievementMgr* m_achievementMgr;
     ReputationMgr*  m_reputationMgr;
 
-    SpellCooldowns m_spellCooldowns;
 
     uint32 m_ChampioningFaction;
 
@@ -2961,70 +2853,4 @@ void AddItemsSetItem(Player* player, Item* item);
 void RemoveItemsSetItem(Player* player, ItemTemplate const* proto);
 
 // "the bodies of template functions must be made available in a header file"
-template <class T> T Player::ApplySpellMod(uint32 spellId, SpellModOp op, T& basevalue, Spell* spell, bool temporaryPet)
-{
-    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
-    if (!spellInfo)
-        return 0;
-    float totalmul = 1.0f;
-    int32 totalflat = 0;
-
-    // Drop charges for triggering spells instead of triggered ones
-    if (m_spellModTakingSpell)
-        spell = m_spellModTakingSpell;
-
-    for (auto mod : m_spellMods[op])
-    {
-        // Charges can be set only for mods with auras
-        if (!mod->ownerAura)
-            ASSERT(mod->charges == 0);
-
-        if (!IsAffectedBySpellmod(spellInfo, mod, spell))
-            continue;
-
-        // xinef: temporary pets cannot use charged mods of owner, needed for mirror image QQ they should use their own auras
-        if (temporaryPet && mod->charges != 0)
-            continue;
-
-        if (mod->type == SPELLMOD_FLAT)
-        {
-            // xinef: do not allow to consume more than one 100% crit increasing spell
-            if (mod->op == SPELLMOD_CRITICAL_CHANCE && totalflat >= 100)
-                continue;
-
-            totalflat += mod->value;
-        }
-        else if (mod->type == SPELLMOD_PCT)
-        {
-            // skip percent mods for null basevalue (most important for spell mods with charges)
-            if (basevalue == T(0) || totalmul == 0.0f)
-                continue;
-
-            // special case (skip > 10sec spell casts for instant cast setting)
-            if (mod->op == SPELLMOD_CASTING_TIME && basevalue >= T(10000) && mod->value <= -100)
-                continue;
-            // xinef: special exception for surge of light, dont affect crit chance if previous mods were not applied
-            else if (mod->op == SPELLMOD_CRITICAL_CHANCE && spell && !HasSpellMod(mod, spell))
-                continue;
-            // xinef: special case for backdraft gcd reduce with backlast time reduction, dont affect gcd if cast time was not applied
-            else if (mod->op == SPELLMOD_GLOBAL_COOLDOWN && spell && !HasSpellMod(mod, spell))
-                continue;
-
-            // xinef: those two mods should be multiplicative (Glyph of Renew)
-            if (mod->op == SPELLMOD_DAMAGE || mod->op == SPELLMOD_DOT)
-                totalmul *= CalculatePct(1.0f, 100.0f + mod->value);
-            else
-                totalmul += CalculatePct(1.0f, mod->value);
-        }
-
-        DropModCharge(mod, spell);
-    }
-    float diff = 0.0f;
-    if (op == SPELLMOD_CASTING_TIME || op == SPELLMOD_DURATION)
-        diff = ((float)basevalue + totalflat) * (totalmul - 1.0f) + (float)totalflat;
-    else
-        diff = (float)basevalue * (totalmul - 1.0f) + (float)totalflat;
-    basevalue = T((float)basevalue + diff);
-    return T(diff);
-}
 #endif

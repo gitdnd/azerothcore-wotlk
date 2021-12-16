@@ -3765,11 +3765,6 @@ void Player::DestroyForPlayer(Player* target, bool onDeath) const
     }
 }
 
-bool Player::HasSpell(uint32 spell) const
-{
-    PlayerSpellMap::const_iterator itr = m_spells.find(spell);
-    return (itr != m_spells.end() && itr->second->State != PLAYERSPELL_REMOVED && itr->second->IsInSpec(m_activeSpec));
-}
 
 bool Player::HasTalent(uint32 spell, uint8  /*spec*/) const
 {
@@ -9162,17 +9157,22 @@ bool Player::IsAffectedBySpellmod(SpellInfo const* spellInfo, SpellModifier* mod
 }
 
 // Binary predicate for sorting SpellModifiers
+
+
+// SOMETHING ABOUT MISSILE BARRAGE
+
 class SpellModPred
 {
 public:
     SpellModPred() {}
-    bool operator() (const SpellModifier* a, const SpellModifier* b) const
+    bool operator()(const SpellModifier* a, const SpellModifier* b) const
     {
         if (a->type != b->type)
             return a->type == SPELLMOD_FLAT;
         return a->value < b->value;
     }
 };
+
 class MageSpellModPred
 {
 public:

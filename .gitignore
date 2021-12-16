@@ -95,3 +95,110 @@ local.properties
 #  !modules/yourmodule
 #
 # ==================
+.vs/azerothcore-wotlk/v16/.suo
+.vs/azerothcore-wotlk/v16/Browse.VC.db
+.vs/azerothcore-wotlk/v16/ipch/AutoPCH/2fc15406dc1354be/ENUMINFO_UNIT.ipch
+.vs/CMake Overview
+.vs/ProjectSettings.json
+.vs/slnx.sqlite
+.vs/VSWorkspaceState.json
+azerothcore-wotlk.sln
+azerothcore-wotlk.vcxproj
+azerothcore-wotlk.vcxproj.filters
+azerothcore-wotlk.vcxproj.user
+Debug/azerothc.3D418F1A.tlog/link.command.1.tlog
+Debug/azerothc.3D418F1A.tlog/link.read.1.tlog
+Debug/azerothc.3D418F1A.tlog/link.write.1.tlog
+Debug/azerothcore-wotlk.log
+out/build/x64-Debug (default)/.cmake/api/v1/query/client-MicrosoftVS/query.json
+out/build/x64-Debug (default)/.cmake/api/v1/reply/cache-v2-e25b25a195723e696f1e.json
+out/build/x64-Debug (default)/.cmake/api/v1/reply/cmakeFiles-v1-41a9d87cc37a235afeb2.json
+out/build/x64-Debug (default)/.cmake/api/v1/reply/codemodel-v2-14696b5a1fe086e3cc6b.json
+out/build/x64-Debug (default)/.cmake/api/v1/reply/index-2021-12-12T08-41-54-0637.json
+out/build/x64-Debug (default)/.cmake/api/v1/reply/target-argon2-Debug-9e9bcc3dd03639299658.json
+out/build/x64-Debug (default)/.cmake/api/v1/reply/target-authserver-Debug-f7ed98462841144fa4f6.json
+out/build/x64-Debug (default)/.cmake/api/v1/reply/target-common-Debug-90976e05170115549dd4.json
+out/build/x64-Debug (default)/.cmake/api/v1/reply/target-database-Debug-143155c74c302063d4b0.json
+out/build/x64-Debug (default)/.cmake/api/v1/reply/target-Detour-Debug-a7eea6f2770fe8fc8f1c.json
+out/build/x64-Debug (default)/.cmake/api/v1/reply/target-fmt-Debug-6a78d8f702b5049345fa.json
+out/build/x64-Debug (default)/.cmake/api/v1/reply/target-g3dlib-Debug-8e0509b0cf27940fcc88.json
+out/build/x64-Debug (default)/.cmake/api/v1/reply/target-game-Debug-e2b8da7a6eb1a4f8adf9.json
+out/build/x64-Debug (default)/.cmake/api/v1/reply/target-gsoap-Debug-87814a332074838bc9a8.json
+out/build/x64-Debug (default)/.cmake/api/v1/reply/target-modules-Debug-20bc62b16a00c404c755.json
+out/build/x64-Debug (default)/.cmake/api/v1/reply/target-Recast-Debug-4a7ebc8c6b33a1cf18bf.json
+out/build/x64-Debug (default)/.cmake/api/v1/reply/target-revision.h-Debug-3f836400d4f9d9d1c5bc.json
+out/build/x64-Debug (default)/.cmake/api/v1/reply/target-scripts-Debug-b4dad99f0c7841c0d4ec.json
+out/build/x64-Debug (default)/.cmake/api/v1/reply/target-sfmt-Debug-184649a63126c61c767c.json
+out/build/x64-Debug (default)/.cmake/api/v1/reply/target-shared-Debug-12545a9292082a196eb8.json
+out/build/x64-Debug (default)/.cmake/api/v1/reply/target-worldserver-Debug-cc85406ed4d9318f9116.json
+out/build/x64-Debug (default)/.cmake/api/v1/reply/target-zlib-Debug-5653672dbacd4ee3c6ea.json
+out/build/x64-Debug (default)/build.ninja
+out/build/x64-Debug (default)/cmake_install.cmake
+out/build/x64-Debug (default)/CMakeCache.txt
+out/build/x64-Debug (default)/CMakeFiles/3.18.20081302-MSVC_2/CMakeCCompiler.cmake
+out/build/x64-Debug (default)/CMakeFiles/3.18.20081302-MSVC_2/CMakeCXXCompiler.cmake
+out/build/x64-Debug (default)/CMakeFiles/3.18.20081302-MSVC_2/CMakeDetermineCompilerABI_C.bin
+out/build/x64-Debug (default)/CMakeFiles/3.18.20081302-MSVC_2/CMakeDetermineCompilerABI_CXX.bin
+out/build/x64-Debug (default)/CMakeFiles/3.18.20081302-MSVC_2/CMakeRCCompiler.cmake
+out/build/x64-Debug (default)/CMakeFiles/3.18.20081302-MSVC_2/CMakeSystem.cmake
+out/build/x64-Debug (default)/CMakeFiles/3.18.20081302-MSVC_2/CompilerIdC/CMakeCCompilerId.c
+out/build/x64-Debug (default)/CMakeFiles/3.18.20081302-MSVC_2/CompilerIdC/CMakeCCompilerId.exe
+out/build/x64-Debug (default)/CMakeFiles/3.18.20081302-MSVC_2/CompilerIdC/CMakeCCompilerId.obj
+out/build/x64-Debug (default)/CMakeFiles/3.18.20081302-MSVC_2/CompilerIdCXX/CMakeCXXCompilerId.cpp
+out/build/x64-Debug (default)/CMakeFiles/3.18.20081302-MSVC_2/CompilerIdCXX/CMakeCXXCompilerId.exe
+out/build/x64-Debug (default)/CMakeFiles/3.18.20081302-MSVC_2/CompilerIdCXX/CMakeCXXCompilerId.obj
+out/build/x64-Debug (default)/CMakeFiles/cmake.check_cache
+out/build/x64-Debug (default)/CMakeFiles/CMakeError.log
+out/build/x64-Debug (default)/CMakeFiles/CMakeOutput.log
+out/build/x64-Debug (default)/CMakeFiles/rules.ninja
+out/build/x64-Debug (default)/CMakeFiles/ShowIncludes/foo.h
+out/build/x64-Debug (default)/CMakeFiles/ShowIncludes/main.c
+out/build/x64-Debug (default)/CMakeFiles/ShowIncludes/main.obj
+out/build/x64-Debug (default)/CMakeFiles/TargetDirectories.txt
+out/build/x64-Debug (default)/deps/argon2/cmake_install.cmake
+out/build/x64-Debug (default)/deps/boost/cmake_install.cmake
+out/build/x64-Debug (default)/deps/cmake_install.cmake
+out/build/x64-Debug (default)/deps/fmt/cmake_install.cmake
+out/build/x64-Debug (default)/deps/g3dlite/cmake_install.cmake
+out/build/x64-Debug (default)/deps/gperftools/cmake_install.cmake
+out/build/x64-Debug (default)/deps/gsoap/cmake_install.cmake
+out/build/x64-Debug (default)/deps/jemalloc/cmake_install.cmake
+out/build/x64-Debug (default)/deps/mysql/cmake_install.cmake
+out/build/x64-Debug (default)/deps/openssl/cmake_install.cmake
+out/build/x64-Debug (default)/deps/readline/cmake_install.cmake
+out/build/x64-Debug (default)/deps/recastnavigation/cmake_install.cmake
+out/build/x64-Debug (default)/deps/recastnavigation/Detour/cmake_install.cmake
+out/build/x64-Debug (default)/deps/recastnavigation/Recast/cmake_install.cmake
+out/build/x64-Debug (default)/deps/SFMT/cmake_install.cmake
+out/build/x64-Debug (default)/deps/stdfs/cmake_install.cmake
+out/build/x64-Debug (default)/deps/threads/cmake_install.cmake
+out/build/x64-Debug (default)/deps/utf8cpp/cmake_install.cmake
+out/build/x64-Debug (default)/deps/zlib/cmake_install.cmake
+out/build/x64-Debug (default)/modules/cmake_install.cmake
+out/build/x64-Debug (default)/modules/gen_scriptloader/static/ModulesLoader.cpp
+out/build/x64-Debug (default)/revision.h
+out/build/x64-Debug (default)/src/cmake_install.cmake
+out/build/x64-Debug (default)/src/common/cmake_install.cmake
+out/build/x64-Debug (default)/src/common/CMakeFiles/common.dir/cmake_pch.cxx
+out/build/x64-Debug (default)/src/common/CMakeFiles/common.dir/cmake_pch.hxx
+out/build/x64-Debug (default)/src/genrev/cmake_install.cmake
+out/build/x64-Debug (default)/src/server/authserver/cmake_install.cmake
+out/build/x64-Debug (default)/src/server/authserver/CMakeFiles/authserver.dir/cmake_pch.cxx
+out/build/x64-Debug (default)/src/server/authserver/CMakeFiles/authserver.dir/cmake_pch.hxx
+out/build/x64-Debug (default)/src/server/cmake_install.cmake
+out/build/x64-Debug (default)/src/server/database/cmake_install.cmake
+out/build/x64-Debug (default)/src/server/database/CMakeFiles/database.dir/cmake_pch.cxx
+out/build/x64-Debug (default)/src/server/database/CMakeFiles/database.dir/cmake_pch.hxx
+out/build/x64-Debug (default)/src/server/game/cmake_install.cmake
+out/build/x64-Debug (default)/src/server/game/CMakeFiles/game.dir/cmake_pch.cxx
+out/build/x64-Debug (default)/src/server/game/CMakeFiles/game.dir/cmake_pch.hxx
+out/build/x64-Debug (default)/src/server/scripts/cmake_install.cmake
+out/build/x64-Debug (default)/src/server/scripts/CMakeFiles/scripts.dir/cmake_pch.cxx
+out/build/x64-Debug (default)/src/server/scripts/CMakeFiles/scripts.dir/cmake_pch.hxx
+out/build/x64-Debug (default)/src/server/scripts/gen_scriptloader/static/ScriptLoader.cpp
+out/build/x64-Debug (default)/src/server/shared/cmake_install.cmake
+out/build/x64-Debug (default)/src/server/worldserver/cmake_install.cmake
+out/build/x64-Debug (default)/src/server/worldserver/CMakeFiles/worldserver.dir/cmake_pch.cxx
+out/build/x64-Debug (default)/src/server/worldserver/CMakeFiles/worldserver.dir/cmake_pch.hxx
+out/build/x64-Debug (default)/Testing/Temporary/LastTest.log
+out/build/x64-Debug (default)/VSInheritEnvironments.txt

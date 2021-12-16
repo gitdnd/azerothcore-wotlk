@@ -1,4 +1,5 @@
 
+#include "Group.h"
 #include "PetDefines.h"
 #include "Player.h"
 #include "ScriptMgr.h"
@@ -8,6 +9,7 @@
 #include "SpellScript.h"
 #include "Totem.h"
 #include "UnitAI.h"
+
 
 
 
@@ -33,19 +35,23 @@ class spell_action_basic_attack : public SpellScript
         AfterCast += SpellCastFn(spell_action_basic_attack::AttackFX);
     }
 };
-class spell_action_deflect : public SpellScript
+class spell_action_deflect : public AuraScript
 {
-    PrepareSpellScript(spell_action_deflect);
+    PrepareAuraScript(spell_action_deflect);
 
-    SpellCastResult PlayAnimation()
+    void Absorb(AuraEffect* aurEff, DamageInfo& dmgInfo, uint32& absorbAmount)
     {
-        Unit* caster = GetCaster();
+        Unit* tempCaster = GetTarget();
+        Unit* tempVictim = dmgInfo.GetAttacker();
 
-        return SPELL_CAST_OK;
+        tempVictim->ModifyPower(POWER_ENERGY, -10);
+        tempCaster->PlayDirectSound();
     }
+
+
     void Register() override
     {
-        OnCheckCast += SpellCheckCastFn(spell_action_deflect::PlayAnimation);
+        OnEffectAbsorb += AuraEffectAbsorbFn(spell_action_deflect::Absorb, EFFECT_0);
     }
 };
 
