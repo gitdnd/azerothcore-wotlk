@@ -559,6 +559,7 @@ public:
     Unit* GetCaster() const { return m_caster; }
     Unit* GetOriginalCaster() const { return m_originalCaster; }
     SpellInfo const* GetSpellInfo() const { return m_spellInfo; }
+
     void SetSpellInfo(SpellInfo const* info) { m_spellInfo = info; }
     int32 GetPowerCost() const { return m_powerCost; }
 
@@ -767,6 +768,21 @@ public:
     double rand_norm()                      { return m_caster->GetMap()->mtRand.randExc(); }
     double rand_chance()                    { return m_caster->GetMap()->mtRand.randExc(100.0); }
 #endif
+
+    /// <summary>
+    /// My stuff :) includes "which spell issued the cast of this spell" so I can tell from the finishing of basic attack if it was cast by undead strike or crusader strike etc.
+    /// </summary>
+    uint32 triggerDummy = 0;
+
+public:
+    uint32 GetTriggerDummy()
+    {
+        return triggerDummy;
+    }
+    void SetTriggerDummy(uint32 newDummy)
+    {
+        triggerDummy = newDummy;
+    }
 };
 
 namespace Acore

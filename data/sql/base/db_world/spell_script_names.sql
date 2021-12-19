@@ -1970,8 +1970,12 @@ INSERT INTO `spell_script_names` (`spell_id`, `ScriptName`) VALUES
 	(77844, 'spell_halion_twilight_cutter'),
 	(77845, 'spell_halion_twilight_cutter'),
 	(77846, 'spell_halion_twilight_cutter'),
-    (89999, 'spell_action_deflect'),
-    (90000, 'spell_action_attack'),
+    	(89997, 'spell_action_piercing_attack'),
+    	(89998, 'spell_action_basic_attack'),
+    	(89999, 'spell_action_deflect_aura'),
+    	(89999, 'spell_action_deflect'),
+    	(90000, 'spell_action_attack'),
+    	(90003, 'spell_action_undeath_strike'),
 	(100101, 'spell_valkyr_ball_periodic_dummy');
 /*!40000 ALTER TABLE `spell_script_names` ENABLE KEYS */;
 

@@ -99,6 +99,22 @@ float playerBaseMoveSpeed[MAX_MOVE_TYPE] =
 };
 
 
+struct SpellAndChance
+{
+    uint32 SpellId = 0;
+    float Chance = 0;
+};
+struct Combo
+{
+    std::vector<uint32> Spells;
+    std::vector<uint32> Pauses;
+};
+struct CombatFrequency
+{
+    std::vector<SpellAndChance> SpellsAndChances;
+    std::vector<Combo> Combos;
+    float DeflectChance = 0;
+};
 
 class SpellModPred
 {
@@ -1744,12 +1760,12 @@ SpellCastResult Unit::CastSpell(Unit* victim, uint32 spellId, TriggerCastFlags t
     return CastSpell(victim, spellInfo, triggerFlags, castItem, triggeredByAura, originalCaster);
 }
 
-SpellCastResult Unit::CastSpell(Unit* victim, SpellInfo const* spellInfo, bool triggered, Item* castItem/*= nullptr*/, AuraEffect const* triggeredByAura /*= nullptr*/, ObjectGuid originalCaster /*= ObjectGuid::Empty*/)
+SpellCastResult Unit::CastSpell(Unit* victim, SpellInfo const* spellInfo, bool triggered, Item* castItem /*= nullptr*/, AuraEffect const* triggeredByAura /*= nullptr*/, ObjectGuid originalCaster /*= ObjectGuid::Empty*/)
 {
     return CastSpell(victim, spellInfo, triggered ? TRIGGERED_FULL_MASK : TRIGGERED_NONE, castItem, triggeredByAura, originalCaster);
 }
 
-SpellCastResult  Unit::CastSpell(Unit* victim, SpellInfo const* spellInfo, TriggerCastFlags triggerFlags, Item* castItem, AuraEffect const* triggeredByAura, ObjectGuid originalCaster)
+SpellCastResult Unit::CastSpell(Unit* victim, SpellInfo const* spellInfo, TriggerCastFlags triggerFlags, Item* castItem, AuraEffect const* triggeredByAura, ObjectGuid originalCaster)
 {
     SpellCastTargets targets;
     targets.SetUnitTarget(victim);

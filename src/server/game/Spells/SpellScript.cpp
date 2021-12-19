@@ -659,6 +659,84 @@ SpellValue const* SpellScript::GetSpellValue()
     return m_spell->m_spellValue;
 }
 
+void SpellScript::ForceAttack()
+{
+    Position         tempPoint     = GetCaster()->GetWorldLocation();
+    Unit*            tempUnit      = GetCaster();
+    const SpellInfo* tempSpellInfo = GetSpellInfo();
+
+    float tempO = tempUnit->GetOrientation();
+    Position tempPoint2;
+    tempPoint2 = tempUnit->GetFirstCollisionPosition(0.6, tempO);
+    //tempPoint2.SetOrientation(0);
+    float tempX = tempPoint2.GetPositionX();
+    float tempY = tempPoint2.GetPositionY();
+
+    float tempZ = tempPoint2.GetPositionZ();
+
+    //tempZ = tempUnit->GetMapHeight(tempX, tempY, tempZ);
+    // if (tempZ > INVALID_HEIGHT)
+    // tempZ += (tempUnit->isType(TYPEMASK_UNIT) ? static_cast<Unit const*>(tempUnit)->GetHoverHeight() : 0.0f);
+
+    tempUnit->CastSpell(tempUnit, 89998, false);
+
+    tempUnit->MonsterMoveWithSpeed(tempX, tempY, tempZ, 2);
+
+    tempUnit->HandleEmoteCommand(EMOTE_ONESHOT_ATTACK2HTIGHT);
+    tempUnit->SetSheath(SHEATH_STATE_MELEE);
+
+    Spell* tempSpell = tempUnit->FindCurrentSpellBySpellId(89998);
+    if (tempSpell)
+    {
+        tempSpell->SetTriggerDummy(GetSpellInfo()->Id);
+    }
+    
+    int32 tempInt1 = tempUnit->GetAttackTime(BASE_ATTACK);
+    tempInt1 *= tempUnit->m_modAttackSpeedPct[BASE_ATTACK];
+    int32 tempCD;
+    if (tempUnit->haveOffhandWeapon() == true)
+    {
+        int32 tempInt2 = tempUnit->GetAttackTime(OFF_ATTACK);
+        tempInt2 *= tempUnit->m_modAttackSpeedPct[OFF_ATTACK];
+        tempCD = (tempInt1 + tempInt2) / 2;
+    }
+    else
+    {
+        tempCD = tempInt1;
+    }
+    uint32 tempCategory = tempSpellInfo->GetCategory();
+
+    tempUnit->_AddSpellCooldown(tempSpellInfo->Id, tempCategory, 0, tempCD, true, true);
+    if (tempUnit->GetTypeId() == TYPEID_PLAYER)
+    {
+        WorldPacket data;
+        Player*     tempPlayer = dynamic_cast<Player*>(tempUnit);
+        tempPlayer->BuildCooldownPacket(data, SPELL_COOLDOWN_FLAG_NONE, tempSpellInfo->Id, tempCD);
+        tempPlayer->SendDirectMessage(&data);
+    }
+
+    SpellCategoryStore::const_iterator i_scstore = sSpellsByCategoryStore.find(tempCategory);
+    if (i_scstore != sSpellsByCategoryStore.end())
+    {
+        for (SpellCategorySet::const_iterator i_scset = i_scstore->second.begin(); i_scset != i_scstore->second.end(); ++i_scset)
+        {
+            if (i_scset->second == tempSpellInfo->Id) // skip main spell, already handled above
+            {
+                continue;
+            }
+
+            // Only within the same spellfamily
+            SpellInfo const* categorySpellInfo = sSpellMgr->GetSpellInfo(i_scset->second);
+            if (!categorySpellInfo || categorySpellInfo->SpellFamilyName != tempSpellInfo->SpellFamilyName)
+            {
+                continue;
+            }
+
+            tempUnit->_AddSpellCooldown(i_scset->second, tempCategory, 0, tempCD, true);
+        }
+    }
+}
+
 bool AuraScript::_Validate(SpellInfo const* entry)
 {
     for (std::list<CheckAreaTargetHandler>::iterator itr = DoCheckAreaTarget.begin(); itr != DoCheckAreaTarget.end();  ++itr)

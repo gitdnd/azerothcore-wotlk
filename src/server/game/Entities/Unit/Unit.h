@@ -1023,6 +1023,7 @@ public:
     void ResistDamage(uint32 amount);
     void BlockDamage(uint32 amount);
 
+
     [[nodiscard]] Unit* GetAttacker() const { return m_attacker; };
     [[nodiscard]] Unit* GetVictim() const { return m_victim; };
     [[nodiscard]] SpellInfo const* GetSpellInfo() const { return m_spellInfo; };
@@ -1782,6 +1783,7 @@ public:
     void TriggerAurasProcOnEvent(CalcDamageInfo& damageInfo);
     void TriggerAurasProcOnEvent(std::list<AuraApplication*>* myProcAuras, std::list<AuraApplication*>* targetProcAuras, Unit* actionTarget, uint32 typeMaskActor, uint32 typeMaskActionTarget, uint32 spellTypeMask, uint32 spellPhaseMask, uint32 hitMask, Spell* spell, DamageInfo* damageInfo, HealInfo* healInfo);
     void TriggerAurasProcOnEvent(ProcEventInfo& eventInfo, std::list<AuraApplication*>& procAuras);
+
 
     void HandleEmoteCommand(uint32 anim_id);
     void AttackerStateUpdate (Unit* victim, WeaponAttackType attType = BASE_ATTACK, bool extra = false);

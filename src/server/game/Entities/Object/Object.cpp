@@ -1021,6 +1021,7 @@ bool Position::HasInLine(WorldObject const* target, float width) const
     if (!HasInArc(M_PI, target))
         return false;
     width += target->GetObjectSize();
+    width *= 0.5;
     float angle = GetRelativeAngle(target);
     return fabs(sin(angle)) * GetExactDist2d(target->GetPositionX(), target->GetPositionY()) < width;
 }

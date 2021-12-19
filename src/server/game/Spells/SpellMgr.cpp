@@ -3366,6 +3366,11 @@ void SpellMgr::LoadSpellCustomAttr()
             case 44535: // Spirit Heal, abilities also have no cost
                 spellInfo->Effects[EFFECT_0].MiscValue = 127;
                 break;
+            case 89997:
+            {
+                spellInfo->AddAttribute(SPELL_ATTR0_CU_CONE_LINE);
+                spellInfo->AddAttribute(SPELL_ATTR0_CU_SHARE_DAMAGE);
+                }
         }
 
         if (spellInfo->Speed > 0.0f)

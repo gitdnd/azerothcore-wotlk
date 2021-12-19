@@ -3447,7 +3447,7 @@ SpellCastResult Spell::prepare(SpellCastTargets const* targets, AuraEffect const
         SendSpellStart();
 
         // set target for proper facing
-        if ((m_casttime || m_spellInfo->IsChanneled()) && !(_triggeredCastFlags & TRIGGERED_IGNORE_SET_FACING))
+        if ((m_casttime || m_spellInfo->IsChanneled()) && !(_triggeredCastFlags & TRIGGERED_IGNORE_SET_FACING) && m_spellInfo->Id != 89998)
         {
             if (m_caster->GetTypeId() == TYPEID_UNIT && !m_caster->ToCreature()->IsInEvadeMode() &&
                     ((m_targets.GetObjectTarget() && m_caster != m_targets.GetObjectTarget()) || m_spellInfo->IsPositive()))
