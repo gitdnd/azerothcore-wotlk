@@ -15,11 +15,14 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <optional>
+
 #include "SpellScript.h"
 #include "Spell.h"
 #include "SpellAuras.h"
 #include "SpellMgr.h"
 #include <string>
+#include <MoveSplineInit.h>
 
 bool _SpellScript::_Validate(SpellInfo const* entry)
 {
@@ -661,78 +664,65 @@ SpellValue const* SpellScript::GetSpellValue()
 
 void SpellScript::ForceAttack()
 {
-    Position         tempPoint     = GetCaster()->GetWorldLocation();
-    Unit*            tempUnit      = GetCaster();
-    const SpellInfo* tempSpellInfo = GetSpellInfo();
+    Unit*            unitCaster      = GetCaster();
+    Position         CasterPnt     = unitCaster->GetWorldLocation();
+    const SpellInfo* spellInfo = GetSpellInfo();
 
-    float tempO = tempUnit->GetOrientation();
-    Position tempPoint2;
-    tempPoint2 = tempUnit->GetFirstCollisionPosition(0.6, tempO);
-    //tempPoint2.SetOrientation(0);
-    float tempX = tempPoint2.GetPositionX();
-    float tempY = tempPoint2.GetPositionY();
+    
+    unitCaster->CastSpell(unitCaster, 89995, true);
+    unitCaster->CastSpell(unitCaster, 89998, false);
 
-    float tempZ = tempPoint2.GetPositionZ();
 
-    //tempZ = tempUnit->GetMapHeight(tempX, tempY, tempZ);
-    // if (tempZ > INVALID_HEIGHT)
-    // tempZ += (tempUnit->isType(TYPEMASK_UNIT) ? static_cast<Unit const*>(tempUnit)->GetHoverHeight() : 0.0f);
-
-    tempUnit->CastSpell(tempUnit, 89998, false);
-
-    tempUnit->MonsterMoveWithSpeed(tempX, tempY, tempZ, 2);
-
-    tempUnit->HandleEmoteCommand(EMOTE_ONESHOT_ATTACK2HTIGHT);
-    tempUnit->SetSheath(SHEATH_STATE_MELEE);
-
-    Spell* tempSpell = tempUnit->FindCurrentSpellBySpellId(89998);
-    if (tempSpell)
+    Spell* spell = unitCaster->FindCurrentSpellBySpellId(89998);
+    if (spell)
     {
-        tempSpell->SetTriggerDummy(GetSpellInfo()->Id);
+        uint32 spellId = (GetSpellInfo()->Id);
+        spell->SetTriggerDummy(std::vector<std::any> {spellId});
     }
     
-    int32 tempInt1 = tempUnit->GetAttackTime(BASE_ATTACK);
-    tempInt1 *= tempUnit->m_modAttackSpeedPct[BASE_ATTACK];
-    int32 tempCD;
-    if (tempUnit->haveOffhandWeapon() == true)
+    int32 atkTime = unitCaster->GetAttackTime(BASE_ATTACK);
+    atkTime *= unitCaster->m_modAttackSpeedPct[BASE_ATTACK];
+    int32 CD;
+    if (unitCaster->haveOffhandWeapon() == true)
     {
-        int32 tempInt2 = tempUnit->GetAttackTime(OFF_ATTACK);
-        tempInt2 *= tempUnit->m_modAttackSpeedPct[OFF_ATTACK];
-        tempCD = (tempInt1 + tempInt2) / 2;
+        int32 atkTime2 = unitCaster->GetAttackTime(OFF_ATTACK);
+        atkTime2 *= unitCaster->m_modAttackSpeedPct[OFF_ATTACK];
+        CD = (atkTime + atkTime2) / 2;
     }
     else
     {
-        tempCD = tempInt1;
+        CD = atkTime;
     }
-    uint32 tempCategory = tempSpellInfo->GetCategory();
+    uint32 category = spellInfo->GetCategory();
 
-    tempUnit->_AddSpellCooldown(tempSpellInfo->Id, tempCategory, 0, tempCD, true, true);
-    if (tempUnit->GetTypeId() == TYPEID_PLAYER)
+    unitCaster->_AddSpellCooldown(spellInfo->Id, category, 0, CD, true, true);
+    if (unitCaster->GetTypeId() == TYPEID_PLAYER)
     {
         WorldPacket data;
-        Player*     tempPlayer = dynamic_cast<Player*>(tempUnit);
-        tempPlayer->BuildCooldownPacket(data, SPELL_COOLDOWN_FLAG_NONE, tempSpellInfo->Id, tempCD);
+        Player*     tempPlayer = dynamic_cast<Player*>(unitCaster);
+
+        tempPlayer->BuildCooldownPacket(data, SPELL_COOLDOWN_FLAG_NONE, spellInfo->Id, CD);
         tempPlayer->SendDirectMessage(&data);
     }
 
-    SpellCategoryStore::const_iterator i_scstore = sSpellsByCategoryStore.find(tempCategory);
+    SpellCategoryStore::const_iterator i_scstore = sSpellsByCategoryStore.find(category);
     if (i_scstore != sSpellsByCategoryStore.end())
     {
         for (SpellCategorySet::const_iterator i_scset = i_scstore->second.begin(); i_scset != i_scstore->second.end(); ++i_scset)
         {
-            if (i_scset->second == tempSpellInfo->Id) // skip main spell, already handled above
+            if (i_scset->second == spellInfo->Id) // skip main spell, already handled above
             {
                 continue;
             }
 
             // Only within the same spellfamily
             SpellInfo const* categorySpellInfo = sSpellMgr->GetSpellInfo(i_scset->second);
-            if (!categorySpellInfo || categorySpellInfo->SpellFamilyName != tempSpellInfo->SpellFamilyName)
+            if (!categorySpellInfo || categorySpellInfo->SpellFamilyName != spellInfo->SpellFamilyName)
             {
                 continue;
             }
 
-            tempUnit->_AddSpellCooldown(i_scset->second, tempCategory, 0, tempCD, true);
+            unitCaster->_AddSpellCooldown(i_scset->second, category, 0, CD, true);
         }
     }
 }

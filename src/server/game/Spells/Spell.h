@@ -18,6 +18,9 @@
 #ifndef __SPELL_H
 #define __SPELL_H
 
+#include <any>
+#include <optional>
+
 #include "GridDefines.h"
 #include "ObjectMgr.h"
 #include "PathGenerator.h"
@@ -770,16 +773,17 @@ public:
 #endif
 
     /// <summary>
-    /// My stuff :) includes "which spell issued the cast of this spell" so I can tell from the finishing of basic attack if it was cast by undead strike or crusader strike etc.
+    /// A collection of random stuff to be read by a single spell.
+    /// includes "which spell issued the cast of this spell" so I can tell from the finishing of basic attack if it was cast by undead strike or crusader strike etc.
     /// </summary>
-    uint32 triggerDummy = 0;
+    std::optional<std::vector<std::any>> triggerDummy = {};
 
 public:
-    uint32 GetTriggerDummy()
+    std::optional<std::vector<std::any>> GetTriggerDummy()
     {
         return triggerDummy;
     }
-    void SetTriggerDummy(uint32 newDummy)
+    void SetTriggerDummy(std::optional<std::vector<std::any>> newDummy)
     {
         triggerDummy = newDummy;
     }

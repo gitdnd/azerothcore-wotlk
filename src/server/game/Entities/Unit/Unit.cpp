@@ -15438,6 +15438,8 @@ uint32 Unit::GetCreatePowers(Powers power) const
         case POWER_HAPPINESS:
             return (GetTypeId() == TYPEID_PLAYER || !((Creature const*)this)->IsPet() || ((Pet const*)this)->getPetType() != HUNTER_PET ? 0 : 1050000);
         case POWER_RUNIC_POWER:
+            if (this->GetTypeId() == TYPEID_PLAYER)
+                return this->GetStat(STAT_SPIRIT) * 100;
             return 1000;
         case POWER_RUNE:
             return 0;
