@@ -21,6 +21,8 @@ enum OutsideSpells
 };
 enum ActionSpells
 {
+    SPELL_ACITON_QUICK_FOLLOW_UP      = 89993,
+    SPELL_ACITON_QUICK_ATTACK     = 89994,
     SPELL_ACITON_ATTACK_SLOW                    = 89995,
     SPELL_ACTION_PIERCING_ATTACK                = 89998,
     SPELL_ACTION_BASIC_ATTACK                   = 89998,
@@ -38,6 +40,80 @@ enum ActionSpells
 };
 
 
+
+
+class spell_action_quick_attack : public SpellScript
+{
+    PrepareSpellScript(spell_action_quick_attack);
+
+    void SpellStart()
+    {
+
+        Unit*            unitCaster = GetCaster();
+        Position         CasterPnt  = unitCaster->GetWorldLocation();
+        const SpellInfo* spellInfo  = GetSpellInfo();
+
+        unitCaster->CastSpell(unitCaster, 89995, true);
+        unitCaster->CastSpell(unitCaster, 89993, false);
+
+        Spell* spell = unitCaster->FindCurrentSpellBySpellId(89993);
+        if (spell)
+        {
+            uint32 spellId = (GetSpellInfo()->Id);
+            spell->SetTriggerDummy(std::vector<std::any> {spellId});
+        }
+
+        int32 atkTime = unitCaster->GetAttackTime(BASE_ATTACK);
+        atkTime *= unitCaster->m_modAttackSpeedPct[BASE_ATTACK];
+        int32 CD;
+        if (unitCaster->haveOffhandWeapon() == true)
+        {
+            int32 atkTime2 = unitCaster->GetAttackTime(OFF_ATTACK);
+            atkTime2 *= unitCaster->m_modAttackSpeedPct[OFF_ATTACK];
+            CD = (atkTime + atkTime2) / 2;
+        }
+        else
+        {
+            CD = atkTime;
+        }
+        uint32 category = spellInfo->GetCategory();
+
+        unitCaster->_AddSpellCooldown(spellInfo->Id, category, 0, CD, true, true);
+        if (unitCaster->GetTypeId() == TYPEID_PLAYER)
+        {
+            WorldPacket data;
+            Player*     tempPlayer = dynamic_cast<Player*>(unitCaster);
+
+            tempPlayer->BuildCooldownPacket(data, SPELL_COOLDOWN_FLAG_NONE, spellInfo->Id, CD);
+            tempPlayer->SendDirectMessage(&data);
+        }
+
+        SpellCategoryStore::const_iterator i_scstore = sSpellsByCategoryStore.find(category);
+        if (i_scstore != sSpellsByCategoryStore.end())
+        {
+            for (SpellCategorySet::const_iterator i_scset = i_scstore->second.begin(); i_scset != i_scstore->second.end(); ++i_scset)
+            {
+                if (i_scset->second == spellInfo->Id) // skip main spell, already handled above
+                {
+                    continue;
+                }
+
+                // Only within the same spellfamily
+                SpellInfo const* categorySpellInfo = sSpellMgr->GetSpellInfo(i_scset->second);
+                if (!categorySpellInfo || categorySpellInfo->SpellFamilyName != spellInfo->SpellFamilyName)
+                {
+                    continue;
+                }
+
+                unitCaster->_AddSpellCooldown(i_scset->second, category, 0, CD, true);
+            }
+        }
+    }
+    void Register() override
+    {
+        BeforeCast += SpellCastFn(spell_action_quick_attack::SpellStart);
+    }
+};
 
 class spell_action_piercing_attack : public SpellScript
 {
@@ -139,7 +215,6 @@ class spell_action_deflect_aura : public AuraScript
 
         unitCast->PlayDirectSound(18023);
         dmgInfo.ModifyDamage(-1 * dmgInfo.GetDamage());
-        unitCast->RemoveSpellCooldown(SPELL_ACTION_DEFLECT, true);
         if (unitAttacker)
         {
             unitAttacker->ModifyPower(POWER_ENERGY, -10);
@@ -162,6 +237,7 @@ class spell_action_deflect_aura : public AuraScript
             Aura* tempAura = GetAura();
             unitCast->CastSpell(unitCast, 89999, false);
         }
+        unitCast->RemoveSpellCooldown(SPELL_ACTION_DEFLECT, true);
     }
 
     void Register() override
@@ -320,6 +396,8 @@ class spell_action_wolf_bite : public SpellScript
 
 void AddSC_action_spell_scripts()
 {
+
+    RegisterSpellScript(spell_action_quick_attack);
     RegisterSpellScript(spell_action_piercing_attack);
     RegisterSpellScript(spell_action_basic_attack);
     RegisterSpellAndAuraScriptPair(spell_action_deflect, spell_action_deflect_aura);

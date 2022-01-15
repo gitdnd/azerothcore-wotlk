@@ -31,10 +31,11 @@ enum Spells
 };
 enum Events
 {
+    NONE,
     C_ATK1_1,
     C_ATK1_2,
-    C_ATK_1_P200,
-    C_ATK_1_Q1,
+    C_ATK1_P200,
+    C_ATK1_Q1,
     CHECK_HEALTH,
     REGULAR_CHECK
 };
@@ -45,6 +46,11 @@ class bastard_wolf : public CreatureScript
 public:
     bastard_wolf() : CreatureScript("bastard_wolf") {}
 
+    
+    CreatureAI* GetAI(Creature* creature) const override
+    {
+        return new bastard_wolfAI(creature);
+    }
 
     struct bastard_wolfAI : public ScriptedAI
     {
@@ -52,73 +58,114 @@ public:
 
         EventMap events;
 
+        bool comboing = false;
+
+        void Reset() override
+        {
+            events.Reset();
+        }
         void EnterCombat(Unit* /*who*/) override
         {
-            events.ScheduleEvent(REGULAR_CHECK, 300);   
+            events.ScheduleEvent(REGULAR_CHECK, 3000);   
             if (rand() / 3 == 0)
             {
-                events.ScheduleEvent(CHECK_HEALTH, 500);
+                events.ScheduleEvent(CHECK_HEALTH, 5000);
             }
         }
 
         void UpdateAI(uint32 diff) override
         {
+
             if (!UpdateVictim())
                 return;
 
             events.Update(diff);
+            auto target = me->GetVictim();
+            
+            if (me->HasUnitState(UNIT_STATE_CASTING))
+            {
+                return;
+            }
+
+
+
+            if (me->isMoving())
+            {
+                if (me->GetDistance(target) > 6)
+                    me->CastSpell(target->GetPositionX(), target->GetPositionY(), target->GetPositionZ(), SPELL_LEAP, false);
+                return;
+            }
+            
+
             switch (events.ExecuteEvent())
             {
             case C_ATK1_1:
-
-                me->CastSpell(me, SPELL_ACTION_ATTACK, false);
+                me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
+                me->CastSpell((Unit*) nullptr, SPELL_ACTION_ATTACK, false);
                 events.ScheduleEvent(C_ATK1_2, 500);
                 break;
             case C_ATK1_2:
-                me->CastSpell(me, SPELL_ACTION_ATTACK, false);
-                if (rand()%2 == 0)
-                    events.ScheduleEvent(C_ATK_1_P200, 700);
+                me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
+                me->CastSpell((Unit*) nullptr, SPELL_ACTION_ATTACK, false);
+                if (rand() % 2 == 0)
+                    events.ScheduleEvent(C_ATK1_P200, 700);
                 else
-                    events.ScheduleEvent(SPELL_ACTION_QUICK_ATTACK, 500);
+                    events.ScheduleEvent(C_ATK1_Q1, 500);
                 break;
-            case C_ATK_1_P200:
-                me->CastSpell(me, SPELL_ACTION_ATTACK, false);
+            case C_ATK1_P200:
+                me->CastSpell((Unit*) nullptr, SPELL_ACTION_ATTACK, false);
+                comboing = false;
+                me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
                 break;
-            case C_ATK_1_Q1:
-                me->CastSpell(me, SPELL_ACTION_QUICK_ATTACK, false);
+            case C_ATK1_Q1:
+                me->CastSpell((Unit*) nullptr, SPELL_ACTION_QUICK_ATTACK, false);
+                comboing = false;
+                me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
                 break;
             case CHECK_HEALTH:
+                if (comboing)
+                    break;
                 if (me->HealthBelowPct(60))
                 {
                     me->CastSpell(me, SPELL_DEVOURING_RAGE, false);
                     break;
                 }
             case REGULAR_CHECK:
-                events.ScheduleEvent(REGULAR_CHECK, 300); 
-                auto target = me->GetVictim();
-                if (me->GetDistance(target) < 1000)
+                if (comboing)
+                    break;
+                events.ScheduleEvent(REGULAR_CHECK, 3000);
+                if (me->GetDistance(target) < 3)
                 {
                     int action = rand() % 10;
                     switch (action)
                     {
                     case 0:
-                        me->CastSpell(target, SPELL_ACTION_WOLF_BITE, false);
+                    {
+                        me->CastSpell((Unit*) nullptr, SPELL_ACTION_WOLF_BITE, false);
                         break;
+                    }
                     case 1:
+                    {
                         me->CastSpell(target, SPELL_BLOOD_HOWL, false);
                         break;
+                    }
                     case 2:
                     case 3:
                     case 4:
+                    {
                         events.ScheduleEvent(C_ATK1_1, 500);
+                        comboing = true;
+                        break;
+                    }
+                    default:
+                        me->CastSpell((Unit*) nullptr, SPELL_ACTION_ATTACK, false);
                         break;
                     }
                     break;
                 }
-                else
-                {
-                    me->CastSpell(target, SPELL_LEAP, false);
-                }
+            default:
+                DoMeleeAttackIfReady();
+                return;
             }
         }
         void MovementInform(uint32 type, uint32 point) override
