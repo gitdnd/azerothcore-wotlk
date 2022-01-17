@@ -2385,6 +2385,14 @@ uint32 Unit::CalcArmorReducedDamage(Unit const* attacker, Unit const* victim, co
     uint32 newdamage = 0;
     float armor = float(victim->GetArmor());
 
+    /*
+    HOW IT WORKS
+    DAMAGEMOD = DAMAGE - std::min(ARMOR, DAMAGE);
+    DAMAGE -= DAMAGEMOD
+    ARMOR -= DAMAGEMOD
+    ARMOR -= TARGETS ARPEN
+    ADD ARMOR DESTRUCTION ABILITY, SET STACKS EQUAL TO REMAINING ARMOR. EVERY 5s when power regens/degens add armor equal to block value + shield value.
+    */
     // Ignore enemy armor by SPELL_AURA_MOD_TARGET_RESISTANCE aura
     if (attacker)
     {
@@ -2431,11 +2439,7 @@ uint32 Unit::CalcArmorReducedDamage(Unit const* attacker, Unit const* victim, co
             }
 
             float maxArmorPen = 0;
-            if (victim->getLevel() < 60)
-                maxArmorPen = float(400 + 85 * victim->getLevel());
-            else
-                maxArmorPen = 400 + 85 * victim->getLevel() + 4.5f * 85 * (victim->getLevel() - 59);
-
+            maxArmorPen = float(attacker->getLevel() * 40);
             // Cap armor penetration to this number
             maxArmorPen = std::min((armor + maxArmorPen) / 3, armor);
             // Figure out how much armor do we ignore
@@ -11730,7 +11734,7 @@ uint32 Unit::SpellDamageBonusDone(Unit* victim, SpellInfo const* spellProto, uin
     {
         if (damagetype == DOT)
         {
-            coeff = bonus->dot_damage;
+            coeff = spellProto->Effects[0].BonusMultiplier + spellProto->Effects[1].BonusMultiplier + spellProto->Effects[2].BonusMultiplier;
             if (bonus->ap_dot_bonus > 0)
             {
                 WeaponAttackType attType = (spellProto->IsRangedWeaponSpell() && spellProto->DmgClass != SPELL_DAMAGE_CLASS_MELEE) ? RANGED_ATTACK : BASE_ATTACK;
@@ -11741,7 +11745,7 @@ uint32 Unit::SpellDamageBonusDone(Unit* victim, SpellInfo const* spellProto, uin
         }
         else
         {
-            coeff = bonus->direct_damage;
+            coeff = spellProto->Effects[0].BonusMultiplier + spellProto->Effects[1].BonusMultiplier + spellProto->Effects[2].BonusMultiplier;
             if (bonus->ap_bonus > 0)
             {
                 WeaponAttackType attType = (spellProto->IsRangedWeaponSpell() && spellProto->DmgClass != SPELL_DAMAGE_CLASS_MELEE) ? RANGED_ATTACK : BASE_ATTACK;
@@ -11750,6 +11754,11 @@ uint32 Unit::SpellDamageBonusDone(Unit* victim, SpellInfo const* spellProto, uin
                 DoneTotal += int32(bonus->ap_bonus * stack * ApCoeffMod * APbonus);
             }
         }
+    }
+    else
+    {
+        
+            coeff = spellProto->Effects[0].BonusMultiplier + spellProto->Effects[1].BonusMultiplier + spellProto->Effects[2].BonusMultiplier;
     }
 
     // Default calculation
@@ -11839,8 +11848,7 @@ uint32 Unit::SpellDamageBonusTaken(Unit* caster, SpellInfo const* spellProto, ui
     // Check for table values
     float coeff = 0;
     SpellBonusEntry const* bonus = sSpellMgr->GetSpellBonusData(spellProto->Id);
-    if (bonus)
-        coeff = (damagetype == DOT) ? bonus->dot_damage : bonus->direct_damage;
+    coeff                        = spellProto->Effects[0].BonusMultiplier + spellProto->Effects[1].BonusMultiplier + spellProto->Effects[2].BonusMultiplier;
 
     // Default calculation
     if (TakenAdvertisedBenefit)
@@ -12488,14 +12496,14 @@ uint32 Unit::SpellHealingBonusDone(Unit* victim, SpellInfo const* spellProto, ui
     {
         if (damagetype == DOT)
         {
-            coeff = bonus->dot_damage;
+            coeff = spellProto->Effects[0].BonusMultiplier + spellProto->Effects[1].BonusMultiplier + spellProto->Effects[2].BonusMultiplier;
             if (bonus->ap_dot_bonus > 0)
                 DoneTotal += int32(bonus->ap_dot_bonus * ApCoeffMod * stack * GetTotalAttackPowerValue(
                                        (spellProto->IsRangedWeaponSpell() && spellProto->DmgClass != SPELL_DAMAGE_CLASS_MELEE) ? RANGED_ATTACK : BASE_ATTACK));
         }
         else
         {
-            coeff = bonus->direct_damage;
+            coeff = spellProto->Effects[0].BonusMultiplier + spellProto->Effects[1].BonusMultiplier + spellProto->Effects[2].BonusMultiplier;
             if (bonus->ap_bonus > 0)
                 DoneTotal += int32(bonus->ap_bonus * ApCoeffMod * stack * GetTotalAttackPowerValue(
                                        (spellProto->IsRangedWeaponSpell() && spellProto->DmgClass != SPELL_DAMAGE_CLASS_MELEE) ? RANGED_ATTACK : BASE_ATTACK));
@@ -12503,6 +12511,7 @@ uint32 Unit::SpellHealingBonusDone(Unit* victim, SpellInfo const* spellProto, ui
     }
     else
     {
+        coeff = spellProto->Effects[0].BonusMultiplier + spellProto->Effects[1].BonusMultiplier + spellProto->Effects[2].BonusMultiplier;
         // No bonus healing for SPELL_DAMAGE_CLASS_NONE class spells by default
         if (spellProto->DmgClass == SPELL_DAMAGE_CLASS_NONE)
             return healamount;
@@ -12606,19 +12615,9 @@ uint32 Unit::SpellHealingBonusTaken(Unit* caster, SpellInfo const* spellProto, u
 
     // Check for table values
     SpellBonusEntry const* bonus = sSpellMgr->GetSpellBonusData(spellProto->Id);
-    float coeff = 0;
-    float factorMod = 1.0f;
-    if (bonus)
-        coeff = (damagetype == DOT) ? bonus->dot_damage : bonus->direct_damage;
-    else
-    {
-        // No bonus healing for SPELL_DAMAGE_CLASS_NONE class spells by default
-        if (spellProto->DmgClass == SPELL_DAMAGE_CLASS_NONE)
-        {
-            healamount = uint32(std::max((float(healamount) * TakenTotalMod), 0.0f));
-            return healamount;
-        }
-    }
+    float                  coeff     = 0;
+    float                  factorMod = 1.0f;
+    coeff = spellProto->Effects[0].BonusMultiplier + spellProto->Effects[1].BonusMultiplier + spellProto->Effects[2].BonusMultiplier;
 
     // Default calculation
     if (TakenAdvertisedBenefit)
@@ -12637,6 +12636,7 @@ uint32 Unit::SpellHealingBonusTaken(Unit* caster, SpellInfo const* spellProto, u
 
         TakenTotal += int32(TakenAdvertisedBenefit * (coeff > 0 ? coeff : TakenCoeff) * factorMod);
     }
+
 
     if (caster)
     {

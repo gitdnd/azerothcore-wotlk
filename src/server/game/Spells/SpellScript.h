@@ -480,6 +480,10 @@ public:
 
     // NEW
     void ForceAttack();
+    void ForceHeavy();
+    void ForceQuick();
+    void ForceThrust();
+    void HandleAttackCD(Unit* unitCaster, const SpellInfo* spellInfo);
 };
 
 // AuraScript interface - enum used for runtime checks of script function calls

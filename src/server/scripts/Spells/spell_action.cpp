@@ -16,15 +16,28 @@
 enum OutsideSpells
 {
 
-    SPELL_DK_DEATH_COIL_DAMAGE = 47632,
-    SPELL_DK_DEATH_COIL_HEAL   = 47633,
+    SPELL_PALADIN_HOLY_SHOCK_R1_DAMAGE  = 91004,
+    SPELL_PALADIN_HOLY_SHOCK_R1_HEALING = 91005,
+    SPELL_DK_DEATH_COIL_DAMAGE = 90008,
+    SPELL_DK_DEATH_COIL_HEAL   = 90009,
 };
 enum ActionSpells
 {
-    SPELL_ACITON_QUICK_FOLLOW_UP      = 89993,
-    SPELL_ACITON_QUICK_ATTACK     = 89994,
-    SPELL_ACITON_ATTACK_SLOW                    = 89995,
-    SPELL_ACTION_PIERCING_ATTACK                = 89998,
+    SPELL_ACTION_HARD_ATTACK        = 89900,
+    SPELL_ACTION_HEAVY_ATTACK       = 89901,
+    SPELL_ACTION_DIVINE_BLOOD       = 89985,
+    SPELL_ACTION_HEALING_POTION   = 89986,
+    SPELL_ACTION_POTION_FATIGUE   = 89987,
+    SPELL_ACTION_POTION   = 89988,
+    SPELL_ACTION_ATTACK_SLOW_DEBUFF     = 89989,
+    SPELL_ACTION_POSTURE_STUN   = 89990,
+    SPELL_ACTION_POSTURE_DAMAGE = 89991,
+    SPELL_ACITON_QUICK_FOLLOW_UP      = 89992,
+    SPELL_ACITON_QUICK_ATTACK     = 89993,
+    SPELL_ACITON_ATTACK_SLOW      = 89994,
+    SPELL_ACITON_ATTACK_SLOW_HEAVY  = 89995,
+    SPELL_ACTION_THRUST_ATTACK        = 89996,
+    SPELL_ACTION_STAB_ATTACK                = 89997,
     SPELL_ACTION_BASIC_ATTACK                   = 89998,
     SPELL_ACTION_DEFLECT                        = 89999,
     SPELL_ACTION_ATTACK                         = 90000,
@@ -33,100 +46,119 @@ enum ActionSpells
     SPELL_ACTION_DEATH_COIL                     = 90004,
     SPELL_ACTION_FESTERING_PLAGUE               = 90005,
     SPELL_ACTION_DEATH_COIL_KILLS = 90006,
+    SPELL_ACTION_PRESENCE_OF_SOUL       = 91001,
+    SPELL_ACTION_HOLY_SHOCK  = 91002,
     SPELL_ACTION_CRUSADER_STRIKE  = 91003,
     SPELL_ACTION_BLOOD_HOWL       = 100003,
     SPELL_WOLF_FORM               = 100004,
     SPELL_ACTION_WOLF_BITE  = 100005,
+    SPELL_ACTION_SHOCKWAVE_GRAPHIC = 100007,
+    SPELL_ACTION_MASSIVE_SMASH = 100008,
 };
 
+class spell_action_hard_attack : public SpellScript
+{
+    PrepareSpellScript(spell_action_hard_attack);
 
+    void Register() override
+    {
+        BeforeCast += SpellCastFn(spell_action_hard_attack::ForceHeavy);
+    }
+};
 
+class spell_action_divine_blood : public SpellScript
+{
+    PrepareSpellScript(spell_action_divine_blood);
+
+    void PotionFatigue()
+    {
+        auto  caster        = GetCaster();
+        Aura* potionFatigue   = caster->GetAura(SPELL_ACTION_POTION_FATIGUE);
+        if (potionFatigue)
+        {
+            potionFatigue->Remove();
+        }
+    }
+
+    void Register() override
+    {
+        OnCast += SpellCastFn(spell_action_divine_blood::PotionFatigue);
+    }
+};
+
+class spell_action_potions : public SpellScript
+{
+    PrepareSpellScript(spell_action_potions);
+
+    void PotionFatigue()
+    {
+        auto item = GetCastItem();
+        if (!item)
+        {
+            return;
+        }
+        Unit* caster = GetCaster();
+        
+        Aura* potionFatigue = caster->GetAura(SPELL_ACTION_POTION_FATIGUE);
+        int   potionFatStacks = 0;
+        if (potionFatigue)
+        {
+            potionFatStacks = potionFatigue->GetStackAmount();
+            potionFatStacks = std::min(potionFatStacks, 10);
+        }
+        caster->CastSpell(caster, SPELL_ACTION_POTION_FATIGUE, true);
+
+        auto potionEnum = 0;
+        switch (item->GetEntry())
+        {
+        case 60002:
+        {
+            potionEnum          = SPELL_ACTION_HEALING_POTION;
+            break;
+        }
+        default:
+            break;
+        }
+        if (potionEnum)
+        {
+            const SpellInfo* si = sSpellMgr->GetSpellInfo(potionEnum);
+            if (!si)
+                return;
+
+            caster->CastSpell(caster, SPELL_ACITON_ATTACK_SLOW, true);
+            CustomSpellValues values;
+            int32             effectiveness = si->Effects[0].CalcValue() * (1 - 0.1 * potionFatStacks);
+            values.AddSpellMod(SPELLVALUE_BASE_POINT0, effectiveness);
+            caster->CastCustomSpell(potionEnum, values, caster, TRIGGERED_NONE);
+        }
+    }
+
+    void Register() override
+    {
+        OnCast += SpellCastFn(spell_action_potions::PotionFatigue);
+    }
+};
 
 class spell_action_quick_attack : public SpellScript
 {
     PrepareSpellScript(spell_action_quick_attack);
 
-    void SpellStart()
-    {
-
-        Unit*            unitCaster = GetCaster();
-        Position         CasterPnt  = unitCaster->GetWorldLocation();
-        const SpellInfo* spellInfo  = GetSpellInfo();
-
-        unitCaster->CastSpell(unitCaster, 89995, true);
-        unitCaster->CastSpell(unitCaster, 89993, false);
-
-        Spell* spell = unitCaster->FindCurrentSpellBySpellId(89993);
-        if (spell)
-        {
-            uint32 spellId = (GetSpellInfo()->Id);
-            spell->SetTriggerDummy(std::vector<std::any> {spellId});
-        }
-
-        int32 atkTime = unitCaster->GetAttackTime(BASE_ATTACK);
-        atkTime *= unitCaster->m_modAttackSpeedPct[BASE_ATTACK];
-        int32 CD;
-        if (unitCaster->haveOffhandWeapon() == true)
-        {
-            int32 atkTime2 = unitCaster->GetAttackTime(OFF_ATTACK);
-            atkTime2 *= unitCaster->m_modAttackSpeedPct[OFF_ATTACK];
-            CD = (atkTime + atkTime2) / 2;
-        }
-        else
-        {
-            CD = atkTime;
-        }
-        uint32 category = spellInfo->GetCategory();
-
-        unitCaster->_AddSpellCooldown(spellInfo->Id, category, 0, CD, true, true);
-        if (unitCaster->GetTypeId() == TYPEID_PLAYER)
-        {
-            WorldPacket data;
-            Player*     tempPlayer = dynamic_cast<Player*>(unitCaster);
-
-            tempPlayer->BuildCooldownPacket(data, SPELL_COOLDOWN_FLAG_NONE, spellInfo->Id, CD);
-            tempPlayer->SendDirectMessage(&data);
-        }
-
-        SpellCategoryStore::const_iterator i_scstore = sSpellsByCategoryStore.find(category);
-        if (i_scstore != sSpellsByCategoryStore.end())
-        {
-            for (SpellCategorySet::const_iterator i_scset = i_scstore->second.begin(); i_scset != i_scstore->second.end(); ++i_scset)
-            {
-                if (i_scset->second == spellInfo->Id) // skip main spell, already handled above
-                {
-                    continue;
-                }
-
-                // Only within the same spellfamily
-                SpellInfo const* categorySpellInfo = sSpellMgr->GetSpellInfo(i_scset->second);
-                if (!categorySpellInfo || categorySpellInfo->SpellFamilyName != spellInfo->SpellFamilyName)
-                {
-                    continue;
-                }
-
-                unitCaster->_AddSpellCooldown(i_scset->second, category, 0, CD, true);
-            }
-        }
-    }
     void Register() override
     {
-        BeforeCast += SpellCastFn(spell_action_quick_attack::SpellStart);
+        BeforeCast += SpellCastFn(spell_action_quick_attack::ForceQuick);
     }
 };
 
-class spell_action_piercing_attack : public SpellScript
+class spell_action_stab_attack : public SpellScript
 {
-    PrepareSpellScript(spell_action_piercing_attack);
-
-    void SpellStart()
-    {
-    }
+    PrepareSpellScript(spell_action_stab_attack);
     void Register() override
     {
-        BeforeCast += SpellCastFn(spell_action_piercing_attack::SpellStart);
+        BeforeCast += SpellCastFn(spell_action_stab_attack::ForceThrust);
     }
 };
+
+
 class spell_action_basic_attack : public SpellScript
 {
     PrepareSpellScript(spell_action_basic_attack);
@@ -142,7 +174,7 @@ class spell_action_basic_attack : public SpellScript
             switch (dummies)
             {
             case SPELL_ACTION_CRUSADER_STRIKE:
-                caster->CastSpell(caster, 12043, true);
+                caster->CastSpell(caster, SPELL_ACTION_PRESENCE_OF_SOUL, true);
                 break;
             }
         }
@@ -160,8 +192,12 @@ class spell_action_basic_attack : public SpellScript
     {
         Unit* caster  = GetCaster();
         Unit* unitHit = GetHitUnit();
-        if (!(caster && unitHit) && GetHitDamage() <= 0)
+        if (!(caster && unitHit) || GetHitDamage() <= 0)
+        {
             return;
+        }
+        caster->ModifyPower(POWER_MANA, caster->GetStat(STAT_SPIRIT));
+        caster->CastSpell(unitHit, SPELL_ACTION_ATTACK_SLOW_DEBUFF, true);
         if (auto dummyRef = GetSpell()->GetTriggerDummy(); dummyRef)
         {
             uint32 dummies = std::any_cast<uint32>((*dummyRef)[0]);
@@ -195,7 +231,7 @@ class spell_action_basic_attack : public SpellScript
     {
         AfterCast += SpellCastFn(spell_action_basic_attack::SpellFinish);
         OnCast += SpellCastFn(spell_action_basic_attack::SpellCast);
-        OnHit += SpellHitFn(spell_action_basic_attack::SpellHit);
+        AfterHit += SpellHitFn(spell_action_basic_attack::SpellHit);
     }
 };
 class spell_action_deflect_aura : public AuraScript
@@ -205,7 +241,6 @@ class spell_action_deflect_aura : public AuraScript
     void SpellFinish()
     {
         Unit* unitCast = GetCaster();
-        unitCast->HandleEmoteCommand(EMOTE_ONESHOT_PARRY2H);
         unitCast->SetSheath(SHEATH_STATE_MELEE);
     }
     void Absorb(AuraEffect* aurEff, DamageInfo& dmgInfo, uint32& absorbAmount)
@@ -217,7 +252,18 @@ class spell_action_deflect_aura : public AuraScript
         dmgInfo.ModifyDamage(-1 * dmgInfo.GetDamage());
         if (unitAttacker)
         {
-            unitAttacker->ModifyPower(POWER_ENERGY, -10);
+            unitCast->CastSpell(unitAttacker, SPELL_ACTION_POSTURE_DAMAGE, true);
+            Aura* postureStacaks = unitAttacker->GetAura(SPELL_ACTION_POSTURE_DAMAGE);
+            if (postureStacaks)
+            {
+                int stacks = postureStacaks->GetStackAmount();
+                if (stacks >= 10)
+                {
+                    unitAttacker->RemoveAura(postureStacaks);
+                    unitCast->CastSpell(unitAttacker, SPELL_ACTION_POSTURE_STUN, true);
+                }
+            }
+            unitCast->ModifyPower(POWER_RUNIC_POWER, dmgInfo.GetDamage() * unitCast->GetStat(STAT_STAMINA) / 1000);
 
             Position tempPoint  = unitCast->GetPosition();
             Position tempPoint2 = unitAttacker->GetPosition();
@@ -235,6 +281,7 @@ class spell_action_deflect_aura : public AuraScript
             Player* tempPlayer = dynamic_cast<Player*>(unitCast);
 
             Aura* tempAura = GetAura();
+            unitCast->RemoveSpellCooldown(SPELL_ACTION_DEFLECT, true);
             unitCast->CastSpell(unitCast, 89999, false);
         }
         unitCast->RemoveSpellCooldown(SPELL_ACTION_DEFLECT, true);
@@ -295,11 +342,11 @@ class spell_action_death_coil : public SpellScript
         {
             if (caster->IsFriendlyTo(target))
             {
-                caster->CastCustomSpell(target, SPELL_DK_DEATH_COIL_HEAL, &damage, nullptr, nullptr, true);
+                caster->CastCustomSpell(target, SPELL_DK_DEATH_COIL_HEAL, &damage, nullptr, nullptr, false);
             }
             else
             {
-                caster->CastCustomSpell(target, SPELL_DK_DEATH_COIL_DAMAGE, &damage, nullptr, nullptr, true);
+                caster->CastCustomSpell(target, SPELL_DK_DEATH_COIL_DAMAGE, &damage, nullptr, nullptr, false);
             }
         }
     }
@@ -349,6 +396,47 @@ class spell_dk_death_coil_damage : public SpellScript
     }
 };
 
+class spell_action_holy_shock : public SpellScript
+{
+    PrepareSpellScript(spell_action_holy_shock);
+
+    void HandleDummy(SpellEffIndex /*effIndex*/)
+    {
+        Unit* caster = GetCaster();
+        if (Unit* unitTarget = GetHitUnit())
+        {
+            if (caster->IsFriendlyTo(unitTarget))
+                caster->CastSpell(unitTarget, SPELL_PALADIN_HOLY_SHOCK_R1_HEALING, true);
+            else
+                caster->CastSpell(unitTarget, SPELL_PALADIN_HOLY_SHOCK_R1_DAMAGE, true);
+        }
+    }
+
+    SpellCastResult CheckCast()
+    {
+        Unit* caster = GetCaster();
+        if (Unit* target = GetExplTargetUnit())
+        {
+            if (!caster->IsFriendlyTo(target))
+            {
+                if (!caster->IsValidAttackTarget(target))
+                    return SPELL_FAILED_BAD_TARGETS;
+
+                if (!caster->isInFront(target))
+                    return SPELL_FAILED_UNIT_NOT_INFRONT;
+            }
+        }
+        else
+            return SPELL_FAILED_BAD_TARGETS;
+        return SPELL_CAST_OK;
+    }
+
+    void Register() override
+    {
+        OnCheckCast += SpellCheckCastFn(spell_action_holy_shock::CheckCast);
+        OnEffectHitTarget += SpellEffectFn(spell_action_holy_shock::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
+    }
+};
 class spell_action_crusader_strike : public SpellScript
 {
     PrepareSpellScript(spell_action_crusader_strike);
@@ -383,7 +471,50 @@ class spell_action_blood_howl : public SpellScript
     }
 };
 
+class spell_action_devouring_rage_auraa : public AuraScript
+{
+    PrepareAuraScript(spell_action_devouring_rage_auraa);
 
+    void CheckProc(ProcEventInfo& eventInfo)
+    {
+        auto damage = eventInfo.GetDamageInfo();
+        if (damage)
+        {
+            auto caster = GetCaster();
+            if(caster)
+            {
+                caster->DealHeal(caster, caster, damage->GetDamage());
+                caster->setAttackTimer(BASE_ATTACK, 0);
+            }
+
+        }
+    }
+
+    void Register() override
+    {
+        OnProc += AuraProcFn(spell_action_devouring_rage_auraa::CheckProc);
+    }
+};
+
+class spell_action_devouring_rage : public SpellScript
+{
+    PrepareSpellScript(spell_action_devouring_rage);
+
+    SpellCastResult CheckCast()
+    {
+        Unit* caster = GetCaster();
+        if (caster->GetHealthPct() > 60)
+        {
+            return SPELL_FAILED_TRY_AGAIN;
+        }
+        return SPELL_CAST_OK;
+    }
+
+    void Register() override
+    {
+        OnCheckCast += SpellCheckCastFn(spell_action_devouring_rage::CheckCast);
+    }
+};
 class spell_action_wolf_bite : public SpellScript
 {
     PrepareSpellScript(spell_action_wolf_bite);
@@ -397,14 +528,17 @@ class spell_action_wolf_bite : public SpellScript
 void AddSC_action_spell_scripts()
 {
 
+    RegisterSpellScript(spell_action_potions);
     RegisterSpellScript(spell_action_quick_attack);
-    RegisterSpellScript(spell_action_piercing_attack);
+    RegisterSpellScript(spell_action_thrust_attack);
     RegisterSpellScript(spell_action_basic_attack);
     RegisterSpellAndAuraScriptPair(spell_action_deflect, spell_action_deflect_aura);
     RegisterSpellScript(spell_action_attack);
     RegisterSpellScript(spell_action_undeath_strike);
     RegisterSpellScript(spell_action_death_coil);
     RegisterSpellScript(spell_dk_death_coil_damage);
+    RegisterSpellScript(spell_action_holy_shock);
     RegisterSpellScript(spell_action_crusader_strike);
+    RegisterSpellAndAuraScriptPair(spell_action_devouring_rage, spell_action_devouring_rage_auraa);
     RegisterSpellScript(spell_action_wolf_bite);
 }

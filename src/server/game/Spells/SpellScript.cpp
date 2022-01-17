@@ -662,6 +662,16 @@ SpellValue const* SpellScript::GetSpellValue()
     return m_spell->m_spellValue;
 }
 
+enum Spells
+{
+    SPELL_ACTION_HEAVY_ATTACK      = 89901,
+    SPELL_ACITON_QUICK_FOLLOW_UP   = 89992,
+    SPELL_ACITON_ATTACK_SLOW       = 89994,
+    SPELL_ACITON_ATTACK_SLOW_HEAVY = 89995,
+    SPELL_ACTION_THRUST_ATTACK     = 89996,
+    SPELL_ACTION_BASIC_ATTACK      = 89998,
+};
+
 void SpellScript::ForceAttack()
 {
     Unit*            unitCaster      = GetCaster();
@@ -669,17 +679,75 @@ void SpellScript::ForceAttack()
     const SpellInfo* spellInfo = GetSpellInfo();
 
     
-    unitCaster->CastSpell(unitCaster, 89995, true);
-    unitCaster->CastSpell(unitCaster, 89998, false);
+    unitCaster->CastSpell(unitCaster, SPELL_ACITON_ATTACK_SLOW, true);
+    unitCaster->CastSpell(unitCaster, SPELL_ACTION_BASIC_ATTACK, false);
 
 
-    Spell* spell = unitCaster->FindCurrentSpellBySpellId(89998);
+    Spell* spell = unitCaster->FindCurrentSpellBySpellId(SPELL_ACTION_BASIC_ATTACK);
     if (spell)
     {
         uint32 spellId = (GetSpellInfo()->Id);
         spell->SetTriggerDummy(std::vector<std::any> {spellId});
     }
-    
+    HandleAttackCD(unitCaster, spellInfo);
+}
+
+void SpellScript::ForceHeavy()
+{
+    Unit*            unitCaster = GetCaster();
+    Position         CasterPnt  = unitCaster->GetWorldLocation();
+    const SpellInfo* spellInfo  = GetSpellInfo();
+
+    unitCaster->CastSpell(unitCaster, SPELL_ACITON_ATTACK_SLOW_HEAVY, true);
+    unitCaster->CastSpell(unitCaster, SPELL_ACTION_HEAVY_ATTACK, false);
+
+    Spell* spell = unitCaster->FindCurrentSpellBySpellId(SPELL_ACTION_HEAVY_ATTACK);
+    if (spell)
+    {
+        uint32 spellId = (GetSpellInfo()->Id);
+        spell->SetTriggerDummy(std::vector<std::any> {spellId});
+    }
+    HandleAttackCD(unitCaster, spellInfo);
+}
+
+void SpellScript::ForceQuick()
+{
+    Unit*            unitCaster = GetCaster();
+    Position         CasterPnt  = unitCaster->GetWorldLocation();
+    const SpellInfo* spellInfo  = GetSpellInfo();
+
+    unitCaster->CastSpell(unitCaster, SPELL_ACITON_ATTACK_SLOW, true);
+    unitCaster->CastSpell(unitCaster, SPELL_ACITON_QUICK_FOLLOW_UP, false);
+
+    Spell* spell = unitCaster->FindCurrentSpellBySpellId(SPELL_ACITON_QUICK_FOLLOW_UP);
+    if (spell)
+    {
+        uint32 spellId = (GetSpellInfo()->Id);
+        spell->SetTriggerDummy(std::vector<std::any> {spellId});
+    }
+    HandleAttackCD(unitCaster, spellInfo);
+}
+
+void SpellScript::ForceThrust()
+{
+    Unit*            unitCaster = GetCaster();
+    Position         CasterPnt  = unitCaster->GetWorldLocation();
+    const SpellInfo* spellInfo  = GetSpellInfo();
+
+    unitCaster->CastSpell(unitCaster, SPELL_ACITON_ATTACK_SLOW_HEAVY, true);
+    unitCaster->CastSpell(unitCaster, SPELL_ACTION_THRUST_ATTACK, false);
+
+    Spell* spell = unitCaster->FindCurrentSpellBySpellId(SPELL_ACTION_THRUST_ATTACK);
+    if (spell)
+    {
+        uint32 spellId = (GetSpellInfo()->Id);
+        spell->SetTriggerDummy(std::vector<std::any> {spellId});
+    }
+    HandleAttackCD(unitCaster, spellInfo);
+}
+
+void SpellScript::HandleAttackCD(Unit* unitCaster, const SpellInfo* spellInfo)
+{
     int32 atkTime = unitCaster->GetAttackTime(BASE_ATTACK);
     atkTime *= unitCaster->m_modAttackSpeedPct[BASE_ATTACK];
     int32 CD;

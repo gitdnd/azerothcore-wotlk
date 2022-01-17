@@ -14,7 +14,11 @@
 // This is where scripts' loading functions should be declared:
 
 void AddSC_animal_mobs();
+void AddSC_underground_mobs();
 
-void AddBefallenScripts() {
+
+void AddBefallenScripts()
+{
     AddSC_animal_mobs();
+    AddSC_underground_mobs();
 }

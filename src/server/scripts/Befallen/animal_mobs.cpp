@@ -1,44 +1,5 @@
-/*
- * This file is part of the AzerothCore Project. See AUTHORS file for Copyright information
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Affero General Public License as published by the
- * Free Software Foundation; either version 3 of the License, or (at your
- * option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+#include "action_creature.h"
 
-#include "ScriptMgr.h"
-#include "ScriptedCreature.h"
-#include "Unit/Unit.h"
-
-enum Spells
-{
-    SPELL_ACTION_QUICK_ATTACK= 89993,
-    SPELL_ACTION_ATTACK     = 90000,
-    SPELL_LEAP              = 100001,
-    SPELL_DEVOURING_RAGE    = 100002,
-    SPELL_BLOOD_HOWL        = 100003,
-    SPELL_WOLF_FORM           = 100004,
-    SPELL_ACTION_WOLF_BITE    = 100005,
-};
-enum Events
-{
-    NONE,
-    C_ATK1_1,
-    C_ATK1_2,
-    C_ATK1_P200,
-    C_ATK1_Q1,
-    CHECK_HEALTH,
-    REGULAR_CHECK
-};
 
 
 class bastard_wolf : public CreatureScript
@@ -52,24 +13,16 @@ public:
         return new bastard_wolfAI(creature);
     }
 
-    struct bastard_wolfAI : public ScriptedAI
+    struct bastard_wolfAI : public BefallenAI
     {
-        bastard_wolfAI(Creature* creature) : ScriptedAI(creature) {}
+        bastard_wolfAI(Creature* creature) : BefallenAI(creature) {}
 
-        EventMap events;
-
-        bool comboing = false;
-
-        void Reset() override
-        {
-            events.Reset();
-        }
         void EnterCombat(Unit* /*who*/) override
         {
             events.ScheduleEvent(REGULAR_CHECK, 3000);   
-            if (rand() / 3 == 0)
+            if (rand() % 3 == 0)
             {
-                events.ScheduleEvent(CHECK_HEALTH, 5000);
+                events.ScheduleEvent(CHECK_HEALTH, 3000);
             }
         }
 
@@ -80,60 +33,136 @@ public:
                 return;
 
             events.Update(diff);
-            auto target = me->GetVictim();
             
             if (me->HasUnitState(UNIT_STATE_CASTING))
             {
                 return;
             }
 
+            auto target = me->GetVictim();
 
 
             if (me->isMoving())
             {
                 if (me->GetDistance(target) > 6)
-                    me->CastSpell(target->GetPositionX(), target->GetPositionY(), target->GetPositionZ(), SPELL_LEAP, false);
+                    me->CastSpell(target->GetPositionX(), target->GetPositionY(), target->GetPositionZ(), SPELL_ACTION_LEAP, false);
                 return;
             }
             
 
             switch (events.ExecuteEvent())
             {
-            case C_ATK1_1:
-                me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
-                me->CastSpell((Unit*) nullptr, SPELL_ACTION_ATTACK, false);
-                events.ScheduleEvent(C_ATK1_2, 500);
-                break;
-            case C_ATK1_2:
-                me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
-                me->CastSpell((Unit*) nullptr, SPELL_ACTION_ATTACK, false);
-                if (rand() % 2 == 0)
-                    events.ScheduleEvent(C_ATK1_P200, 700);
-                else
-                    events.ScheduleEvent(C_ATK1_Q1, 500);
-                break;
-            case C_ATK1_P200:
-                me->CastSpell((Unit*) nullptr, SPELL_ACTION_ATTACK, false);
-                comboing = false;
-                me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
-                break;
-            case C_ATK1_Q1:
-                me->CastSpell((Unit*) nullptr, SPELL_ACTION_QUICK_ATTACK, false);
-                comboing = false;
-                me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
-                break;
             case CHECK_HEALTH:
                 if (comboing)
+                {
+                    events.ScheduleEvent(CHECK_HEALTH, 3000);
                     break;
-                if (me->HealthBelowPct(60))
+                }
+                if (me->HealthBelowPct(50))
                 {
                     me->CastSpell(me, SPELL_DEVOURING_RAGE, false);
                     break;
                 }
+                else
+                    events.ScheduleEvent(CHECK_HEALTH, 3000);
+                break;
+            case D_1:
+            {
+                switch (comboing)
+                {
+                case 1:
+                    me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
+                    events.ScheduleEvent(D_1, 400);
+                    EasyCast(SPELL_ACTION_DEFLECT);
+                    comboing++;
+                    break;
+                case 2:
+                    me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
+                    events.ScheduleEvent(D_1, 400);
+                    EasyCast(SPELL_ACTION_DEFLECT);
+                    comboing++;
+                    break;
+                case 3:
+                    comboing = false;
+                    me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
+                    if (rand() % 2 == 0)
+                    {
+                        EasyCast(SPELL_ACTION_ATTACK);
+                    }
+                    else
+                    {
+                        EasyCast(SPELL_ACTION_DEFLECT);
+                    }
+                    comboing = 0;
+                    break;
+                }
+                break;
+            }
+            case ATK_1:
+                switch (comboing)
+                {
+                case 1:
+                    me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
+                    EasyCast(SPELL_ACTION_ATTACK);
+                    events.ScheduleEvent(ATK_1, 500);
+                    comboing = 2;
+                    break;
+                case 2:
+                    me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
+                    EasyCast(SPELL_ACTION_ATTACK);
+                    if (rand() % 2 == 0)
+                    {
+                        events.ScheduleEvent(ATK_1, 700);
+                        comboing = 3;
+                    }
+                    else
+                    {
+                        events.ScheduleEvent(ATK_1, 500);
+                        comboing = 4;
+                    }
+                    break;
+                case 3:
+                    me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
+                    EasyCast(SPELL_ACTION_ATTACK);
+                    comboing = 0;
+                    break;
+                case 4:
+                    me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
+                    EasyCast(SPELL_ACTION_QUICK_ATTACK);
+                    comboing = 0;
+                    break;
+                }
+            case ATK_2:
+                switch (comboing)
+                {
+                case 1:
+                    me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
+                    EasyCast(SPELL_ACTION_ATTACK);
+                    events.ScheduleEvent(ATK_2, 500);
+                    comboing = 2;
+                    break;
+                case 2:
+                    me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
+                    EasyCast(SPELL_ACTION_QUICK_ATTACK);
+                    events.ScheduleEvent(ATK_2, 250);
+                    comboing = 3;
+                    break;
+                case 3:
+                    me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
+                    EasyCast(SPELL_ACTION_QUICK_ATTACK);
+                    events.ScheduleEvent(ATK_2, 250);
+                    comboing = 4;
+                    break;
+                case 4:
+                    me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
+                    EasyCast(SPELL_ACTION_ATTACK);
+                    comboing = 0;
+                    break;
+                }
             case REGULAR_CHECK:
+                events.ScheduleEvent(REGULAR_CHECK, 3000);
                 if (comboing)
                     break;
-                events.ScheduleEvent(REGULAR_CHECK, 3000);
                 if (me->GetDistance(target) < 3)
                 {
                     int action = rand() % 10;
@@ -141,7 +170,7 @@ public:
                     {
                     case 0:
                     {
-                        me->CastSpell((Unit*) nullptr, SPELL_ACTION_WOLF_BITE, false);
+                        EasyCast(SPELL_ACTION_WOLF_BITE);
                         break;
                     }
                     case 1:
@@ -153,16 +182,40 @@ public:
                     case 3:
                     case 4:
                     {
-                        events.ScheduleEvent(C_ATK1_1, 500);
-                        comboing = true;
+                        EasyQueCombo(ATK_1);
                         break;
                     }
+                    case 5:
+                    case 6:
+                    {
+                        EasyQueCombo(ATK_2);
+                    }
+                    case 7:
+                    {
+                        EasyCast(SPELL_ACTION_DEFLECT);
+                        break;
+                    }
+                    case 8:
+                    {
+                        EasyQueCombo(D_1);
+                        break;
+                    }
+                    case 9:
+                    {
+                        if (target)
+                        {
+                            if (target->HasUnitState(UNIT_STATE_CASTING))
+                            {
+                                EasyCast(SPELL_ACTION_DEFLECT);
+                            }
+                        }
+                    }
                     default:
-                        me->CastSpell((Unit*) nullptr, SPELL_ACTION_ATTACK, false);
                         break;
                     }
                     break;
                 }
+                break;
             default:
                 DoMeleeAttackIfReady();
                 return;
