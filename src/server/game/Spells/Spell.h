@@ -19,6 +19,7 @@
 #define __SPELL_H
 
 #include <any>
+#include <map>
 #include <optional>
 
 #include "GridDefines.h"
@@ -40,6 +41,13 @@ class ByteBuffer;
 class BasicEvent;
 
 #define SPELL_CHANNEL_UPDATE_INTERVAL (1 * IN_MILLISECONDS)
+
+enum class MapDummy
+{
+    TRIGGERING_SPELL,
+    STRIKE,
+    WAS_IN_AIR,
+};
 
 enum SpellCastFlags
 {
@@ -776,16 +784,12 @@ public:
     /// A collection of random stuff to be read by a single spell.
     /// includes "which spell issued the cast of this spell" so I can tell from the finishing of basic attack if it was cast by undead strike or crusader strike etc.
     /// </summary>
-    std::optional<std::vector<std::any>> triggerDummy = {};
 
 public:
-    std::optional<std::vector<std::any>> GetTriggerDummy()
+    std::map<MapDummy, std::optional<std::any>> triggerDummy = {};
+    std::map<MapDummy, std::optional<std::any>>& GetTriggerDummy()
     {
         return triggerDummy;
-    }
-    void SetTriggerDummy(std::optional<std::vector<std::any>> newDummy)
-    {
-        triggerDummy = newDummy;
     }
 };
 

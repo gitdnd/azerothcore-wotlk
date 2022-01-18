@@ -664,6 +664,7 @@ SpellValue const* SpellScript::GetSpellValue()
 
 enum Spells
 {
+    SPELL_ACTION_SLAM_DUNK = 89984,
     SPELL_ACTION_HEAVY_ATTACK      = 89901,
     SPELL_ACITON_QUICK_FOLLOW_UP   = 89992,
     SPELL_ACITON_ATTACK_SLOW       = 89994,
@@ -678,17 +679,14 @@ void SpellScript::ForceAttack()
     Position         CasterPnt     = unitCaster->GetWorldLocation();
     const SpellInfo* spellInfo = GetSpellInfo();
 
-    
+    HandleAtkSpell(unitCaster);
+
     unitCaster->CastSpell(unitCaster, SPELL_ACITON_ATTACK_SLOW, true);
     unitCaster->CastSpell(unitCaster, SPELL_ACTION_BASIC_ATTACK, false);
 
 
     Spell* spell = unitCaster->FindCurrentSpellBySpellId(SPELL_ACTION_BASIC_ATTACK);
-    if (spell)
-    {
-        uint32 spellId = (GetSpellInfo()->Id);
-        spell->SetTriggerDummy(std::vector<std::any> {spellId});
-    }
+    HandleTriggerDummy(spell);
     HandleAttackCD(unitCaster, spellInfo);
 }
 
@@ -698,15 +696,13 @@ void SpellScript::ForceHeavy()
     Position         CasterPnt  = unitCaster->GetWorldLocation();
     const SpellInfo* spellInfo  = GetSpellInfo();
 
+    HandleAtkSpell(unitCaster);
+
     unitCaster->CastSpell(unitCaster, SPELL_ACITON_ATTACK_SLOW_HEAVY, true);
     unitCaster->CastSpell(unitCaster, SPELL_ACTION_HEAVY_ATTACK, false);
 
     Spell* spell = unitCaster->FindCurrentSpellBySpellId(SPELL_ACTION_HEAVY_ATTACK);
-    if (spell)
-    {
-        uint32 spellId = (GetSpellInfo()->Id);
-        spell->SetTriggerDummy(std::vector<std::any> {spellId});
-    }
+    HandleTriggerDummy(spell);
     HandleAttackCD(unitCaster, spellInfo);
 }
 
@@ -716,15 +712,13 @@ void SpellScript::ForceQuick()
     Position         CasterPnt  = unitCaster->GetWorldLocation();
     const SpellInfo* spellInfo  = GetSpellInfo();
 
+    HandleAtkSpell(unitCaster);
+
     unitCaster->CastSpell(unitCaster, SPELL_ACITON_ATTACK_SLOW, true);
     unitCaster->CastSpell(unitCaster, SPELL_ACITON_QUICK_FOLLOW_UP, false);
 
     Spell* spell = unitCaster->FindCurrentSpellBySpellId(SPELL_ACITON_QUICK_FOLLOW_UP);
-    if (spell)
-    {
-        uint32 spellId = (GetSpellInfo()->Id);
-        spell->SetTriggerDummy(std::vector<std::any> {spellId});
-    }
+    HandleTriggerDummy(spell);
     HandleAttackCD(unitCaster, spellInfo);
 }
 
@@ -734,19 +728,35 @@ void SpellScript::ForceThrust()
     Position         CasterPnt  = unitCaster->GetWorldLocation();
     const SpellInfo* spellInfo  = GetSpellInfo();
 
+    HandleAtkSpell(unitCaster);
+
     unitCaster->CastSpell(unitCaster, SPELL_ACITON_ATTACK_SLOW_HEAVY, true);
     unitCaster->CastSpell(unitCaster, SPELL_ACTION_THRUST_ATTACK, false);
 
     Spell* spell = unitCaster->FindCurrentSpellBySpellId(SPELL_ACTION_THRUST_ATTACK);
-    if (spell)
-    {
-        uint32 spellId = (GetSpellInfo()->Id);
-        spell->SetTriggerDummy(std::vector<std::any> {spellId});
-    }
+    HandleTriggerDummy(spell);
     HandleAttackCD(unitCaster, spellInfo);
 }
 
-void SpellScript::HandleAttackCD(Unit* unitCaster, const SpellInfo* spellInfo)
+void SpellScript::HandleTriggerDummy(Spell*& spell)
+{
+    if (spell)
+    {
+        uint32 spellId = (GetSpellInfo()->Id);
+        auto&   spellMap = spell->GetTriggerDummy();
+        spellMap[MapDummy::TRIGGERING_SPELL] = spellId;
+    }
+}
+void SpellScript::HandleAtkSpell(Unit*& unitCaster)
+{
+    if (unitCaster->GetUnitMovementFlags() & MOVEMENTFLAG_FALLING)
+    {
+        unitCaster->CastSpell(unitCaster, SPELL_ACTION_SLAM_DUNK, true);
+        auto& spellMap                             = GetSpell()->GetTriggerDummy();
+        spellMap[MapDummy::WAS_IN_AIR] = true;
+    }
+}
+void SpellScript::HandleAttackCD(Unit*& unitCaster, const SpellInfo* spellInfo)
 {
     int32 atkTime = unitCaster->GetAttackTime(BASE_ATTACK);
     atkTime *= unitCaster->m_modAttackSpeedPct[BASE_ATTACK];
@@ -761,6 +771,13 @@ void SpellScript::HandleAttackCD(Unit* unitCaster, const SpellInfo* spellInfo)
     {
         CD = atkTime;
     }
+    auto spellMap                       = GetSpell()->GetTriggerDummy();
+    if (spellMap[MapDummy::WAS_IN_AIR].has_value())
+    {
+        if (std::any_cast<bool>(spellMap[MapDummy::WAS_IN_AIR].value()) == true)
+            CD += 2000;
+    }
+
     uint32 category = spellInfo->GetCategory();
 
     unitCaster->_AddSpellCooldown(spellInfo->Id, category, 0, CD, true, true);

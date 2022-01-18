@@ -29,7 +29,8 @@ enum Spells
     SPELL_ACTION_UNDEATH_STRIKE   = 90001,
     SPELL_ACTION_HOLY_SHOCK = 91002,
     SPELL_ACTION_THUNDER_CLAP = 92003,
-    SPELL_ACTION_KICK = 93004,
+    SPELL_ACTION_KICK           = 93004,
+    SPELL_ACTION_DEMONBOLT      = 94003,
     SPELL_ACTION_LEAP                = 100001,
     SPELL_DEVOURING_RAGE      = 100002,
     SPELL_BLOOD_HOWL          = 100003,
@@ -55,16 +56,20 @@ enum Events
 
 struct BefallenAI : public ScriptedAI
 {
-
     BefallenAI(Creature* creature) : ScriptedAI(creature) {}
     EventMap events;
 
-    int comboing = 0;
+    int                        comboing = 0;
+    std::vector<WorldLocation> positions{me->GetWorldLocation()};
 
     void Reset() override
     {
         events.Reset();
         comboing = 0;
+    }
+    void DelayAttack()
+    {
+        me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
     }
     void EasyCast(int Spell)
     {
@@ -79,7 +84,7 @@ struct BefallenAI : public ScriptedAI
     }
     void EasyQueCombo(int Attack)
     {
-        auto atkTime = me->GetAttackTime(BASE_ATTACK);
+        int atkTime = me->GetAttackTime(BASE_ATTACK);
         events.ScheduleEvent(Attack, me->getAttackTimer(BASE_ATTACK));
         me->setAttackTimer(BASE_ATTACK, atkTime);
         comboing = 1;

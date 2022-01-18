@@ -17,6 +17,8 @@ public:
     {
         bastard_wolfAI(Creature* creature) : BefallenAI(creature) {}
 
+        bool engaged = false;
+        
         void EnterCombat(Unit* /*who*/) override
         {
             events.ScheduleEvent(REGULAR_CHECK, 3000);   
@@ -48,7 +50,10 @@ public:
                     me->CastSpell(target->GetPositionX(), target->GetPositionY(), target->GetPositionZ(), SPELL_ACTION_LEAP, false);
                 return;
             }
-            
+
+            // if HP < 100% or enemy in range, set engaged to true.
+            // while not engaged, will just stare at the victim.
+            // will also occasionally do slow walks towards its starting destination.
 
             switch (events.ExecuteEvent())
             {
@@ -56,12 +61,10 @@ public:
                 if (comboing)
                 {
                     events.ScheduleEvent(CHECK_HEALTH, 3000);
-                    break;
                 }
-                if (me->HealthBelowPct(50))
+                else if (me->HealthBelowPct(50))
                 {
                     me->CastSpell(me, SPELL_DEVOURING_RAGE, false);
-                    break;
                 }
                 else
                     events.ScheduleEvent(CHECK_HEALTH, 3000);
@@ -71,20 +74,20 @@ public:
                 switch (comboing)
                 {
                 case 1:
-                    me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
+                    DelayAttack();
                     events.ScheduleEvent(D_1, 400);
                     EasyCast(SPELL_ACTION_DEFLECT);
-                    comboing++;
+                    comboing = 2;
                     break;
                 case 2:
-                    me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
+                    DelayAttack();
                     events.ScheduleEvent(D_1, 400);
                     EasyCast(SPELL_ACTION_DEFLECT);
-                    comboing++;
+                    comboing = 3;
                     break;
                 case 3:
                     comboing = false;
-                    me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
+                    DelayAttack();
                     if (rand() % 2 == 0)
                     {
                         EasyCast(SPELL_ACTION_ATTACK);
@@ -95,20 +98,23 @@ public:
                     }
                     comboing = 0;
                     break;
+                default:
+                    break;
                 }
                 break;
             }
             case ATK_1:
+            {
                 switch (comboing)
                 {
                 case 1:
-                    me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
+                    DelayAttack();
                     EasyCast(SPELL_ACTION_ATTACK);
                     events.ScheduleEvent(ATK_1, 500);
                     comboing = 2;
                     break;
                 case 2:
-                    me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
+                    DelayAttack();
                     EasyCast(SPELL_ACTION_ATTACK);
                     if (rand() % 2 == 0)
                     {
@@ -122,43 +128,52 @@ public:
                     }
                     break;
                 case 3:
-                    me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
+                    DelayAttack();
                     EasyCast(SPELL_ACTION_ATTACK);
                     comboing = 0;
                     break;
                 case 4:
-                    me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
+                    DelayAttack();
                     EasyCast(SPELL_ACTION_QUICK_ATTACK);
                     comboing = 0;
                     break;
+                default:
+                    break;
                 }
+                break;
+            }
             case ATK_2:
+            {
                 switch (comboing)
                 {
                 case 1:
-                    me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
+                    DelayAttack();
                     EasyCast(SPELL_ACTION_ATTACK);
                     events.ScheduleEvent(ATK_2, 500);
                     comboing = 2;
                     break;
                 case 2:
-                    me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
+                    DelayAttack();
                     EasyCast(SPELL_ACTION_QUICK_ATTACK);
                     events.ScheduleEvent(ATK_2, 250);
                     comboing = 3;
                     break;
                 case 3:
-                    me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
+                    DelayAttack();
                     EasyCast(SPELL_ACTION_QUICK_ATTACK);
                     events.ScheduleEvent(ATK_2, 250);
                     comboing = 4;
                     break;
                 case 4:
-                    me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
+                    DelayAttack();
                     EasyCast(SPELL_ACTION_ATTACK);
                     comboing = 0;
                     break;
+                default:
+                    break;
                 }
+                break;
+            }
             case REGULAR_CHECK:
                 events.ScheduleEvent(REGULAR_CHECK, 3000);
                 if (comboing)
