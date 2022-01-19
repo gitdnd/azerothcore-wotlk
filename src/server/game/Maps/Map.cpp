@@ -1001,7 +1001,6 @@ void Map::PlayerRelocation(Player* player, float x, float y, float z, float o)
         AddToGrid(player, new_cell);
     }
 
-
     player->Relocate(x, y, z, o);
     if (player->IsVehicle())
         player->GetVehicleKit()->RelocatePassengers();
@@ -1023,7 +1022,6 @@ void Map::CreatureRelocation(Creature* creature, float x, float y, float z, floa
     }
     else
         RemoveCreatureFromMoveList(creature);
-
 
     creature->Relocate(x, y, z, o);
     if (creature->IsVehicle())

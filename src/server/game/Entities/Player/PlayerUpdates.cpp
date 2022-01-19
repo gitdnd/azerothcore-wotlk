@@ -1486,7 +1486,7 @@ void Player::UpdatePvP(bool state, bool _override)
     sScriptMgr->OnPlayerPVPFlagChange(this, state);
 }
 
-void Unit::UpdatePotionCooldown(Spell* spell)
+void Player::UpdatePotionCooldown(Spell* spell)
 {
     // no potion used i combat or still in combat
     if (!GetLastPotionId() || IsInCombat())

@@ -155,7 +155,7 @@ public:
 
     void _AddCreatureSpellCooldown(uint32 spell_id, uint16 categoryId, uint32 end_time);
     void AddSpellCooldown(uint32 spell_id, uint32 /*itemid*/, uint32 end_time, bool needSendToClient = false, bool forceSendToSpectator = false) override;
-    [[nodiscard]] virtual bool HasSpellCooldown(uint32 spell_id) const;
+    [[nodiscard]] bool HasSpellCooldown(uint32 spell_id) const override;
     [[nodiscard]] uint32 GetSpellCooldown(uint32 spell_id) const;
     void ProhibitSpellSchool(SpellSchoolMask idSchoolMask, uint32 unTimeMs) override;
     [[nodiscard]] bool IsSpellProhibited(SpellSchoolMask idSchoolMask) const;

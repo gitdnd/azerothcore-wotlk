@@ -50,7 +50,7 @@ SmartAI::SmartAI(Creature* c) : CreatureAI(c)
     // Xinef: spawn in run mode and set mRun to run... this overrides SetWalk EVERYWHERE
     mRun = true;
 
-    mCanAutoAttack = false;
+    mCanAutoAttack = true;
     mCanCombatMove = true;
 
     mForcedPaused = false;

@@ -34,32 +34,43 @@ enum Mistletoe
 };
 
 // 26218 - Mistletoe
-class spell_winter_veil_mistletoe : public SpellScript
+class spell_winter_veil_mistletoe : public SpellScriptLoader
 {
-    PrepareSpellScript(spell_winter_veil_mistletoe);
+public:
+    spell_winter_veil_mistletoe() : SpellScriptLoader("spell_winter_veil_mistletoe") { }
 
-    bool Validate(SpellInfo const* /*spell*/) override
+    class spell_winter_veil_mistletoe_SpellScript : public SpellScript
     {
-        return ValidateSpellInfo(
-            {
-                SPELL_CREATE_MISTLETOE,
-                SPELL_CREATE_HOLLY,
-                SPELL_CREATE_SNOWFLAKES
-            });
-    }
+        PrepareSpellScript(spell_winter_veil_mistletoe_SpellScript);
 
-    void HandleScript(SpellEffIndex /*effIndex*/)
-    {
-        if (Player* target = GetHitPlayer())
+        bool Validate(SpellInfo const* /*spell*/) override
         {
-            uint32 spellId = RAND(SPELL_CREATE_HOLLY, SPELL_CREATE_MISTLETOE, SPELL_CREATE_SNOWFLAKES);
-            GetCaster()->CastSpell(target, spellId, true);
+            return ValidateSpellInfo(
+                {
+                    SPELL_CREATE_MISTLETOE,
+                    SPELL_CREATE_HOLLY,
+                    SPELL_CREATE_SNOWFLAKES
+                });
         }
-    }
 
-    void Register() override
+        void HandleScript(SpellEffIndex /*effIndex*/)
+        {
+            if (Player* target = GetHitPlayer())
+            {
+                uint32 spellId = RAND(SPELL_CREATE_HOLLY, SPELL_CREATE_MISTLETOE, SPELL_CREATE_SNOWFLAKES);
+                GetCaster()->CastSpell(target, spellId, true);
+            }
+        }
+
+        void Register() override
+        {
+            OnEffectHitTarget += SpellEffectFn(spell_winter_veil_mistletoe_SpellScript::HandleScript, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+        }
+    };
+
+    SpellScript* GetSpellScript() const override
     {
-        OnEffectHitTarget += SpellEffectFn(spell_winter_veil_mistletoe::HandleScript, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+        return new spell_winter_veil_mistletoe_SpellScript();
     }
 };
 
@@ -72,37 +83,48 @@ enum winterWondervoltTrap
 };
 
 // 26275 - PX-238 Winter Wondervolt TRAP
-class spell_winter_wondervolt_trap : public SpellScript
+class spell_winter_wondervolt_trap : public SpellScriptLoader
 {
-    PrepareSpellScript(spell_winter_wondervolt_trap);
+public:
+    spell_winter_wondervolt_trap() : SpellScriptLoader("spell_winter_wondervolt_trap") {}
 
-    void HandleScriptEffect(SpellEffIndex /*effIndex*/)
+    class spell_winter_wondervolt_trap_SpellScript : public SpellScript
     {
-        if (Player* target = GetHitPlayer())
+        PrepareSpellScript(spell_winter_wondervolt_trap_SpellScript);
+
+        void HandleScriptEffect(SpellEffIndex /*effIndex*/)
         {
-            // check presence
-            if (target->HasAuraType(SPELL_AURA_TRANSFORM))
+            if (Player* target = GetHitPlayer())
+            {
+                // check presence
+                if (target->HasAuraType(SPELL_AURA_TRANSFORM))
+                    return;
+
+                uint32 spellId = 0;
+                if (target->getGender() == GENDER_MALE)
+                {
+                    spellId = target->GetTeamId() == TEAM_ALLIANCE ? SPELL_WINTER_WONDERVOLT_GREEN_MAN : SPELL_WINTER_WONDERVOLT_RED_MAN;
+                }
+                else
+                {
+                    spellId = target->GetTeamId() == TEAM_ALLIANCE ? SPELL_WINTER_WONDERVOLT_GREEN_WOMEN : SPELL_WINTER_WONDERVOLT_RED_WOMEN;
+                }
+
+                // cast
+                target->CastSpell(target, spellId, true);
                 return;
-
-            uint32 spellId = 0;
-            if (target->getGender() == GENDER_MALE)
-            {
-                spellId = target->GetTeamId() == TEAM_ALLIANCE ? SPELL_WINTER_WONDERVOLT_GREEN_MAN : SPELL_WINTER_WONDERVOLT_RED_MAN;
             }
-            else
-            {
-                spellId = target->GetTeamId() == TEAM_ALLIANCE ? SPELL_WINTER_WONDERVOLT_GREEN_WOMEN : SPELL_WINTER_WONDERVOLT_RED_WOMEN;
-            }
-
-            // cast
-            target->CastSpell(target, spellId, true);
-            return;
         }
-    }
 
-    void Register() override
+        void Register() override
+        {
+            OnEffectHitTarget += SpellEffectFn(spell_winter_wondervolt_trap_SpellScript::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+        }
+    };
+
+    SpellScript* GetSpellScript() const override
     {
-        OnEffectHitTarget += SpellEffectFn(spell_winter_wondervolt_trap::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+        return new spell_winter_wondervolt_trap_SpellScript();
     }
 };
 
@@ -123,30 +145,24 @@ enum crashinTrashin
 };
 
 // 49297 - Racer Rocket Slam
-class spell_winter_veil_racer_rocket_slam : public SpellScript
+class spell_winter_veil_racer_rocket_slam : public SpellScriptLoader
 {
-    PrepareSpellScript(spell_winter_veil_racer_rocket_slam);
+public:
+    spell_winter_veil_racer_rocket_slam() : SpellScriptLoader("spell_winter_veil_racer_rocket_slam") {}
 
-    void HandleTriggerSpell(SpellEffIndex /*effIndex*/)
+    class spell_winter_veil_racer_rocket_slam_SpellScript : public SpellScript
     {
-        Unit* caster = GetCaster();
-        PreventHitEffect(EFFECT_0);
-        PreventHitEffect(EFFECT_1);
+        PrepareSpellScript(spell_winter_veil_racer_rocket_slam_SpellScript);
 
-        std::list<Creature*> unitList;
-        Unit* target = nullptr;
-        caster->GetCreaturesWithEntryInRange(unitList, 30.0f, NPC_BLUE_RACER);
-        if (!unitList.empty())
-            for (std::list<Creature*>::const_iterator itr = unitList.begin(); itr != unitList.end(); ++itr)
-                if (caster->HasInLine((*itr), 1.0f) && (*itr)->GetGUID() != caster->GetGUID())
-                {
-                    target = (*itr);
-                    break;
-                }
-        if (!target)
+        void HandleTriggerSpell(SpellEffIndex /*effIndex*/)
         {
-            unitList.clear();
-            caster->GetCreaturesWithEntryInRange(unitList, 30.0f, NPC_RED_RACER);
+            Unit* caster = GetCaster();
+            PreventHitEffect(EFFECT_0);
+            PreventHitEffect(EFFECT_1);
+
+            std::list<Creature*> unitList;
+            Unit* target = nullptr;
+            caster->GetCreaturesWithEntryInRange(unitList, 30.0f, NPC_BLUE_RACER);
             if (!unitList.empty())
                 for (std::list<Creature*>::const_iterator itr = unitList.begin(); itr != unitList.end(); ++itr)
                     if (caster->HasInLine((*itr), 1.0f) && (*itr)->GetGUID() != caster->GetGUID())
@@ -154,57 +170,85 @@ class spell_winter_veil_racer_rocket_slam : public SpellScript
                         target = (*itr);
                         break;
                     }
+            if (!target)
+            {
+                unitList.clear();
+                caster->GetCreaturesWithEntryInRange(unitList, 30.0f, NPC_RED_RACER);
+                if (!unitList.empty())
+                    for (std::list<Creature*>::const_iterator itr = unitList.begin(); itr != unitList.end(); ++itr)
+                        if (caster->HasInLine((*itr), 1.0f) && (*itr)->GetGUID() != caster->GetGUID())
+                        {
+                            target = (*itr);
+                            break;
+                        }
+            }
+
+            if (target)
+            {
+                caster->CastSpell(target, SPELL_RACER_CHARGE_TO_OBJECT, true);
+                caster->CastSpell(target, SPELL_RACER_SLAM_HIT, true);
+            }
+            else
+            {
+                Position pos;
+                float x = caster->GetPositionX() + 30 * cos(caster->GetOrientation());
+                float y = caster->GetPositionY() + 30 * sin(caster->GetOrientation());
+                pos.Relocate(x, y, caster->GetMap()->GetHeight(x, y, MAX_HEIGHT) + 0.5f);
+                //caster->GetFirstCollisionPosition(pos, 30.0f, caster->GetOrientation());
+                caster->CastSpell(pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ(), SPELL_RACER_CHARGE_TO_OBJECT, true);
+            }
         }
 
-        if (target)
+        void Register() override
         {
-            caster->CastSpell(target, SPELL_RACER_CHARGE_TO_OBJECT, true);
-            caster->CastSpell(target, SPELL_RACER_SLAM_HIT, true);
+            OnEffectLaunch += SpellEffectFn(spell_winter_veil_racer_rocket_slam_SpellScript::HandleTriggerSpell, EFFECT_1, SPELL_EFFECT_TRIGGER_SPELL);
         }
-        else
-        {
-            Position pos;
-            float x = caster->GetPositionX() + 30 * cos(caster->GetOrientation());
-            float y = caster->GetPositionY() + 30 * sin(caster->GetOrientation());
-            pos.Relocate(x, y, caster->GetMap()->GetHeight(x, y, MAX_HEIGHT) + 0.5f);
-            //caster->GetFirstCollisionPosition(pos, 30.0f, caster->GetOrientation());
-            caster->CastSpell(pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ(), SPELL_RACER_CHARGE_TO_OBJECT, true);
-        }
-    }
+    };
 
-    void Register() override
+    SpellScript* GetSpellScript() const override
     {
-        OnEffectLaunch += SpellEffectFn(spell_winter_veil_racer_rocket_slam::HandleTriggerSpell, EFFECT_1, SPELL_EFFECT_TRIGGER_SPELL);
+        return new spell_winter_veil_racer_rocket_slam_SpellScript();
     }
 };
 
 // 49325 - Racer Slam, resolve
-class spell_winter_veil_racer_slam_hit : public SpellScript
+class spell_winter_veil_racer_slam_hit : public SpellScriptLoader
 {
-    PrepareSpellScript(spell_winter_veil_racer_slam_hit);
+public:
+    spell_winter_veil_racer_slam_hit() : SpellScriptLoader("spell_winter_veil_racer_slam_hit") {}
 
-    void HandleScriptEffect(SpellEffIndex /*effIndex*/)
+    class spell_winter_veil_racer_slam_hit_SpellScript : public SpellScript
     {
-        Unit* caster = GetCaster();
-        Creature* target = GetHitCreature();
-        if (!target || caster == target)
-            return;
+        PrepareSpellScript(spell_winter_veil_racer_slam_hit_SpellScript);
 
-        target->CastSpell(target->GetPositionX() + irand(-10, 10), target->GetPositionY() + irand(-10, 10), target->GetPositionZ(), SPELL_RACER_DEATH_VISUAL, true);
-        target->DespawnOrUnsummon(3000);
-        target->CastSpell(target, SPELL_RACER_FLAMES, true);
-        caster->CastSpell(caster, SPELL_RACER_KILL_COUNTER, true);
-
-        if (Player* targetSummoner = target->GetCharmerOrOwnerPlayerOrPlayerItself())
+        void HandleScriptEffect(SpellEffIndex /*effIndex*/)
         {
-            //targetSummoner->RemoveCriteriaProgress(sAchievementCriteriaStore.LookupEntry(RACER_ACHI_CRITERIA)); !ZOMG, ADD ACCESSOR
-            targetSummoner->RemoveAurasDueToSpell(SPELL_RACER_KILL_COUNTER);
-        }
-    }
+            Unit* caster = GetCaster();
+            Creature* target = GetHitCreature();
+            if (!target || caster == target)
+                return;
 
-    void Register() override
+            target->CastSpell(target->GetPositionX() + irand(-10, 10), target->GetPositionY() + irand(-10, 10), target->GetPositionZ(), SPELL_RACER_DEATH_VISUAL, true);
+            target->DespawnOrUnsummon(3000);
+            target->CastSpell(target, SPELL_RACER_FLAMES, true);
+            caster->CastSpell(caster, SPELL_RACER_KILL_COUNTER, true);
+
+            if (Player* targetSummoner = target->GetCharmerOrOwnerPlayerOrPlayerItself())
+            {
+                //targetSummoner->RemoveCriteriaProgress(sAchievementCriteriaStore.LookupEntry(RACER_ACHI_CRITERIA)); !ZOMG, ADD ACCESSOR
+                targetSummoner->RemoveAurasDueToSpell(SPELL_RACER_KILL_COUNTER);
+            }
+        }
+
+        void Register() override
+        {
+            OnEffectHitTarget += SpellEffectFn(spell_winter_veil_racer_slam_hit_SpellScript::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+        }
+    };
+
+    SpellScript* GetSpellScript() const override
     {
-        OnEffectHitTarget += SpellEffectFn(spell_winter_veil_racer_slam_hit::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+        return new spell_winter_veil_racer_slam_hit_SpellScript();
     }
 };
 
@@ -219,49 +263,60 @@ enum airRifle
 
 /* 65576 - Pelted!
    67533 - Shoot Air Rifle */
-class spell_winter_veil_shoot_air_rifle : public SpellScript
+class spell_winter_veil_shoot_air_rifle : public SpellScriptLoader
 {
-    PrepareSpellScript(spell_winter_veil_shoot_air_rifle);
+public:
+    spell_winter_veil_shoot_air_rifle() : SpellScriptLoader("spell_winter_veil_shoot_air_rifle") {}
 
-    void HandleScriptEffect(SpellEffIndex /*effIndex*/)
+    class spell_winter_veil_shoot_air_rifle_SpellScript : public SpellScript
     {
-        Unit* caster = GetOriginalCaster();
-        Unit* target = GetHitUnit();
-        if (!target)
-            return;
+        PrepareSpellScript(spell_winter_veil_shoot_air_rifle_SpellScript);
 
-        if (GetSpellInfo()->Id == SPELL_AIR_RIFLE_HIT_TRIGGER)
+        void HandleScriptEffect(SpellEffIndex /*effIndex*/)
         {
-            if (!caster->IsFriendlyTo(target))
-                caster->CastSpell(target, SPELL_AIR_RIFLE_PELTED_DAMAGE, true, nullptr, nullptr, caster->GetGUID());
-        }
-        else
-        {
-            uint8 rand = urand(0, 99);
-            if (rand < 15)
-                caster->CastSpell(caster, SPELL_AIR_RIFLE_RIGHT_IN_THE_EYE, true, nullptr, nullptr, caster->GetGUID());
-            else if (rand < 35)
-                caster->CastSpell(target, SPELL_AIR_RIFLE_STARLED, true, nullptr, nullptr, caster->GetGUID());
+            Unit* caster = GetOriginalCaster();
+            Unit* target = GetHitUnit();
+            if (!target)
+                return;
+
+            if (GetSpellInfo()->Id == SPELL_AIR_RIFLE_HIT_TRIGGER)
+            {
+                if (!caster->IsFriendlyTo(target))
+                    caster->CastSpell(target, SPELL_AIR_RIFLE_PELTED_DAMAGE, true, nullptr, nullptr, caster->GetGUID());
+            }
             else
-                caster->CastSpell(target, SPELL_AIR_RIFLE_HIT, true, nullptr, nullptr, caster->GetGUID());
+            {
+                uint8 rand = urand(0, 99);
+                if (rand < 15)
+                    caster->CastSpell(caster, SPELL_AIR_RIFLE_RIGHT_IN_THE_EYE, true, nullptr, nullptr, caster->GetGUID());
+                else if (rand < 35)
+                    caster->CastSpell(target, SPELL_AIR_RIFLE_STARLED, true, nullptr, nullptr, caster->GetGUID());
+                else
+                    caster->CastSpell(target, SPELL_AIR_RIFLE_HIT, true, nullptr, nullptr, caster->GetGUID());
+            }
         }
-    }
 
-    void Register() override
+        void Register() override
+        {
+            if (m_scriptSpellId == SPELL_AIR_RIFLE_HIT_TRIGGER)
+                OnEffectHitTarget += SpellEffectFn(spell_winter_veil_shoot_air_rifle_SpellScript::HandleScriptEffect, EFFECT_1, SPELL_EFFECT_SCRIPT_EFFECT);
+            else
+                OnEffectHitTarget += SpellEffectFn(spell_winter_veil_shoot_air_rifle_SpellScript::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+        }
+    };
+
+    SpellScript* GetSpellScript() const override
     {
-        if (m_scriptSpellId == SPELL_AIR_RIFLE_HIT_TRIGGER)
-            OnEffectHitTarget += SpellEffectFn(spell_winter_veil_shoot_air_rifle::HandleScriptEffect, EFFECT_1, SPELL_EFFECT_SCRIPT_EFFECT);
-        else
-            OnEffectHitTarget += SpellEffectFn(spell_winter_veil_shoot_air_rifle::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+        return new spell_winter_veil_shoot_air_rifle_SpellScript();
     }
 };
 
 void AddSC_event_winter_veil_scripts()
 {
     // Spells
-    RegisterSpellScript(spell_winter_veil_mistletoe);
-    RegisterSpellScript(spell_winter_wondervolt_trap);
-    RegisterSpellScript(spell_winter_veil_racer_rocket_slam);
-    RegisterSpellScript(spell_winter_veil_racer_slam_hit);
-    RegisterSpellScript(spell_winter_veil_shoot_air_rifle);
+    new spell_winter_veil_mistletoe();
+    new spell_winter_wondervolt_trap();
+    new spell_winter_veil_racer_rocket_slam();
+    new spell_winter_veil_racer_slam_hit();
+    new spell_winter_veil_shoot_air_rifle();
 }

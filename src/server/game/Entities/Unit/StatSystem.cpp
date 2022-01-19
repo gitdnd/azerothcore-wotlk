@@ -116,9 +116,7 @@ bool Player::UpdateStats(Stats stat)
             UpdateArmor();                                  //SPELL_AURA_MOD_RESISTANCE_OF_INTELLECT_PERCENT, only armor currently
             break;
         default:
-            UpdateMaxPower(POWER_RUNIC_POWER);
             break;
-
     }
 
     if (stat == STAT_STRENGTH)
@@ -133,7 +131,7 @@ bool Player::UpdateStats(Stats stat)
         UpdateAttackPowerAndDamage(true);
     }
     else
-    { 
+    {
         // Need update (exist AP from stat auras)
         if (HasAuraTypeWithMiscvalue(SPELL_AURA_MOD_ATTACK_POWER_OF_STAT_PERCENT, stat))
             UpdateAttackPowerAndDamage(false);
@@ -341,12 +339,135 @@ void Player::UpdateAttackPowerAndDamage(bool ranged)
         index_mod = UNIT_FIELD_RANGED_ATTACK_POWER_MODS;
         index_mult = UNIT_FIELD_RANGED_ATTACK_POWER_MULTIPLIER;
 
-        val2 = GetStat(STAT_AGILITY) * 2;
+        switch (getClass())
+        {
+            case CLASS_HUNTER:
+                val2 = level * 2.0f + GetStat(STAT_AGILITY) - 10.0f;
+                break;
+            case CLASS_ROGUE:
+            case CLASS_WARRIOR:
+                val2 = level + GetStat(STAT_AGILITY) - 10.0f;
+                break;
+            case CLASS_DRUID:
+                switch (GetShapeshiftForm())
+                {
+                    case FORM_CAT:
+                    case FORM_BEAR:
+                    case FORM_DIREBEAR:
+                        val2 = 0.0f;
+                        break;
+                    default:
+                        val2 = GetStat(STAT_AGILITY) - 10.0f;
+                        break;
+                }
+                break;
+            default:
+                val2 = GetStat(STAT_AGILITY) - 10.0f;
+                break;
+        }
     }
     else
     {
+        switch (getClass())
+        {
+            case CLASS_PALADIN:
+            case CLASS_DEATH_KNIGHT:
+            case CLASS_WARRIOR:
+                val2 = level * 3.0f + GetStat(STAT_STRENGTH) * 2.0f - 20.0f;
+                break;
+            case CLASS_HUNTER:
+            case CLASS_SHAMAN:
+            case CLASS_ROGUE:
+                val2 = level * 2.0f + GetStat(STAT_STRENGTH) + GetStat(STAT_AGILITY) - 20.0f;
+                break;
+            case CLASS_DRUID:
+                {
+                    // Check if Predatory Strikes is skilled
+                    float mLevelMult = 0.0f;
+                    float weapon_bonus = 0.0f;
+                    if (IsInFeralForm())
+                    {
+                        Unit::AuraEffectList const& mDummy = GetAuraEffectsByType(SPELL_AURA_DUMMY);
+                        for (Unit::AuraEffectList::const_iterator itr = mDummy.begin(); itr != mDummy.end(); ++itr)
+                        {
+                            AuraEffect* aurEff = *itr;
+                            if (aurEff->GetSpellInfo()->SpellIconID == 1563)
+                            {
+                                switch (aurEff->GetEffIndex())
+                                {
+                                    case 0: // Predatory Strikes (effect 0)
+                                        mLevelMult = CalculatePct(1.0f, aurEff->GetAmount());
+                                        break;
+                                    case 1: // Predatory Strikes (effect 1)
+                                        if (Item* mainHand = m_items[EQUIPMENT_SLOT_MAINHAND])
+                                        {
+                                            // also gains % attack power from equipped weapon
+                                            ItemTemplate const* proto = mainHand->GetTemplate();
+                                            if (!proto)
+                                                continue;
 
-        val2 = GetStat(STAT_AGILITY) + GetStat(STAT_STRENGTH) * 2.0f;
+                                            uint32 ap = proto->getFeralBonus();
+                                            // Get AP Bonuses from weapon
+                                            for (uint8 i = 0; i < MAX_ITEM_PROTO_STATS; ++i)
+                                            {
+                                                if (i >= proto->StatsCount)
+                                                    break;
+
+                                                if (proto->ItemStat[i].ItemStatType == ITEM_MOD_ATTACK_POWER)
+                                                    ap += proto->ItemStat[i].ItemStatValue;
+                                            }
+
+                                            // Get AP Bonuses from weapon spells
+                                            for (uint8 i = 0; i < MAX_ITEM_PROTO_SPELLS; ++i)
+                                            {
+                                                // no spell
+                                                if (!proto->Spells[i].SpellId || proto->Spells[i].SpellTrigger != ITEM_SPELLTRIGGER_ON_EQUIP)
+                                                    continue;
+
+                                                // check if it is valid spell
+                                                SpellInfo const* spellproto = sSpellMgr->GetSpellInfo(proto->Spells[i].SpellId);
+                                                if (!spellproto)
+                                                    continue;
+
+                                                for (uint8 j = 0; j < MAX_SPELL_EFFECTS; ++j)
+                                                    if (spellproto->Effects[j].ApplyAuraName == SPELL_AURA_MOD_ATTACK_POWER)
+                                                        ap += spellproto->Effects[j].CalcValue();
+                                            }
+
+                                            weapon_bonus = CalculatePct(float(ap), aurEff->GetAmount());
+                                        }
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+                        }
+                    }
+
+                    switch (GetShapeshiftForm())
+                    {
+                        case FORM_CAT:
+                            val2 = (getLevel() * mLevelMult) + GetStat(STAT_STRENGTH) * 2.0f + GetStat(STAT_AGILITY) - 20.0f + weapon_bonus + m_baseFeralAP;
+                            break;
+                        case FORM_BEAR:
+                        case FORM_DIREBEAR:
+                            val2 = (getLevel() * mLevelMult) + GetStat(STAT_STRENGTH) * 2.0f - 20.0f + weapon_bonus + m_baseFeralAP;
+                            break;
+                        case FORM_MOONKIN:
+                            val2 = (getLevel() * mLevelMult) + GetStat(STAT_STRENGTH) * 2.0f - 20.0f + m_baseFeralAP;
+                            break;
+                        default:
+                            val2 = GetStat(STAT_STRENGTH) * 2.0f - 20.0f;
+                            break;
+                    }
+                    break;
+                }
+            case CLASS_MAGE:
+            case CLASS_PRIEST:
+            case CLASS_WARLOCK:
+                val2 = GetStat(STAT_STRENGTH) - 10.0f;
+                break;
+        }
     }
 
     SetModifierValue(unitMod, BASE_VALUE, val2);
@@ -357,9 +478,12 @@ void Player::UpdateAttackPowerAndDamage(bool ranged)
     //add dynamic flat mods
     if (ranged)
     {
-        AuraEffectList const& mRAPbyStat = GetAuraEffectsByType(SPELL_AURA_MOD_RANGED_ATTACK_POWER_OF_STAT_PERCENT);
-        for (AuraEffectList::const_iterator i = mRAPbyStat.begin(); i != mRAPbyStat.end(); ++i)
-            attPowerMod += CalculatePct(GetStat(Stats((*i)->GetMiscValue())), (*i)->GetAmount());
+        if ((getClassMask() & CLASSMASK_WAND_USERS) == 0)
+        {
+            AuraEffectList const& mRAPbyStat = GetAuraEffectsByType(SPELL_AURA_MOD_RANGED_ATTACK_POWER_OF_STAT_PERCENT);
+            for (AuraEffectList::const_iterator i = mRAPbyStat.begin(); i != mRAPbyStat.end(); ++i)
+                attPowerMod += CalculatePct(GetStat(Stats((*i)->GetMiscValue())), (*i)->GetAmount());
+        }
     }
     else
     {
@@ -388,9 +512,10 @@ void Player::UpdateAttackPowerAndDamage(bool ranged)
     else
     {
         UpdateDamagePhysical(BASE_ATTACK);
-        UpdateSpellDamageAndHealingBonus();
         if (CanDualWield() && haveOffhandWeapon())           //allow update offhand damage only if player knows DualWield Spec and has equipped offhand weapon
             UpdateDamagePhysical(OFF_ATTACK);
+        if (getClass() == CLASS_SHAMAN || getClass() == CLASS_PALADIN)                      // mental quickness
+            UpdateSpellDamageAndHealingBonus();
     }
 }
 
@@ -540,34 +665,34 @@ void Player::UpdateAllCritPercentages()
 
 const float m_diminishing_k[MAX_CLASSES] =
 {
-    1.0f,  // Warrior
-    1.0f,  // Paladin
-    1.0f,  // Hunter
-    1.0f,  // Rogue
-    1.0f,  // Priest
-    1.0f,  // DK
-    1.0f,  // Shaman
-    1.0f,  // Mage
-    1.0f,  // Warlock
+    0.9560f,  // Warrior
+    0.9560f,  // Paladin
+    0.9880f,  // Hunter
+    0.9880f,  // Rogue
+    0.9830f,  // Priest
+    0.9560f,  // DK
+    0.9880f,  // Shaman
+    0.9830f,  // Mage
+    0.9830f,  // Warlock
     0.0f,     // ??
-    1.0f   // Druid
+    0.9720f   // Druid
 };
 
 float Player::GetMissPercentageFromDefence() const
 {
     float const miss_cap[MAX_CLASSES] =
     {
-        0.0f, // Warrior //correct
-        0.0f, // Paladin //correct
-        0.0f, // Hunter  //?
-        0.0f, // Rogue   //?
-        0.0f, // Priest  //?
-        0.0f, // DK      //correct
-        0.0f, // Shaman  //?
-        0.0f, // Mage    //?
-        0.0f,   // Warlock //?
+        16.00f,     // Warrior //correct
+        16.00f,     // Paladin //correct
+        16.00f,     // Hunter  //?
+        16.00f,     // Rogue   //?
+        16.00f,     // Priest  //?
+        16.00f,     // DK      //correct
+        16.00f,     // Shaman  //?
+        16.00f,     // Mage    //?
+        16.00f,     // Warlock //?
         0.0f,       // ??
-        0.0f    // Druid   //?
+        16.00f      // Druid   //?
     };
 
     float diminishing = 0.0f, nondiminishing = 0.0f;
@@ -584,13 +709,13 @@ void Player::UpdateParryPercentage()
 {
     const float parry_cap[MAX_CLASSES] =
     {
-        0.0f,     // Warrior
-        0.0f,     // Paladin
-        0.0f,    // Hunter
-        0.0f,    // Rogue
+        47.003525f,     // Warrior
+        47.003525f,     // Paladin
+        145.560408f,    // Hunter
+        145.560408f,    // Rogue
         0.0f,           // Priest
-        0.0f,     // DK
-        0.0f,    // Shaman
+        47.003525f,     // DK
+        145.560408f,    // Shaman
         0.0f,           // Mage
         0.0f,           // Warlock
         0.0f,           // ??
@@ -625,17 +750,17 @@ void Player::UpdateDodgePercentage()
 {
     const float dodge_cap[MAX_CLASSES] =
     {
-        0.0f,     // Warrior
-        0.0f,     // Paladin
-        0.0f,    // Hunter
-        0.0f,    // Rogue
-        0.0f,    // Priest
-        0.0f,     // DK
-        0.0f,    // Shaman
-        0.0f,    // Mage
-        0.0f,    // Warlock
+        88.129021f,     // Warrior
+        88.129021f,     // Paladin
+        145.560408f,    // Hunter
+        145.560408f,    // Rogue
+        150.375940f,    // Priest
+        88.129021f,     // DK
+        145.560408f,    // Shaman
+        150.375940f,    // Mage
+        150.375940f,    // Warlock
         0.0f,           // ??
-        0.0f     // Druid
+        116.890707f     // Druid
     };
 
     float diminishing = 0.0f, nondiminishing = 0.0f;
