@@ -1021,6 +1021,7 @@ bool Position::HasInLine(WorldObject const* target, float width) const
     if (!HasInArc(M_PI, target))
         return false;
     width += target->GetObjectSize();
+    width *= 0.5;
     float angle = GetRelativeAngle(target);
     return fabs(sin(angle)) * GetExactDist2d(target->GetPositionX(), target->GetPositionY()) < width;
 }
@@ -1522,7 +1523,7 @@ void Position::RelocateOffset(const Position& offset)
     m_positionX = GetPositionX() + (offset.GetPositionX() * cos(GetOrientation()) + offset.GetPositionY() * sin(GetOrientation() + M_PI));
     m_positionY = GetPositionY() + (offset.GetPositionY() * cos(GetOrientation()) + offset.GetPositionX() * sin(GetOrientation()));
     m_positionZ = GetPositionZ() + offset.GetPositionZ();
-    m_orientation = GetOrientation() + offset.GetOrientation();
+    SetOrientation(GetOrientation() + offset.GetOrientation());
 }
 
 void Position::GetPositionOffsetTo(const Position& endPos, Position& retOffset) const
@@ -1533,7 +1534,7 @@ void Position::GetPositionOffsetTo(const Position& endPos, Position& retOffset) 
     retOffset.m_positionX = dx * cos(GetOrientation()) + dy * sin(GetOrientation());
     retOffset.m_positionY = dy * cos(GetOrientation()) - dx * sin(GetOrientation());
     retOffset.m_positionZ = endPos.GetPositionZ() - GetPositionZ();
-    retOffset.m_orientation = endPos.GetOrientation() - GetOrientation();
+    retOffset.SetOrientation(endPos.GetOrientation() - GetOrientation());
 }
 
 float Position::GetAngle(const Position* obj) const
@@ -2900,7 +2901,7 @@ void WorldObject::MovePosition(Position& pos, float dist, float angle)
     Acore::NormalizeMapCoord(pos.m_positionX);
     Acore::NormalizeMapCoord(pos.m_positionY);
     UpdateGroundPositionZ(pos.m_positionX, pos.m_positionY, pos.m_positionZ);
-    pos.m_orientation = m_orientation;
+    pos.SetOrientation(m_orientation);
 }
 
 Position WorldObject::GetFirstCollisionPosition(float startX, float startY, float startZ, float destX, float destY)

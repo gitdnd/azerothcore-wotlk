@@ -18,6 +18,8 @@
 #ifndef __SPELL_SCRIPT_H
 #define __SPELL_SCRIPT_H
 
+#include "DBCStores.h"
+#include "Player.h"
 #include "SharedDefines.h"
 #include "Spell.h"
 #include "SpellAuraDefines.h"
@@ -481,6 +483,15 @@ public:
     void Cancel(); // pussywizard
 
     void SetCustomCastResultMessage(SpellCustomErrors result);
+
+    // NEW
+    void ForceAttack();
+    void ForceHeavy();
+    void ForceQuick();
+    void ForceThrust();
+    void HandleAtkSpell(Unit*& unitCaster);
+    void HandleTriggerDummy(Spell*& spell);
+    void HandleAttackCD(Unit*& unitCaster, const SpellInfo* spellInfo);
 };
 
 // AuraScript interface - enum used for runtime checks of script function calls

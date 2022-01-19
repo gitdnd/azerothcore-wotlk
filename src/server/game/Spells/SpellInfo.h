@@ -362,6 +362,7 @@ public:
     uint32 ManaPerSecondPerLevel;
     uint32 ManaCostPercentage;
     uint32 RuneCostID;
+    uint32 TriggerId;
     SpellRangeEntry const* RangeEntry;
     float  Speed;
     uint32 StackAmount;
@@ -415,6 +416,8 @@ public:
     inline bool HasAttribute(SpellAttr6 attribute) const { return (AttributesEx6 & attribute) != 0; }
     inline bool HasAttribute(SpellAttr7 attribute) const { return (AttributesEx7 & attribute) != 0; }
     inline bool HasAttribute(SpellCustomAttributes customAttribute) const { return (AttributesCu & customAttribute) != 0; }
+
+    inline void AddAttribute(SpellCustomAttributes customAttribute) { AttributesCu |= customAttribute; }
 
     bool IsExplicitDiscovery() const;
     bool IsLootCrafting() const;
