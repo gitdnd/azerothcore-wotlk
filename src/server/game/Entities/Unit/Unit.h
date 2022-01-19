@@ -26,6 +26,7 @@
 #include "Object.h"
 #include "SpellAuraDefines.h"
 #include "ThreatMgr.h"
+#include "WorldSession.h"
 #include <functional>
 
 #define WORLD_TRIGGER   12999
@@ -348,6 +349,105 @@ class SpellCastTargets;
 
 typedef std::list<Unit*> UnitList;
 typedef std::list< std::pair<Aura*, uint8> > DispelChargesList;
+
+
+// Note: SPELLMOD_* values is aura types in fact
+enum SpellModType
+{
+    SPELLMOD_FLAT = 107, // SPELL_AURA_ADD_FLAT_MODIFIER
+    SPELLMOD_PCT  = 108  // SPELL_AURA_ADD_PCT_MODIFIER
+};
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+enum TalentTree // talent tabs
+{
+    TALENT_TREE_WARRIOR_ARMS         = 161,
+    TALENT_TREE_WARRIOR_FURY         = 164,
+    TALENT_TREE_WARRIOR_PROTECTION   = 163,
+    TALENT_TREE_PALADIN_HOLY         = 382,
+    TALENT_TREE_PALADIN_PROTECTION   = 383,
+    TALENT_TREE_PALADIN_RETRIBUTION  = 381,
+    TALENT_TREE_HUNTER_BEAST_MASTERY = 361,
+    TALENT_TREE_HUNTER_MARKSMANSHIP  = 363,
+    TALENT_TREE_HUNTER_SURVIVAL      = 362,
+    TALENT_TREE_ROGUE_ASSASSINATION  = 182,
+    TALENT_TREE_ROGUE_COMBAT         = 181,
+    TALENT_TREE_ROGUE_SUBTLETY       = 183,
+    TALENT_TREE_PRIEST_DISCIPLINE    = 201,
+    TALENT_TREE_PRIEST_HOLY          = 202,
+    TALENT_TREE_PRIEST_SHADOW        = 203,
+    TALENT_TREE_DEATH_KNIGHT_BLOOD   = 398,
+    TALENT_TREE_DEATH_KNIGHT_FROST   = 399,
+    TALENT_TREE_DEATH_KNIGHT_UNHOLY  = 400,
+    TALENT_TREE_SHAMAN_ELEMENTAL     = 261,
+    TALENT_TREE_SHAMAN_ENHANCEMENT   = 263,
+    TALENT_TREE_SHAMAN_RESTORATION   = 262,
+    TALENT_TREE_MAGE_ARCANE          = 81,
+    TALENT_TREE_MAGE_FIRE            = 41,
+    TALENT_TREE_MAGE_FROST           = 61,
+    TALENT_TREE_WARLOCK_AFFLICTION   = 302,
+    TALENT_TREE_WARLOCK_DEMONOLOGY   = 303,
+    TALENT_TREE_WARLOCK_DESTRUCTION  = 301,
+    TALENT_TREE_DRUID_BALANCE        = 283,
+    TALENT_TREE_DRUID_FERAL_COMBAT   = 281,
+    TALENT_TREE_DRUID_RESTORATION    = 282
+};
+
+enum PlayerSpellState
+{
+    PLAYERSPELL_UNCHANGED = 0,
+    PLAYERSPELL_CHANGED   = 1,
+    PLAYERSPELL_NEW       = 2,
+    PLAYERSPELL_REMOVED   = 3,
+    PLAYERSPELL_TEMPORARY = 4
+};
+struct PlayerSpell
+{
+    PlayerSpellState State : 7;  // UPPER CASE TO CAUSE CONSOLE ERRORS (CHECK EVERY USAGE)!
+    bool             Active : 1; // UPPER CASE TO CAUSE CONSOLE ERRORS (CHECK EVERY USAGE)! lower rank of a spell are not useable, but learnt
+    uint8            specMask : 8;
+    bool             IsInSpec(uint8 spec)
+    {
+        return (specMask & (1 << spec));
+    }
+};
+
+struct PlayerTalent
+{
+    PlayerSpellState State : 8; // UPPER CASE TO CAUSE CONSOLE ERRORS (CHECK EVERY USAGE)!
+    uint8            specMask : 8;
+    uint32           talentID;
+    bool             inSpellBook;
+    bool             IsInSpec(uint8 spec)
+    {
+        return (specMask & (1 << spec));
+    }
+};
+
+
+// Spell modifier (used for modify other spells)
+struct SpellModifier
+{
+    SpellModifier(Aura* _ownerAura = nullptr) : op(SPELLMOD_DAMAGE), type(SPELLMOD_FLAT), charges(0), mask(), ownerAura(_ownerAura) {}
+    SpellModOp   op : 8;
+    SpellModType type : 8;
+    int16        charges : 16;
+    int32        value {0};
+    flag96       mask;
+    uint32       spellId {0};
+    Aura* const  ownerAura;
+};
+
+typedef std::unordered_map<uint32, PlayerTalent*> PlayerTalentMap;
+typedef std::list<SpellModifier*>                 SpellModList;
+
+typedef std::unordered_map<uint32, PlayerSpell*> PlayerSpellMap;
+
+////////////////////////////////////////////////////////////////////////////////
 
 enum SpellImmuneBlockType
 {
@@ -923,6 +1023,7 @@ public:
     void ResistDamage(uint32 amount);
     void BlockDamage(uint32 amount);
 
+
     [[nodiscard]] Unit* GetAttacker() const { return m_attacker; };
     [[nodiscard]] Unit* GetVictim() const { return m_victim; };
     [[nodiscard]] SpellInfo const* GetSpellInfo() const { return m_spellInfo; };
@@ -1112,6 +1213,20 @@ enum CurrentSpellTypes
 #define CURRENT_FIRST_NON_MELEE_SPELL 1
 #define CURRENT_MAX_SPELL             4
 
+/////////////////////////////////////////////////////////////////
+
+struct SpellCooldown
+{
+    uint32 end;
+    uint16 category;
+    uint32 itemid;
+    uint32 maxduration;
+    bool   sendToSpectator : 1;
+    bool   needSendToClient : 1;
+};
+
+typedef std::map<uint32, SpellCooldown> SpellCooldowns;
+
 struct GlobalCooldown
 {
     explicit GlobalCooldown(uint32 _dur = 0, uint32 _time = 0) : duration(_dur), cast_time(_time) {}
@@ -1119,6 +1234,7 @@ struct GlobalCooldown
     uint32 duration;
     uint32 cast_time;
 };
+
 
 typedef std::unordered_map<uint32 /*category*/, GlobalCooldown> GlobalCooldownList;
 
@@ -1135,6 +1251,8 @@ public:
 private:
     GlobalCooldownList m_GlobalCooldowns;
 };
+
+/////////////////////////////////////////////////////////////////
 
 enum ActiveStates
 {
@@ -1418,6 +1536,8 @@ private:
 class Unit : public WorldObject
 {
 public:
+
+
     typedef std::unordered_set<Unit*> AttackerSet;
     typedef std::set<Unit*> ControlSet;
 
@@ -1451,10 +1571,10 @@ public:
     void CleanupBeforeRemoveFromMap(bool finalCleanup);
     void CleanupsBeforeDelete(bool finalCleanup = true) override;                        // used in ~Creature/~Player (or before mass creature delete to remove cross-references to already deleted units)
 
-    DiminishingLevels GetDiminishing(DiminishingGroup  group);
+    DiminishingLevels GetDiminishing(DiminishingGroup group);
     void IncrDiminishing(DiminishingGroup group);
-    float ApplyDiminishingToDuration(DiminishingGroup  group, int32& duration, Unit* caster, DiminishingLevels Level, int32 limitduration);
-    void ApplyDiminishingAura(DiminishingGroup  group, bool apply);
+    float ApplyDiminishingToDuration(DiminishingGroup group, int32& duration, Unit* caster, DiminishingLevels Level, int32 limitduration);
+    void ApplyDiminishingAura(DiminishingGroup group, bool apply);
     void ClearDiminishings() { m_Diminishing.clear(); }
 
     // target dependent range checks
@@ -1603,7 +1723,7 @@ public:
     void SetFaction(uint32 faction);
     [[nodiscard]] FactionTemplateEntry const* GetFactionTemplateEntry() const;
 
-    ReputationRank GetReactionTo(Unit const* target) const;
+    ReputationRank GetReactionTo(Unit const* target, bool checkOriginalFaction = false) const;
     ReputationRank GetFactionReactionTo(FactionTemplateEntry const* factionTemplateEntry, Unit const* target) const;
 
     bool IsHostileTo(Unit const* unit) const;
@@ -1663,6 +1783,7 @@ public:
     void TriggerAurasProcOnEvent(CalcDamageInfo& damageInfo);
     void TriggerAurasProcOnEvent(std::list<AuraApplication*>* myProcAuras, std::list<AuraApplication*>* targetProcAuras, Unit* actionTarget, uint32 typeMaskActor, uint32 typeMaskActionTarget, uint32 spellTypeMask, uint32 spellPhaseMask, uint32 hitMask, Spell* spell, DamageInfo* damageInfo, HealInfo* healInfo);
     void TriggerAurasProcOnEvent(ProcEventInfo& eventInfo, std::list<AuraApplication*>& procAuras);
+
 
     void HandleEmoteCommand(uint32 anim_id);
     void AttackerStateUpdate (Unit* victim, WeaponAttackType attType = BASE_ATTACK, bool extra = false);
@@ -1780,7 +1901,97 @@ public:
     [[nodiscard]] uint32 GetCombatTimer() const { return m_CombatTimer; }
 
     [[nodiscard]] bool HasAuraTypeWithFamilyFlags(AuraType auraType, uint32 familyName, uint32 familyFlags) const;
-    [[nodiscard]] bool virtual HasSpell(uint32 /*spellID*/) const { return false; }
+
+
+
+    /////////////////////////////////////////////
+
+protected:
+    PlayerSpellMap    m_spells;
+    GlobalCooldownMgr m_GlobalCooldownMgr;
+    uint32            m_lastPotionId; // last used health/mana potion in combat, that block next potion use
+    SpellCooldowns    m_spellCooldowns;
+    SpellModList      m_spellMods[MAX_SPELLMOD];
+
+
+public:
+    
+    [[nodiscard]] virtual bool HasSpell(uint32 spell) const;
+
+    virtual void         AddSpellMod(SpellModifier* mod, bool apply);
+    virtual bool         IsAffectedBySpellmod(SpellInfo const* spellInfo, SpellModifier* mod, Spell* spell = nullptr);
+    virtual bool         HasSpellMod(SpellModifier* mod, Spell* spell);
+    template <class T> T ApplySpellMod(uint32 spellId, SpellModOp op, T& basevalue, Spell* spell = nullptr, bool temporaryPet = false);
+    virtual void                 RemoveSpellMods(Spell* spell);
+    virtual void                 RestoreSpellMods(Spell* spell, uint32 ownerAuraId = 0, Aura* aura = nullptr);
+    virtual void                 RestoreAllSpellMods(uint32 ownerAuraId = 0, Aura* aura = nullptr);
+    virtual void                 DropModCharge(SpellModifier* mod, Spell* spell);
+    virtual void                 SetSpellModTakingSpell(Spell* spell, bool apply);
+
+    [[nodiscard]] bool HasSpellCooldown(uint32 spell_id) const 
+    {
+        SpellCooldowns::const_iterator itr = m_spellCooldowns.find(spell_id);
+        return itr != m_spellCooldowns.end() && itr->second.end > World::GetGameTimeMS();
+    }
+    [[nodiscard]] bool HasSpellItemCooldown(uint32 spell_id, uint32 itemid) const 
+    {
+        SpellCooldowns::const_iterator itr = m_spellCooldowns.find(spell_id);
+        return itr != m_spellCooldowns.end() && itr->second.end > World::GetGameTimeMS() && itr->second.itemid == itemid;
+    }
+    [[nodiscard]] uint32 GetSpellCooldownDelay(uint32 spell_id) const
+    {
+        SpellCooldowns::const_iterator itr = m_spellCooldowns.find(spell_id);
+        return uint32(itr != m_spellCooldowns.end() && itr->second.end > World::GetGameTimeMS() ? itr->second.end - World::GetGameTimeMS() : 0);
+    }
+    virtual void AddSpellAndCategoryCooldowns(SpellInfo const* spellInfo, uint32 itemId, Spell* spell = nullptr, bool infinityCooldown = false);
+    virtual void AddSpellCooldown(uint32 spell_id, uint32 itemid, uint32 end_time, bool needSendToClient = false, bool forceSendToSpectator = false);
+    virtual void _AddSpellCooldown(uint32 spell_id, uint16 categoryId, uint32 itemid, uint32 end_time, bool needSendToClient = false, bool forceSendToSpectator = false);
+    virtual void ModifySpellCooldown(uint32 spellId, int32 cooldown);
+    virtual void SendCooldownEvent(SpellInfo const* spellInfo, uint32 itemId = 0, Spell* spell = nullptr, bool setCooldown = true);
+    virtual void ProhibitSpellSchool(SpellSchoolMask idSchoolMask, uint32 unTimeMs);
+    virtual void RemoveSpellCooldown(uint32 spell_id, bool update = false);
+    virtual void SendClearCooldown(uint32 spell_id, Unit* target);
+
+    GlobalCooldownMgr& GetGlobalCooldownMgr()
+    {
+        return m_GlobalCooldownMgr;
+    }
+
+    virtual void   RemoveCategoryCooldown(uint32 cat);
+    virtual void   RemoveArenaSpellCooldowns(bool removeActivePetCooldowns = false);
+    virtual void   RemoveAllSpellCooldown();
+    virtual void _LoadSpellCooldowns(PreparedQueryResult result);
+    virtual void   _SaveSpellCooldowns(CharacterDatabaseTransaction trans, bool logout);
+    uint32 GetLastPotionId()
+    {
+        return m_lastPotionId;
+    }
+    void SetLastPotionId(uint32 item_id)
+    {
+        m_lastPotionId = item_id;
+    }
+    virtual void UpdatePotionCooldown(Spell* spell = nullptr);
+
+    PlayerSpellMap const& GetSpellMap() const
+    {
+        return m_spells;
+    }
+    PlayerSpellMap& GetSpellMap()
+    {
+        return m_spells;
+    }
+
+    Spell* m_spellModTakingSpell;
+
+
+
+    //////////////////////////////////////////////////////////
+
+
+
+
+
+
     [[nodiscard]] bool HasBreakableByDamageAuraType(AuraType type, uint32 excludeAura = 0) const;
     bool HasBreakableByDamageCrowdControlAura(Unit* excludeCasterChannel = nullptr) const;
 
@@ -2124,7 +2335,7 @@ public:
     [[nodiscard]] float GetCreateStat(Stats stat) const { return m_createStats[stat]; }
 
     void SetCurrentCastedSpell(Spell* pSpell);
-    virtual void ProhibitSpellSchool(SpellSchoolMask /*idSchoolMask*/, uint32 /*unTimeMs*/) { }
+
     void InterruptSpell(CurrentSpellTypes spellType, bool withDelayed = true, bool withInstant = true, bool bySelf = false);
     void FinishSpell(CurrentSpellTypes spellType, bool ok = true);
 
@@ -2484,14 +2695,7 @@ public:
     void ExecuteDelayedUnitAINotifyEvent();
 
     // cooldowns
-    [[nodiscard]] virtual bool HasSpellCooldown(uint32 /*spell_id*/) const { return false; }
-    [[nodiscard]] virtual bool HasSpellItemCooldown(uint32 /*spell_id*/, uint32 /*itemid*/) const { return false; }
-    virtual void AddSpellCooldown(uint32 /*spell_id*/, uint32 /*itemid*/, uint32 /*end_time*/, bool needSendToClient = false, bool forceSendToSpectator = false)
-    {
-        // workaround for unused parameters
-        (void)needSendToClient;
-        (void)forceSendToSpectator;
-    }
+
 
     [[nodiscard]] bool CanApplyResilience() const { return m_applyResilience; }
 
