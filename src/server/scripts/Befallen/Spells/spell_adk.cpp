@@ -35,23 +35,36 @@ class spell_action_death_coil : public SpellScript
 
     SpellCastResult CheckCast()
     {
-        Unit* caster = GetCaster();
-        if (Unit* target = GetExplTargetUnit())
+        Unit* caster  = GetCaster();
+        auto  dcSpell = caster->FindCurrentSpellBySpellId(SPELL_DK_DEATH_COIL_DAMAGE);
+        if (dcSpell)
         {
-            if (!caster->IsFriendlyTo(target) && !caster->isInFront(target))
-                return SPELL_FAILED_UNIT_NOT_INFRONT;
+            int castTime = dcSpell->GetSpellTimer();
+            caster->CastStop(SPELL_DK_DEATH_COIL_DAMAGE);
 
-            bool undead = target->HasSpell(90003);
-
-            if (target->IsFriendlyTo(caster) && (target->GetCreatureType() != CREATURE_TYPE_UNDEAD && !undead))
-                return SPELL_FAILED_BAD_TARGETS;
+            int32 damage = GetEffectValue();
+            caster->CastCustomSpell(caster, SPELL_DK_DEATH_COIL_HEAL, &damage, nullptr, nullptr, false);
+            auto dcSpell2 = caster->FindCurrentSpellBySpellId(SPELL_DK_DEATH_COIL_HEAL);
+            dcSpell2->ModifySpellTimer(-1 * castTime);
         }
         else
-            return SPELL_FAILED_BAD_TARGETS;
+        {
+            if (Unit* target = GetExplTargetUnit())
+            {
+                if (!caster->IsFriendlyTo(target) && !caster->isInFront(target))
+                    return SPELL_FAILED_UNIT_NOT_INFRONT;
 
+                bool undead = target->HasSpell(90003);
+
+                if (target->IsFriendlyTo(caster) && (target->GetCreatureType() != CREATURE_TYPE_UNDEAD && !undead))
+                    return SPELL_FAILED_BAD_TARGETS;
+            }
+            else
+                return SPELL_FAILED_BAD_TARGETS;
+
+        }
         return SPELL_CAST_OK;
     }
-
     void Register() override
     {
         OnCheckCast += SpellCheckCastFn(spell_action_death_coil::CheckCast);
@@ -86,6 +99,7 @@ class spell_dk_death_coil_damage : public SpellScript
     {
         AfterHit += SpellHitFn(spell_dk_death_coil_damage::SpellHit);
     }
+    
 };
 
 

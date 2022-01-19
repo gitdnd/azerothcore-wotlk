@@ -578,7 +578,8 @@ public:
 
     void CleanupTargetList();
 
-    void SetSpellValue(SpellValueMod mod, int32 value);
+    void              SetSpellValue(SpellValueMod mod, int32 value);
+    void              ModifySpellValue(SpellValueMod mod, int32 value);
     SpellValue const* GetSpellValue() { return m_spellValue; }
 
     // xinef: moved to public
@@ -718,7 +719,9 @@ public:
     // Scripting system
     bool _scriptsLoaded;
     //void LoadScripts();
-    void CallScriptBeforeCastHandlers();
+    void                    CallScriptBeforeCastTimeHandlers();
+    void                    CallScriptBeforeCastHandlers();
+    void                    CallScriptWhileCastHandlers();
     void CallScriptOnCastHandlers();
     void CallScriptAfterCastHandlers();
     SpellCastResult CallScriptCheckCastHandlers();
@@ -786,6 +789,18 @@ public:
     /// </summary>
 
 public:
+    int32 GetSpellTimer()
+    {
+        return m_timer;
+    };
+    void ModifySpellTimer(int32 amount)
+    {
+        m_timer += amount;
+    };
+    void SetSpellTimer(int32 amount)
+    {
+        m_timer = amount;
+    };
     std::map<MapDummy, std::optional<std::any>> triggerDummy = {};
     std::map<MapDummy, std::optional<std::any>>& GetTriggerDummy()
     {
