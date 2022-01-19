@@ -1,6 +1,21 @@
 #include "action_include.h"
 
 
+class spell_action_air_dodge : public SpellScript
+{
+    PrepareSpellScript(spell_action_air_dodge);
+
+    void RollFinish() {
+        auto caster = GetCaster();
+        auto spell  = GetSpell();
+        spell->EffectRoll(EFFECT_0);
+    }
+
+    void Register() override
+    {
+        AfterCast += SpellCastFn(spell_action_air_dodge::RollFinish);
+    }
+};
 
 class spell_action_hard_attack : public SpellScript
 {
@@ -36,7 +51,7 @@ class spell_action_basic_attack : public SpellScript
 {
     PrepareSpellScript(spell_action_basic_attack);
 
-    bool wasInAir = false;
+    bool WasInAir = false;
     std::map<MapDummy, std::optional<std::any>> spellMap;
     int32 dummies = 0;
     void SpellFinish()
@@ -79,7 +94,7 @@ class spell_action_basic_attack : public SpellScript
         Spell* spell    = GetSpell();
 
         caster->ModifyPower(POWER_MANA, caster->GetStat(STAT_SPIRIT));
-        if (wasInAir)
+        if (WasInAir)
         {
             CustomSpellValues values;
             values.AddSpellMod(SPELLVALUE_AURA_DURATION, 2000);
@@ -120,23 +135,23 @@ class spell_action_basic_attack : public SpellScript
     void SpellBegin()
     {
         spellMap    = GetSpell()->GetTriggerDummy();
-        auto& inAir = spellMap[MapDummy::WAS_IN_AIR];
+        auto& inAir = spellMap[MapDummy::WasInAir];
         if (inAir.has_value())
         {
             if (std::any_cast<bool>(inAir.value()) == true)
             {
-                wasInAir = true;
+                WasInAir = true;
             }
             else
             {
-                wasInAir = false;
+                WasInAir = false;
             }
         }
         else
-            wasInAir = false;
-        if (spellMap[MapDummy::TRIGGERING_SPELL].has_value())
+            WasInAir = false;
+        if (spellMap[MapDummy::TriggeringSpell].has_value())
         {
-            dummies = std::any_cast<uint32>(spellMap[MapDummy::TRIGGERING_SPELL].value());
+            dummies = std::any_cast<uint32>(spellMap[MapDummy::TriggeringSpell].value());
         }
     }
     void Register() override
@@ -215,6 +230,7 @@ class spell_action_deflect : public SpellScript
 
     void SpellFinish()
     {
+
         Unit* caster = GetCaster();
 
         caster->SetSheath(SHEATH_STATE_MELEE);
@@ -249,6 +265,7 @@ void SC_warrior_scripts();
 
 void AddSC_action_spell_scripts()
 {
+    RegisterSpellScript(spell_action_air_dodge);
     RegisterSpellScript(spell_action_hard_attack);
     RegisterSpellScript(spell_action_quick_attack);
     RegisterSpellScript(spell_action_stab_attack);

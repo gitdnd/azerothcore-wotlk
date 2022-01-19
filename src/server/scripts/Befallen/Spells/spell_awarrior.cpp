@@ -29,7 +29,6 @@ class spell_action_thunder_clap : public SpellScript
     void SpellCast()
     {
         Unit* caster = GetCaster();
-
         auto spell = GetSpell();
         if (wasInAir)
         {
@@ -44,15 +43,12 @@ class spell_action_thunder_clap : public SpellScript
                 castingPoint = caster->GetWorldLocation();
                 wasInAir     = false;
                 spell->SetSpellTimer(std::max(airTicks, 0));
-                spell->ModifySpellValue(SPELLVALUE_BASE_POINT0, spell->GetSpellValue()->EffectBasePoints[0] * ( 1 + (250 - airTicks) / 250));
+                spell->SetSpellValue(SPELLVALUE_BASE_POINT0, spell->GetSpellValue()->EffectBasePoints[0] * ( 1 + (250 - airTicks) / 250));
             }
         }
-        else
+        else if (caster->GetWorldLocation() != castingPoint)
         {
-            if (caster->GetWorldLocation() != castingPoint)
-            {
-                caster->CastStop(SPELL_ACTION_THUNDER_CLAP);
-            }
+            spell->cancel();
         }
     }
 

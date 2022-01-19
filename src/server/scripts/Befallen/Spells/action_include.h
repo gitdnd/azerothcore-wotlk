@@ -20,6 +20,7 @@ enum OutsideSpells
 };
 enum ActionSpells
 {
+    SPELL_ACTION_AIR_DODGE    = 89981,
     SPELL_ACTION_AIR_DEFLECT_HIT = 89982,
     SPELL_ACTION_AIR_DEFLECT        = 89983,
     SPELL_ACTION_SLAM_DUNK        = 89984,

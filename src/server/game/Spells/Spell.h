@@ -789,6 +789,8 @@ public:
     /// </summary>
 
 public:
+    void  EffectRoll(SpellEffIndex effIndex);
+
     int32 GetSpellTimer()
     {
         return m_timer;

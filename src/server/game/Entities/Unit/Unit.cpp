@@ -19276,6 +19276,27 @@ void Unit::JumpTo(float speedXY, float speedZ, bool forward)
         ToPlayer()->GetSession()->SendPacket(&data);
     }
 }
+void Unit::Roll(float speedXY, float speedZ, float yaw)
+{
+    float angle =  (yaw - M_PI);
+    if (GetTypeId() == TYPEID_UNIT)
+        GetMotionMaster()->MoveJumpTo(angle, speedXY, speedZ);
+    else
+    {
+        float vcos = cos(angle + GetOrientation());
+        float vsin = sin(angle + GetOrientation());
+
+        WorldPacket data(SMSG_MOVE_KNOCK_BACK, (8 + 4 + 4 + 4 + 4 + 4));
+        data << GetPackGUID();
+        data << uint32(0);      // Sequence
+        data << float(vcos);    // x direction
+        data << float(vsin);    // y direction
+        data << float(speedXY); // Horizontal speed
+        data << float(-speedZ); // Z Movement speed (vertical)
+
+        ToPlayer()->GetSession()->SendPacket(&data);
+    }
+}
 
 void Unit::JumpTo(WorldObject* obj, float speedZ)
 {

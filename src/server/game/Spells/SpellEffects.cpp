@@ -5241,6 +5241,24 @@ void Spell::EffectLeapBack(SpellEffIndex effIndex)
         m_caster->ToPlayer()->SetFallInformation(time(nullptr), m_caster->GetPositionZ());
 }
 
+void Spell::EffectRoll(SpellEffIndex effIndex)
+{
+    float speedxy = m_spellInfo->Effects[effIndex].MiscValue / 10.0f;
+    float speedz  = damage / 10.0f;
+    // 1891: Disengage
+    float x, y, z;
+    m_caster->GetOldPosition(x, y, z);
+    m_caster->Roll(3 * speedxy, speedz, m_caster->GetRelativeAngle(x, y));
+
+    if (m_caster->GetTypeId() == TYPEID_PLAYER)
+    {
+        sScriptMgr->AnticheatSetUnderACKmount(m_caster->ToPlayer());
+    }
+
+    // xinef: changes fall time
+    if (m_caster->GetTypeId() == TYPEID_PLAYER)
+        m_caster->ToPlayer()->SetFallInformation(time(nullptr), m_caster->GetPositionZ());
+}
 void Spell::EffectQuestClear(SpellEffIndex effIndex)
 {
     if (effectHandleMode != SPELL_EFFECT_HANDLE_HIT_TARGET)

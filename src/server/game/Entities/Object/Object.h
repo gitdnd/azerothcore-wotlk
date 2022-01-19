@@ -281,6 +281,11 @@ struct Position
     float m_positionZ = 0;
     float m_orientation = 0;
 
+    float m_positionXprev   = 0;
+    float m_positionYprev   = 0;
+    float m_positionZprev   = 0;
+
+
     bool operator==(Position const& a) const;
 
     inline bool operator!=(Position const& a)
@@ -295,17 +300,28 @@ struct Position
 
     void Relocate(float x, float y)
     {
+        m_positionXprev = m_positionX;
+        m_positionYprev = m_positionY;
+
         m_positionX = x;
         m_positionY = y;
     }
     void Relocate(float x, float y, float z)
     {
+        m_positionXprev = m_positionX;
+        m_positionYprev = m_positionY;
+        m_positionZprev = m_positionZ;
+
         m_positionX = x;
         m_positionY = y;
         m_positionZ = z;
     }
     void Relocate(float x, float y, float z, float orientation)
     {
+        m_positionXprev = m_positionX;
+        m_positionYprev = m_positionY;
+        m_positionZprev = m_positionZ;
+
         m_positionX = x;
         m_positionY = y;
         m_positionZ = z;
@@ -313,6 +329,10 @@ struct Position
     }
     void Relocate(const Position& pos)
     {
+        m_positionXprev = m_positionX;
+        m_positionYprev = m_positionY;
+        m_positionZprev = m_positionZ;
+
         m_positionX = pos.m_positionX;
         m_positionY = pos.m_positionY;
         m_positionZ = pos.m_positionZ;
@@ -320,6 +340,10 @@ struct Position
     }
     void Relocate(const Position* pos)
     {
+        m_positionXprev = m_positionX;
+        m_positionYprev = m_positionY;
+        m_positionZprev = m_positionZ;
+
         m_positionX = pos->m_positionX;
         m_positionY = pos->m_positionY;
         m_positionZ = pos->m_positionZ;
@@ -354,6 +378,13 @@ struct Position
         y = m_positionY;
         z = m_positionZ;
         o = m_orientation;
+    }
+
+    void GetOldPosition(float& x, float& y, float& z) const
+    {
+        x = m_positionXprev;
+        y = m_positionYprev;
+        z = m_positionZprev;
     }
 
     [[nodiscard]] Position GetPosition() const { return *this; }

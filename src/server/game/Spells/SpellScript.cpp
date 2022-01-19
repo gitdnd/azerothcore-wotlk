@@ -744,7 +744,7 @@ void SpellScript::HandleTriggerDummy(Spell*& spell)
     {
         uint32 spellId = (GetSpellInfo()->Id);
         auto&   spellMap = spell->GetTriggerDummy();
-        spellMap[MapDummy::TRIGGERING_SPELL] = spellId;
+        spellMap[MapDummy::TriggeringSpell] = spellId;
     }
 }
 void SpellScript::HandleAtkSpell(Unit*& unitCaster)
@@ -753,7 +753,7 @@ void SpellScript::HandleAtkSpell(Unit*& unitCaster)
     {
         unitCaster->CastSpell(unitCaster, SPELL_ACTION_SLAM_DUNK, true);
         auto& spellMap                             = GetSpell()->GetTriggerDummy();
-        spellMap[MapDummy::WAS_IN_AIR] = true;
+        spellMap[MapDummy::WasInAir] = true;
     }
 }
 void SpellScript::HandleAttackCD(Unit*& unitCaster, const SpellInfo* spellInfo)
@@ -772,9 +772,9 @@ void SpellScript::HandleAttackCD(Unit*& unitCaster, const SpellInfo* spellInfo)
         CD = atkTime;
     }
     auto spellMap                       = GetSpell()->GetTriggerDummy();
-    if (spellMap[MapDummy::WAS_IN_AIR].has_value())
+    if (spellMap[MapDummy::WasInAir].has_value())
     {
-        if (std::any_cast<bool>(spellMap[MapDummy::WAS_IN_AIR].value()) == true)
+        if (std::any_cast<bool>(spellMap[MapDummy::WasInAir].value()) == true)
             CD += 2000;
     }
 
