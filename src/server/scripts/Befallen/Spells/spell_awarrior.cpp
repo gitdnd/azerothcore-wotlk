@@ -1,7 +1,77 @@
 #include "action_include.h"
 
-enum Events {
-    STILL_IN_AIR,
+
+
+class spell_action_star_jump_two : public SpellScript
+{
+    PrepareSpellScript(spell_action_star_jump_two);
+
+    void SpellWhile()
+    {
+        Unit* caster = GetCaster();
+        if (caster->GetUnitMovementFlags() & MOVEMENTFLAG_FALLING)
+        {
+            GetSpell()->ReSetTimer();
+        }
+        else
+        {
+            GetSpell()->cancel();
+            caster->AddSpellCooldown(SPELL_ACTION_STAR_JUMP, 0, 10000, true);
+        }
+    }
+    void SpellCast()
+    {
+        Unit* caster = GetCaster();
+        caster->AddSpellCooldown(SPELL_ACTION_STAR_JUMP, 0, 10000, true);
+        Spell* spell  = GetSpell();
+        auto target = spell->GetDestTargets(0);
+        if (!target)
+            return;
+
+        caster->CastSpell(target->_position.GetPositionX(), target->_position.GetPositionY(), target->_position.GetPositionZ(), SPELL_ACTION_LEAP, true);
+        caster->CastSpell(caster, SPELL_ACTION_THUNDER_CLAP, false);
+    }
+
+    void Register() override
+    {
+        WhileCast += SpellCastFn(spell_action_star_jump_two::SpellWhile);
+        AfterCast += SpellCastFn(spell_action_star_jump_two::SpellCast);
+    }
+};
+
+
+class spell_action_star_jump_one : public SpellScript
+{
+    PrepareSpellScript(spell_action_star_jump_one);
+
+
+    void Register() override
+    {
+    }
+};
+
+class spell_action_star_jump : public SpellScript
+{
+    PrepareSpellScript(spell_action_star_jump);
+
+    void SpellCast()
+    {
+        Unit* caster = GetCaster();
+        if (caster->FindCurrentSpellBySpellId(SPELL_ACTION_STAR_JUMP_TWO))
+        {
+            caster->FindCurrentSpellBySpellId(SPELL_ACTION_STAR_JUMP_TWO)->SetSpellTimer(0);
+        }
+        else if (caster->GetUnitMovementFlags() & MOVEMENTFLAG_FALLING)
+        {
+            caster->CastSpell(caster, SPELL_ACTION_STAR_JUMP_ONE, false);
+            caster->CastSpell(caster, SPELL_ACTION_STAR_JUMP_TWO, false);
+        }
+    }
+
+    void Register() override
+    {
+        BeforeCastTime += SpellCastFn(spell_action_star_jump::SpellCast);
+    }
 };
 
 class spell_action_thunder_clap : public SpellScript
@@ -43,7 +113,7 @@ class spell_action_thunder_clap : public SpellScript
                 castingPoint = caster->GetWorldLocation();
                 wasInAir     = false;
                 spell->SetSpellTimer(std::max(airTicks, 0));
-                spell->SetSpellValue(SPELLVALUE_BASE_POINT0, spell->GetSpellValue()->EffectBasePoints[0] * ( 1 + (250 - airTicks) / 250));
+                spell->SetSpellValue(SPELLVALUE_BASE_POINT0, (int) (float(spell->GetSpellValue()->EffectBasePoints[0]) * (1.f + (250.f - float(airTicks)) / 250.f)));
             }
         }
         else if (caster->GetWorldLocation() != castingPoint)
@@ -59,6 +129,10 @@ class spell_action_thunder_clap : public SpellScript
     }
 };
 
-void SC_warrior_scripts() {
+void SC_warrior_scripts()
+{
+    RegisterSpellScript(spell_action_star_jump_two);
+    RegisterSpellScript(spell_action_star_jump_one);
+    RegisterSpellScript(spell_action_star_jump);
     RegisterSpellScript(spell_action_thunder_clap);
 }

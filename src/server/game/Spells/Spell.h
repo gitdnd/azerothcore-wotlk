@@ -789,6 +789,17 @@ public:
     /// </summary>
 
 public:
+    Unit* GetCastTarget()
+    {
+        return unitTarget;
+    }
+    SpellDestination* GetDestTargets(int index)
+    {
+        if (index == 0 || index == 1 || index == 2)
+            return &(m_destTargets[index]);
+        else
+            return nullptr;
+    }
     void  EffectRoll(SpellEffIndex effIndex);
 
     int32 GetSpellTimer()

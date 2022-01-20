@@ -259,8 +259,10 @@ class spell_action_attack : public SpellScript
 
 void SC_enemy_scripts();
 void SC_dk_scripts();
+void SC_druid_scripts();
 void SC_item_scripts();
 void SC_paladin_scripts();
+void SC_priest_scripts();
 void SC_warrior_scripts();
 
 void AddSC_action_spell_scripts()
@@ -276,7 +278,9 @@ void AddSC_action_spell_scripts()
 
     SC_enemy_scripts(); 
     SC_dk_scripts();
+    SC_druid_scripts();
     SC_item_scripts();
     SC_paladin_scripts();
+    SC_priest_scripts();
     SC_warrior_scripts();
 }

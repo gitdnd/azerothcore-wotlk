@@ -2,6 +2,7 @@
 
 
 
+
 class spell_action_undeath_strike : public SpellScript
 {
     PrepareSpellScript(spell_action_undeath_strike);
@@ -16,59 +17,70 @@ class spell_action_death_coil : public SpellScript
 {
     PrepareSpellScript(spell_action_death_coil);
 
-    void HandleDummy(SpellEffIndex /*effIndex*/)
+    Unit* caster;
+    int   damage = 50;
+    void  Recasting()
     {
-        int32 damage = GetEffectValue();
-        Unit* caster = GetCaster();
-        if (Unit* target = GetHitUnit())
+        Spell* spell   = GetSpell();
+        auto dcSpell = caster->FindCurrentSpellBySpellId(SPELL_DK_DEATH_COIL_DAMAGE);
+        if (dcSpell && dcSpell->GetSpellTimer() > 0 && (caster->HasSpell(90003) || (caster->GetCreatureType() == CREATURE_TYPE_UNDEAD)))
         {
-            if (caster->IsFriendlyTo(target))
+            int castTime = dcSpell->GetSpellTimer();
+            dcSpell->cancel();
+
+            caster->CastCustomSpell(caster, SPELL_DK_DEATH_COIL_HEAL, &damage, nullptr, nullptr, false);
+            auto dcSpell2 = caster->FindCurrentSpellBySpellId(SPELL_DK_DEATH_COIL_HEAL);
+            dcSpell2->SetSpellTimer(castTime);
+        }
+        else 
+        {
+            auto  dcSpell2 = caster->FindCurrentSpellBySpellId(SPELL_DK_DEATH_COIL_HEAL);
+            if (dcSpell2)
+                return;
+            int32 damage = GetEffectValue();
+            Unit* target = GetExplTargetUnit();
+            if (target)
             {
-                caster->CastCustomSpell(target, SPELL_DK_DEATH_COIL_HEAL, &damage, nullptr, nullptr, false);
-            }
-            else
-            {
-                caster->CastCustomSpell(target, SPELL_DK_DEATH_COIL_DAMAGE, &damage, nullptr, nullptr, false);
+                if (caster->IsFriendlyTo(target))
+                {
+                    caster->CastCustomSpell(target, SPELL_DK_DEATH_COIL_HEAL, &damage, nullptr, nullptr, false);
+                }
+                else
+                {
+                    caster->CastCustomSpell(target, SPELL_DK_DEATH_COIL_DAMAGE, &damage, nullptr, nullptr, false);
+                }
             }
         }
     }
-
     SpellCastResult CheckCast()
     {
-        Unit* caster  = GetCaster();
-        auto  dcSpell = caster->FindCurrentSpellBySpellId(SPELL_DK_DEATH_COIL_DAMAGE);
-        if (dcSpell)
+        caster = GetCaster();
+        if (Unit* target = GetExplTargetUnit())
         {
-            int castTime = dcSpell->GetSpellTimer();
-            caster->CastStop(SPELL_DK_DEATH_COIL_DAMAGE);
+            if (!caster->IsFriendlyTo(target) && !caster->isInFront(target))
+                return SPELL_FAILED_UNIT_NOT_INFRONT;
 
-            int32 damage = GetEffectValue();
-            caster->CastCustomSpell(caster, SPELL_DK_DEATH_COIL_HEAL, &damage, nullptr, nullptr, false);
-            auto dcSpell2 = caster->FindCurrentSpellBySpellId(SPELL_DK_DEATH_COIL_HEAL);
-            dcSpell2->ModifySpellTimer(-1 * castTime);
+            bool undead = target->HasSpell(90003);
+
+            if (target->IsFriendlyTo(caster) && (target->GetCreatureType() != CREATURE_TYPE_UNDEAD && !undead))
+            {
+                if (target != caster && (caster->GetCreatureType() == CREATURE_TYPE_UNDEAD || caster->HasSpell(90003)))
+                {
+                    GetSpell()->m_targets.SetUnitTarget(caster);
+                    return SPELL_CAST_OK;
+                }
+            }
+            return SPELL_FAILED_BAD_TARGETS;
         }
         else
-        {
-            if (Unit* target = GetExplTargetUnit())
-            {
-                if (!caster->IsFriendlyTo(target) && !caster->isInFront(target))
-                    return SPELL_FAILED_UNIT_NOT_INFRONT;
+            return SPELL_FAILED_BAD_TARGETS;
 
-                bool undead = target->HasSpell(90003);
-
-                if (target->IsFriendlyTo(caster) && (target->GetCreatureType() != CREATURE_TYPE_UNDEAD && !undead))
-                    return SPELL_FAILED_BAD_TARGETS;
-            }
-            else
-                return SPELL_FAILED_BAD_TARGETS;
-
-        }
         return SPELL_CAST_OK;
     }
     void Register() override
     {
+        BeforeCastTime += SpellCastFn(spell_action_death_coil::Recasting);
         OnCheckCast += SpellCheckCastFn(spell_action_death_coil::CheckCast);
-        OnEffectHitTarget += SpellEffectFn(spell_action_death_coil::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
     }
 };
 
@@ -102,6 +114,20 @@ class spell_dk_death_coil_damage : public SpellScript
     
 };
 
+class spell_action_dark_strangulate : public SpellScript
+{
+    PrepareSpellScript(spell_action_dark_strangulate);
+
+    void SpellCast()
+    {
+        Unit* target = GetHitUnit();
+    }
+
+    void Register() override
+    {
+        BeforeCast += SpellCastFn(spell_action_dark_strangulate::SpellCast);
+    }
+};
 
 void SC_dk_scripts()
 {
