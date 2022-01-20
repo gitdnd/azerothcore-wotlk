@@ -9,15 +9,22 @@ class spell_action_heal_flash_heal : public SpellScript
     void  Recasting()
     {
         Unit* caster = GetCaster();
-        auto spell = caster->FindCurrentSpellBySpellId(SPELL_ACTION_HEAL);
-        if (spell)
+        Spell* spell  = GetSpell();
+        auto  spell2  = caster->FindCurrentSpellBySpellId(SPELL_ACTION_HEAL);
+        Unit* target = spell->m_targets.GetUnitTarget();
+        if (spell2)
         {
-            int castTime = spell->GetCastTime() - spell->GetSpellTimer();
-            Unit* target   = spell->m_targets.GetUnitTarget();
-            spell->cancel();
+            int castTime = spell2->GetCastTime() - spell2->GetSpellTimer();
+            spell2->cancel();
             caster->CastSpell(target, SPELL_ACTION_FLASH_HEAL, false);
-            auto spell2 = caster->FindCurrentSpellBySpellId(SPELL_ACTION_FLASH_HEAL);
-            spell2->ModifySpellTimer(-1 * castTime);
+            auto spell3 = caster->FindCurrentSpellBySpellId(SPELL_ACTION_FLASH_HEAL);
+            spell3->ModifySpellTimer(-1 * castTime);
+        }
+        else
+        {
+            auto spell3 = caster->FindCurrentSpellBySpellId(SPELL_ACTION_FLASH_HEAL);
+            if (!spell3)
+                caster->CastSpell(target, SPELL_ACTION_HEAL, false);
         }
     }
     void Register() override

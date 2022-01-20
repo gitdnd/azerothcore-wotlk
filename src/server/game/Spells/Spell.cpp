@@ -4052,7 +4052,7 @@ void Spell::update(uint32 difftime)
                     }
                 }
 
-                if (m_timer == 0 && !IsNextMeleeSwingSpell() && !IsAutoRepeat())
+                if (m_timer <= 0 && !IsNextMeleeSwingSpell() && !IsAutoRepeat())
                     // don't CheckCast for instant spells - done in spell::prepare, skip duplicate checks, needed for range checks for example
                     cast(!m_casttime);
                 break;
@@ -4073,7 +4073,7 @@ void Spell::update(uint32 difftime)
                     }
                 }
 
-                if (m_timer == 0)
+                if (m_timer <= 0)
                 {
                     SendChannelUpdate(0);
 

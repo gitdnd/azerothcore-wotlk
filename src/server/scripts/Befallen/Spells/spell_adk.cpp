@@ -25,10 +25,13 @@ class spell_action_death_coil : public SpellScript
         auto dcSpell = caster->FindCurrentSpellBySpellId(SPELL_DK_DEATH_COIL_DAMAGE);
         if (dcSpell && dcSpell->GetSpellTimer() > 0 && (caster->HasSpell(90003) || (caster->GetCreatureType() == CREATURE_TYPE_UNDEAD)))
         {
+            caster->ModifyPower(POWER_MANA, 250);
             int castTime = dcSpell->GetSpellTimer();
             dcSpell->cancel();
 
-            caster->CastCustomSpell(caster, SPELL_DK_DEATH_COIL_HEAL, &damage, nullptr, nullptr, false);
+            CustomSpellValues values;
+            values.AddSpellMod(SPELLVALUE_BASE_POINT0, damage);
+            caster->CastCustomSpell(SPELL_DK_DEATH_COIL_HEAL, values, caster, TRIGGERED_IGNORE_POWER_AND_REAGENT_COST);
             auto dcSpell2 = caster->FindCurrentSpellBySpellId(SPELL_DK_DEATH_COIL_HEAL);
             dcSpell2->SetSpellTimer(castTime);
         }
@@ -37,7 +40,6 @@ class spell_action_death_coil : public SpellScript
             auto  dcSpell2 = caster->FindCurrentSpellBySpellId(SPELL_DK_DEATH_COIL_HEAL);
             if (dcSpell2)
                 return;
-            int32 damage = GetEffectValue();
             Unit* target = GetExplTargetUnit();
             if (target)
             {
@@ -62,15 +64,16 @@ class spell_action_death_coil : public SpellScript
 
             bool undead = target->HasSpell(90003);
 
-            if (target->IsFriendlyTo(caster) && (target->GetCreatureType() != CREATURE_TYPE_UNDEAD && !undead))
+            if (target->IsFriendlyTo(caster))
             {
+                if (target->GetCreatureType() != CREATURE_TYPE_UNDEAD && !undead)
+                    return SPELL_FAILED_BAD_TARGETS;
                 if (target != caster && (caster->GetCreatureType() == CREATURE_TYPE_UNDEAD || caster->HasSpell(90003)))
                 {
                     GetSpell()->m_targets.SetUnitTarget(caster);
                     return SPELL_CAST_OK;
                 }
             }
-            return SPELL_FAILED_BAD_TARGETS;
         }
         else
             return SPELL_FAILED_BAD_TARGETS;

@@ -12,7 +12,7 @@ class spell_action_wrath : public SpellScript
         {
             Spell* spell = GetSpell();
             spell->cancel();
-            caster->CastSpell(GetHitUnit(), SPELL_ACTION_WRATH_DUMMY, true);
+            caster->CastSpell(GetExplTargetUnit(), SPELL_ACTION_WRATH_DUMMY, true);
             caster->RemoveAura(SPELL_ACTION_WRATH_READY);
         }
     }
@@ -41,7 +41,7 @@ class spell_action_wrath_dummy : public SpellScript
         Unit* target = GetHitUnit();
         Unit* caster = GetCaster();
         float dist = target->GetDistance(caster);
-        SetHitDamage(GetHitDamage() / std::max(1, int(std::sqrt(dist))));
+        SetHitDamage(int(float(GetHitDamage()) / std::max(1.f, (std::sqrt(dist)))));
     }
 
     void Register() override
