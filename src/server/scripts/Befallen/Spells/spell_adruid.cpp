@@ -81,6 +81,20 @@ class spell_action_healing_touch : public SpellScript
         AfterCast += SpellCastFn(spell_action_healing_touch::SpellAfter);
     }
 };
+class spell_action_moonfire : public SpellScript
+{
+    PrepareSpellScript(spell_action_moonfire);
+
+    void MFCast()
+    {
+
+    }
+
+    void Register() override
+    {
+        OnCast += SpellCastFn(spell_action_moonfire::MFCast);
+    }
+};
 
 void SC_druid_scripts()
 {
