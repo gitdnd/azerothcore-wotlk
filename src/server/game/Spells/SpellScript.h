@@ -18,6 +18,8 @@
 #ifndef __SPELL_SCRIPT_H
 #define __SPELL_SCRIPT_H
 
+#include "DBCStores.h"
+#include "Player.h"
 #include "SharedDefines.h"
 #include "Spell.h"
 #include "SpellAuraDefines.h"
@@ -167,9 +169,12 @@ enum SpellScriptHookType
     SPELL_SCRIPT_HOOK_OBJECT_TARGET_SELECT,
     SPELL_SCRIPT_HOOK_DESTINATION_TARGET_SELECT,
     SPELL_SCRIPT_HOOK_CHECK_CAST,
+    SPELL_SCRIPT_HOOK_BEFORE_CAST_TIME,
     SPELL_SCRIPT_HOOK_BEFORE_CAST,
+    SPELL_SCRIPT_HOOK_WHILE_CAST,
     SPELL_SCRIPT_HOOK_ON_CAST,
     SPELL_SCRIPT_HOOK_AFTER_CAST,
+    SPELL_SCRIPT_HOOK_AFTER_FULL_CHANNEL,
 };
 
 #define HOOK_SPELL_HIT_START SPELL_SCRIPT_HOOK_EFFECT_HIT
@@ -316,11 +321,17 @@ public:
     // hooks to which you can attach your functions
     //
     // example: BeforeCast += SpellCastFn(class::function);
+    HookList<CastHandler> BeforeCastTime;
+    // example: BeforeCast += SpellCastFn(class::function);
     HookList<CastHandler> BeforeCast;
+    // example: WhileCast += SpellCastFn(class::function);
+    HookList<CastHandler> WhileCast;
     // example: OnCast += SpellCastFn(class::function);
     HookList<CastHandler> OnCast;
     // example: AfterCast += SpellCastFn(class::function);
     HookList<CastHandler> AfterCast;
+    // example: AfterFullChannel += SpellCastFn(class::function);
+    HookList<CastHandler> AfterFullChannel;
 #define SpellCastFn(F) CastHandlerFunction(&F)
 
     // example: OnCheckCast += SpellCheckCastFn();
@@ -475,6 +486,8 @@ public:
     void Cancel(); // pussywizard
 
     void SetCustomCastResultMessage(SpellCustomErrors result);
+
+    void HandleTriggerDummy(Spell*& spell);
 };
 
 // AuraScript interface - enum used for runtime checks of script function calls

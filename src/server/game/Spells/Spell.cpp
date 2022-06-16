@@ -3090,15 +3090,10 @@ SpellMissInfo Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool scaleA
         uint32 flagsExtra = unit->GetTypeId() == TYPEID_UNIT ? unit->ToCreature()->GetCreatureTemplate()->flags_extra : 0;
 
         // Increase Diminishing on unit, current informations for actually casts will use values above
-        if ((type == DRTYPE_PLAYER && (unit->IsCharmedOwnedByPlayerOrPlayer() || flagsExtra & CREATURE_FLAG_EXTRA_ALL_DIMINISH ||
-            (m_diminishGroup == DIMINISHING_TAUNT && (flagsExtra & CREATURE_FLAG_EXTRA_OBEYS_TAUNT_DIMINISHING_RETURNS)))) || type == DRTYPE_ALL)
-        {
-            // Do not apply diminish return if caster is NPC
-            if (m_caster->IsCharmedOwnedByPlayerOrPlayer())
-            {
-                unit->IncrDiminishing(m_diminishGroup);
-            }
-        }
+        if ((type == DRTYPE_PLAYER && (
+            unit->GetCharmerOrOwnerPlayerOrPlayerItself() || flagsExtra & CREATURE_FLAG_EXTRA_ALL_DIMINISH || (m_diminishGroup == DIMINISHING_TAUNT && (flagsExtra & CREATURE_FLAG_EXTRA_OBEYS_TAUNT_DIMINISHING_RETURNS))
+            )) || type == DRTYPE_ALL)
+            unit->IncrDiminishing(m_diminishGroup);
     }
 
     if (m_caster != unit && m_caster->IsHostileTo(unit) && !m_spellInfo->IsPositive() && !m_triggeredByAuraSpell && !m_spellInfo->HasAttribute(SPELL_ATTR0_CU_DONT_BREAK_STEALTH))
@@ -3684,6 +3679,7 @@ SpellCastResult Spell::prepare(SpellCastTargets const* targets, AuraEffect const
             TriggerGlobalCooldown();
     }
 
+    CallScriptBeforeCastTimeHandlers();
     return SPELL_CAST_OK;
 }
 
@@ -4399,10 +4395,13 @@ void Spell::update(uint32 difftime)
                     if (difftime >= (uint32)m_timer)
                         m_timer = 0;
                     else
+                    {
                         m_timer -= difftime;
+                        CallScriptWhileCastHandlers();
+                    }
                 }
 
-                if (m_timer == 0 && !IsNextMeleeSwingSpell() && !IsAutoRepeat())
+                if (m_timer <= 0 && !IsNextMeleeSwingSpell() && !IsAutoRepeat())
                     // don't CheckCast for instant spells - done in spell::prepare, skip duplicate checks, needed for range checks for example
                     cast(!m_casttime);
                 break;
@@ -4416,14 +4415,18 @@ void Spell::update(uint32 difftime)
                         if (difftime >= (uint32)m_timer)
                             m_timer = 0;
                         else
+                        {
                             m_timer -= difftime;
+                            CallScriptWhileCastHandlers();
+                        }
                     }
                 }
 
-                if (m_timer == 0)
+                if (m_timer <= 0)
                 {
                     SendChannelUpdate(0);
 
+                    CallScriptAfterFullChannelHandlers();
                     finish();
                 }
                 // Xinef: Dont update channeled target list on last tick, allow auras to update duration properly
@@ -8414,9 +8417,42 @@ void Spell::SetSpellValue(SpellValueMod mod, int32 value)
         case SPELLVALUE_FORCED_CRIT_RESULT:
             m_spellValue->ForcedCritResult = (bool)value;
             break;
+        case SPELLVALUE_SPELL_TIME:
+            SetSpellTimer(value);
+            break;
     }
 }
 
+void Spell::ModifySpellValue(SpellValueMod mod, int32 value)
+{
+    switch (mod)
+    {
+    case SPELLVALUE_BASE_POINT0:
+        m_spellValue->EffectBasePoints[0] += value;
+        break;
+    case SPELLVALUE_BASE_POINT1:
+        m_spellValue->EffectBasePoints[1] += value;
+        break;
+    case SPELLVALUE_BASE_POINT2:
+        m_spellValue->EffectBasePoints[2] += value;
+        break;
+    case SPELLVALUE_RADIUS_MOD:
+        m_spellValue->RadiusMod += (float)value / 10000;
+        break;
+    case SPELLVALUE_MAX_TARGETS:
+        m_spellValue->MaxAffectedTargets += (uint32)value;
+        break;
+    case SPELLVALUE_AURA_STACK:
+        m_spellValue->AuraStackAmount += uint8(value);
+        break;
+    case SPELLVALUE_AURA_DURATION:
+        m_spellValue->AuraDuration += value;
+        break;
+    case SPELLVALUE_FORCED_CRIT_RESULT:
+        m_spellValue->ForcedCritResult += (bool)value;
+        break;
+    }
+}
 void Spell::PrepareTargetProcessing()
 {
     CheckEffectExecuteData();
@@ -8472,6 +8508,21 @@ void Spell::LoadScripts()
     }
 }
 
+void Spell::CallScriptBeforeCastTimeHandlers()
+{
+    for (std::list<SpellScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
+    {
+        (*scritr)->_PrepareScriptCall(SPELL_SCRIPT_HOOK_BEFORE_CAST_TIME);
+        std::list<SpellScript::CastHandler>::iterator hookItrEnd = (*scritr)->BeforeCastTime.end(), hookItr = (*scritr)->BeforeCastTime.begin();
+        for (; hookItr != hookItrEnd; ++hookItr)
+        {
+            (*hookItr).Call(*scritr);
+        }
+
+        (*scritr)->_FinishScriptCall();
+    }
+}
+
 void Spell::CallScriptBeforeCastHandlers()
 {
     for (std::list<SpellScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
@@ -8485,6 +8536,20 @@ void Spell::CallScriptBeforeCastHandlers()
     }
 }
 
+void Spell::CallScriptWhileCastHandlers()
+{
+    for (std::list<SpellScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
+    {
+        (*scritr)->_PrepareScriptCall(SPELL_SCRIPT_HOOK_WHILE_CAST);
+        std::list<SpellScript::CastHandler>::iterator hookItrEnd = (*scritr)->WhileCast.end(), hookItr = (*scritr)->WhileCast.begin();
+        for (; hookItr != hookItrEnd; ++hookItr)
+        {
+            (*hookItr).Call(*scritr);
+        }
+
+        (*scritr)->_FinishScriptCall();
+    }
+}
 void Spell::CallScriptOnCastHandlers()
 {
     for (std::list<SpellScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
@@ -8510,6 +8575,20 @@ void Spell::CallScriptAfterCastHandlers()
         (*scritr)->_FinishScriptCall();
     }
 }
+
+void Spell::CallScriptAfterFullChannelHandlers()
+{
+    for (std::list<SpellScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
+    {
+        (*scritr)->_PrepareScriptCall(SPELL_SCRIPT_HOOK_AFTER_CAST);
+        std::list<SpellScript::CastHandler>::iterator hookItrEnd = (*scritr)->AfterFullChannel.end(), hookItr = (*scritr)->AfterFullChannel.begin();
+        for (; hookItr != hookItrEnd; ++hookItr)
+            (*hookItr).Call(*scritr);
+
+        (*scritr)->_FinishScriptCall();
+    }
+}
+
 
 SpellCastResult Spell::CallScriptCheckCastHandlers()
 {

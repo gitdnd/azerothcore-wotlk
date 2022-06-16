@@ -19,6 +19,7 @@
 #include "Spell.h"
 #include "SpellAuras.h"
 #include "SpellMgr.h"
+#include <optional>
 #include <string>
 
 bool _SpellScript::_Validate(SpellInfo const* entry)
@@ -654,6 +655,15 @@ void SpellScript::SetCustomCastResultMessage(SpellCustomErrors result)
     m_spell->m_customError = result;
 }
 
+void SpellScript::HandleTriggerDummy(Spell*& spell)
+{
+    if (spell)
+    {
+        uint32 spellId = (GetSpellInfo()->Id);
+        auto& spellMap = spell->GetTriggerDummy();
+        spellMap[MapDummy::TriggeringSpell] = spellId;
+    }
+}
 SpellValue const* SpellScript::GetSpellValue()
 {
     return m_spell->m_spellValue;

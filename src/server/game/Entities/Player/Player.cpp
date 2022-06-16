@@ -602,9 +602,16 @@ bool Player::Create(ObjectGuid::LowType guidlow, CharacterCreateInfo* createInfo
         SetPower(POWER_RUNE, 8);
         SetMaxPower(POWER_RUNE, 8);
         SetPower(POWER_RUNIC_POWER, 0);
-        SetMaxPower(POWER_RUNIC_POWER, 1000);
+        SetMaxPower(POWER_RUNIC_POWER, GetStat(STAT_SPIRIT) * 100);
+        UpdateMaxPower(POWER_MANA); 
+        SetPower(POWER_MANA, GetMaxPower(POWER_MANA));
     }
-
+    if (getPowerType() == POWER_ENERGY)
+    {
+        SetMaxPower(POWER_ENERGY, GetStat(STAT_STAMINA) * 100);
+        UpdateMaxPower(POWER_MANA);
+        SetPower(POWER_MANA, GetMaxPower(POWER_MANA));
+    }
     // original spells
     LearnDefaultSkills();
     LearnCustomSpells();
@@ -1773,8 +1780,7 @@ void Player::RegenerateAll()
         }
 
         Regenerate(POWER_RAGE);
-        if (getClass() == CLASS_DEATH_KNIGHT)
-            Regenerate(POWER_RUNIC_POWER);
+        Regenerate(POWER_RUNIC_POWER);
 
         m_regenTimerCount -= 2000;
     }
@@ -1850,8 +1856,6 @@ void Player::Regenerate(Powers power)
                 bool recentCast = IsUnderLastManaUseEffect();
                 float ManaIncreaseRate = sWorld->getRate(RATE_POWER_MANA);
 
-                if (sWorld->getBoolConfig(CONFIG_LOW_LEVEL_REGEN_BOOST) && GetLevel() < 15)
-                    ManaIncreaseRate = sWorld->getRate(RATE_POWER_MANA) * (2.066f - (GetLevel() * 0.066f));
 
                 if (recentCast) // Trinity Updates Mana in intervals of 2s, which is correct
                     addvalue += GetFloatValue(UNIT_FIELD_POWER_REGEN_INTERRUPTED_FLAT_MODIFIER) *  ManaIncreaseRate * 0.001f * m_regenTimer;
@@ -1869,7 +1873,7 @@ void Player::Regenerate(Powers power)
             }
             break;
         case POWER_ENERGY:                                  // Regenerate energy (rogue)
-            addvalue += 0.01f * m_regenTimer * sWorld->getRate(RATE_POWER_ENERGY);
+            addvalue += 0.01f * m_regenTimer * sWorld->getRate(RATE_POWER_ENERGY) * GetStat(STAT_STAMINA);
             break;
         case POWER_RUNIC_POWER:
             {
@@ -1960,8 +1964,6 @@ void Player::RegenerateHealth()
 
     float HealthIncreaseRate = sWorld->getRate(RATE_HEALTH);
 
-    if (sWorld->getBoolConfig(CONFIG_LOW_LEVEL_REGEN_BOOST) && GetLevel() < 15)
-        HealthIncreaseRate = sWorld->getRate(RATE_HEALTH) * (2.066f - (GetLevel() * 0.066f));
 
     float addvalue = 0.0f;
 
@@ -4418,29 +4420,6 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
     {
         return;
     }
-
-    //Characters from level 1-10 are not affected by resurrection sickness.
-    //Characters from level 11-19 will suffer from one minute of sickness
-    //for each level they are above 10.
-    //Characters level 20 and up suffer from ten minutes of sickness.
-    int32 startLevel = sWorld->getIntConfig(CONFIG_DEATH_SICKNESS_LEVEL);
-
-    if (int32(GetLevel()) >= startLevel)
-    {
-        // set resurrection sickness
-        CastSpell(this, 15007, true);
-
-        // not full duration
-        if (int32(GetLevel()) < startLevel + 9)
-        {
-            int32 delta = (int32(GetLevel()) - startLevel + 1) * MINUTE;
-
-            if (Aura* aur = GetAura(15007, GetGUID()))
-            {
-                aur->SetDuration(delta * IN_MILLISECONDS);
-            }
-        }
-    }
 }
 
 void Player::KillPlayer()
@@ -5001,7 +4980,7 @@ float Player::GetMeleeCritFromAgility()
     if (!critBase || !critRatio)
         return 0.0f;
 
-    float crit = critBase->base + GetStat(STAT_AGILITY) * critRatio->ratio;
+    float crit = GetStat(STAT_AGILITY) * 0.001;
     return crit * 100.0f;
 }
 
@@ -5054,8 +5033,8 @@ void Player::GetDodgeFromAgility(float& diminishing, float& nondiminishing)
     float bonus_agility = GetStat(STAT_AGILITY) - base_agility;
 
     // calculate diminishing (green in char screen) and non-diminishing (white) contribution
-    diminishing = 100.0f * bonus_agility * dodgeRatio->ratio * crit_to_dodge[pclass - 1];
-    nondiminishing = 100.0f * (dodge_base[pclass - 1] + base_agility * dodgeRatio->ratio * crit_to_dodge[pclass - 1]);
+    diminishing = 0.0f;
+    nondiminishing = 0.0f;
 }
 
 float Player::GetSpellCritFromIntellect()
@@ -5071,7 +5050,7 @@ float Player::GetSpellCritFromIntellect()
     if (!critBase || !critRatio)
         return 0.0f;
 
-    float crit = critBase->base + GetStat(STAT_INTELLECT) * critRatio->ratio;
+    float crit = GetStat(STAT_INTELLECT) * 0.001;
     return crit * 100.0f;
 }
 
@@ -5088,7 +5067,7 @@ float Player::GetRatingMultiplier(CombatRating cr) const
     if (!Rating || !classRating)
         return 1.0f;                                        // By default use minimum coefficient (not must be called)
 
-    return classRating->ratio / Rating->ratio;
+    return 1.0f;
 }
 
 float Player::GetRatingBonusValue(CombatRating cr) const
@@ -5112,7 +5091,9 @@ float Player::GetExpertiseDodgeOrParryReduction(WeaponAttackType attType) const
 
 float Player::OCTRegenHPPerSpirit()
 {
-    uint8 level = GetLevel();
+    return 0; // because I need HP to only regen from items.
+
+    uint8 level = getLevel();
     uint32 pclass = getClass();
 
     if (level > GT_MAX_LEVEL)
@@ -5129,8 +5110,8 @@ float Player::OCTRegenHPPerSpirit()
     if (baseSpirit > 50)
         baseSpirit = 50;
     float moreSpirit = spirit - baseSpirit;
-    float regen = baseSpirit * baseRatio->ratio + moreSpirit * moreRatio->ratio;
-    return regen;
+    float regen = baseSpirit + moreSpirit;
+    return spirit;
 }
 
 float Player::OCTRegenMPPerSpirit()

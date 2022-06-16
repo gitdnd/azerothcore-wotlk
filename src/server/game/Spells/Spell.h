@@ -23,6 +23,9 @@
 #include "PathGenerator.h"
 #include "SharedDefines.h"
 #include "SpellInfo.h"
+#include <any>
+#include <map>
+#include <optional>
 
 class Unit;
 class Player;
@@ -88,6 +91,17 @@ enum SpellRangeFlag
     SPELL_RANGE_DEFAULT             = 0,
     SPELL_RANGE_MELEE               = 1,     //melee
     SPELL_RANGE_RANGED              = 2,     //hunter range and ranged weapon
+};
+
+enum class MapDummy : uint8
+{
+    Misc_1,
+    Misc_2,
+    Misc_3,
+    TriggeringSpell,
+    Strike,
+    WasInAir,
+
 };
 
 struct SpellDestination
@@ -579,6 +593,7 @@ public:
     void CleanupTargetList();
 
     void SetSpellValue(SpellValueMod mod, int32 value);
+    void ModifySpellValue(SpellValueMod mod, int32 value);
     SpellValue const* GetSpellValue() { return m_spellValue; }
 
     // xinef: moved to public
@@ -724,9 +739,12 @@ public:
     // Scripting system
     bool _scriptsLoaded;
     //void LoadScripts();
+    void CallScriptBeforeCastTimeHandlers();
     void CallScriptBeforeCastHandlers();
+    void CallScriptWhileCastHandlers();
     void CallScriptOnCastHandlers();
     void CallScriptAfterCastHandlers();
+    void CallScriptAfterFullChannelHandlers();
     SpellCastResult CallScriptCheckCastHandlers();
     void PrepareScriptHitHandlers();
     bool CallScriptEffectHandlers(SpellEffIndex effIndex, SpellEffectHandleMode mode);
@@ -757,6 +775,11 @@ public:
     void CalculateJumpSpeeds(uint8 i, float dist, float& speedxy, float& speedz);
 
     SpellCastResult CanOpenLock(uint32 effIndex, uint32 lockid, SkillType& skillid, int32& reqSkillValue, int32& skillValue);
+
+
+
+
+
     // -------------------------------------------
 
     uint32 m_spellState;
@@ -786,6 +809,21 @@ public:
     double rand_norm()                      { return m_caster->GetMap()->mtRand.randExc(); }
     double rand_chance()                    { return m_caster->GetMap()->mtRand.randExc(100.0); }
 #endif
+public:
+    Unit* GetCastTarget() { return unitTarget; }
+    SpellDestination* GetDestTargets(int index)
+    {
+        if (index == 0 || index == 1 || index == 2)
+            return &(m_destTargets[index]);
+        else
+            return nullptr;
+    }
+    int32 GetSpellTimer() { return m_timer; };
+    void ModifySpellTimer(int32 amount) { m_timer += amount; };
+    void SetSpellTimer(int32 amount) { m_timer = amount; };
+    std::map<MapDummy, std::optional<std::any>> triggerDummy = {};
+    std::map<MapDummy, std::optional<std::any>>& GetTriggerDummy() { return triggerDummy; }
+    void AddTriggerDummy(MapDummy key, std::optional<std::any> value) { triggerDummy.emplace(key, value); }
 };
 
 namespace Acore

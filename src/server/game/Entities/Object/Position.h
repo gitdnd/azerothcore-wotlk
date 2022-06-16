@@ -56,6 +56,7 @@ struct Position
     float m_positionX = 0;
     float m_positionY = 0;
     float m_positionZ = 0;
+
     float m_orientation = 0; // Better to limit access to _orientation field, to guarantee the value is normalized
 
     bool operator==(Position const& a) const;
@@ -70,41 +71,32 @@ struct Position
         return { m_positionX, m_positionY, m_positionZ };
     }
 
-    void Relocate(float x, float y)
+    virtual void Relocate(float x, float y)
     {
         m_positionX = x;
         m_positionY = y;
     }
 
-    void Relocate(float x, float y, float z)
+    virtual void Relocate(float x, float y, float z)
     {
-        m_positionX = x;
-        m_positionY = y;
+        Relocate(x, y);
         m_positionZ = z;
     }
 
-    void Relocate(float x, float y, float z, float orientation)
+    virtual void Relocate(float x, float y, float z, float orientation)
     {
-        m_positionX = x;
-        m_positionY = y;
-        m_positionZ = z;
+        Relocate(x, y, z);
         m_orientation = orientation;
     }
 
-    void Relocate(const Position& pos)
+    virtual void Relocate(const Position& pos)
     {
-        m_positionX = pos.m_positionX;
-        m_positionY = pos.m_positionY;
-        m_positionZ = pos.m_positionZ;
-        m_orientation = pos.m_orientation;
+        Relocate(pos.m_positionX, pos.m_positionY, pos.m_positionZ, pos.m_orientation);
     }
 
-    void Relocate(const Position* pos)
+    virtual void Relocate(const Position* pos)
     {
-        m_positionX = pos->m_positionX;
-        m_positionY = pos->m_positionY;
-        m_positionZ = pos->m_positionZ;
-        m_orientation = pos->m_orientation;
+        Relocate(pos->m_positionX, pos->m_positionY, pos->m_positionZ, pos->m_orientation);
     }
 
     void RelocatePolarOffset(float angle, float dist, float z = 0.0f);
