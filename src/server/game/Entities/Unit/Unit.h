@@ -1381,6 +1381,13 @@ public:
 
         return nullptr;
     }
+
+    void SetOrientation(float orientation)
+    {
+        if (!HasUnitState(UNIT_STATE_CANNOT_TURN))
+            m_orientation = orientation;
+    }
+
     bool Attack(Unit* victim, bool meleeAttack);
     void CastStop(uint32 except_spellid = 0, bool withInstant = true);
     bool AttackStop();
@@ -1460,6 +1467,7 @@ public:
     inline void SetFullHealth() { SetHealth(GetMaxHealth()); }
     int32 ModifyHealth(int32 val);
     int32 GetHealthGain(int32 dVal);
+
 
     [[nodiscard]] Powers getPowerType() const { return Powers(GetByteValue(UNIT_FIELD_BYTES_0, 3)); }
     void setPowerType(Powers power);
@@ -1690,7 +1698,8 @@ public:
     bool IsEngagedBy(Unit const* who) const { return IsInCombatWith(who); }
 
     [[nodiscard]] bool IsInCombat() const { return HasUnitFlag(UNIT_FLAG_IN_COMBAT); }
-    bool IsInCombatWith(Unit const* who) const;
+	bool IsInCombatWith(Unit const* who) const;
+    int InCombatWithHowMany();
 
     [[nodiscard]] bool IsPetInCombat() const { return HasUnitFlag(UNIT_FLAG_PET_IN_COMBAT); }
     void CombatStart(Unit* target, bool initialAggro = true);
@@ -2108,15 +2117,73 @@ public:
     [[nodiscard]] Powers GetPowerTypeByAuraGroup(UnitMods unitMod) const;
     [[nodiscard]] bool CanModifyStats() const { return m_canModifyStats; }
     void SetCanModifyStats(bool modifyStats) { m_canModifyStats = modifyStats; }
-    virtual bool UpdateStats(Stats stat) = 0;
-    virtual bool UpdateAllStats() = 0;
-    virtual void UpdateResistances(uint32 school) = 0;
-    virtual void UpdateAllResistances();
-    virtual void UpdateArmor() = 0;
-    virtual void UpdateMaxHealth() = 0;
-    virtual void UpdateMaxPower(Powers power) = 0;
-    virtual void UpdateAttackPowerAndDamage(bool ranged = false) = 0;
-    virtual void UpdateDamagePhysical(WeaponAttackType attType);
+
+    void SetBaseModValue(BaseModGroup modGroup, BaseModType modType, float value) { m_auraBaseMod[modGroup][modType] = value; }
+    void HandleBaseModValue(BaseModGroup modGroup, BaseModType modType, float amount, bool apply);
+    [[nodiscard]] float GetBaseModValue(BaseModGroup modGroup, BaseModType modType) const;
+    [[nodiscard]] float GetTotalBaseModValue(BaseModGroup modGroup) const;
+    [[nodiscard]] float GetTotalPercentageModValue(BaseModGroup modGroup) const { return m_auraBaseMod[modGroup][FLAT_MOD] + m_auraBaseMod[modGroup][PCT_MOD]; }
+
+    [[nodiscard]] float GetRealParry() const { return m_realParry; }
+    [[nodiscard]] float GetRealDodge() const { return m_realDodge; }
+
+    float GetHealthBonusFromStamina();
+    float GetManaBonusFromIntellect();
+
+    void UpdateAllResistances();
+    bool UpdateStats(Stats stat);
+    bool UpdateAllStats();
+    void ApplySpellPenetrationBonus(int32 amount, bool apply);
+    void UpdateResistances(uint32 school);
+    void UpdateArmor();
+    void UpdateMaxHealth();
+    void UpdateMaxPower(Powers power);
+    void ApplyFeralAPBonus(int32 amount, bool apply);
+    void UpdateAttackPowerAndDamage(bool ranged = false);
+    void UpdateShieldBlockValue();
+    void ApplySpellPowerBonus(int32 amount, bool apply);
+    void UpdateSpellDamageAndHealingBonus();
+    void ApplyRatingMod(CombatRating cr, int32 value, bool apply);
+    void UpdateRating(CombatRating cr);
+    void UpdateAllRatings();
+
+    void CalculateMinMaxDamage(WeaponAttackType attType, bool normalized, bool addTotalPct, float& minDamage, float& maxDamage);
+
+    void UpdateDefenseBonusesMod();
+    inline void RecalculateRating(CombatRating cr) { ApplyRatingMod(cr, 0, true); }
+    float GetMeleeCritFromAgility();
+    void GetDodgeFromAgility(float& diminishing, float& nondiminishing);
+    [[nodiscard]] float GetMissPercentageFromDefence() const;
+    float GetSpellCritFromIntellect();
+    float OCTRegenHPPerSpirit();
+    float OCTRegenMPPerSpirit();
+    [[nodiscard]] float GetRatingMultiplier(CombatRating cr) const;
+    [[nodiscard]] float GetRatingBonusValue(CombatRating cr) const;
+    uint32 GetBaseSpellPowerBonus() { return m_baseSpellPower; }
+    [[nodiscard]] int32 GetSpellPenetrationItemMod() const { return m_spellPenetrationItemMod; }
+    void UpdateDamagePhysical(WeaponAttackType attType);
+
+    [[nodiscard]] float GetExpertiseDodgeOrParryReduction(WeaponAttackType attType) const;
+    void UpdateBlockPercentage();
+    void UpdateCritPercentage(WeaponAttackType attType);
+    void UpdateAllCritPercentages();
+    void UpdateParryPercentage();
+    void UpdateDodgePercentage();
+    void UpdateMeleeHitChances();
+    void UpdateRangedHitChances();
+    void UpdateSpellHitChances();
+
+    void UpdateAllSpellCritChances();
+    void UpdateSpellCritChance(uint32 school);
+    void UpdateArmorPenetration(int32 amount);
+    void UpdateExpertise(WeaponAttackType attType);
+    void ApplyManaRegenBonus(int32 amount, bool apply);
+    void ApplyHealthRegenBonus(int32 amount, bool apply);
+    void UpdateManaRegen();
+
+    void _ApplyAllStatBonuses();
+    void _RemoveAllStatBonuses();
+
     float GetTotalAttackPowerValue(WeaponAttackType attType, Unit* pVictim = nullptr) const;
     [[nodiscard]] float GetWeaponDamageRange(WeaponAttackType attType, WeaponDamageRange type, uint8 damageIndex = 0) const;
     void SetBaseWeaponDamage(WeaponAttackType attType, WeaponDamageRange damageRange, float value, uint8 damageIndex = 0) { m_weaponDamage[attType][damageRange][damageIndex] = value; }
@@ -2485,6 +2552,17 @@ protected:
     int32 m_attackTimer[MAX_ATTACK];
 
     float m_createStats[MAX_STATS];
+
+    float m_auraBaseMod[BASEMOD_END][MOD_END];
+    int16 m_baseRatingValue[MAX_COMBAT_RATING];
+    uint32 m_baseSpellPower;
+    uint32 m_baseFeralAP;
+    uint32 m_baseManaRegen;
+    uint32 m_baseHealthRegen;
+    int32 m_spellPenetrationItemMod;
+
+    float m_realDodge;
+    float m_realParry;
 
     AttackerSet m_attackers;
     Unit* m_attacking;

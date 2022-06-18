@@ -723,35 +723,35 @@ void ScriptMgr::OnAfterStoreOrEquipNewItem(Player* player, uint32 vendorslot, It
     });
 }
 
-void ScriptMgr::OnAfterUpdateMaxPower(Player* player, Powers& power, float& value)
+void ScriptMgr::OnAfterUpdateMaxPower(Unit* unit, Powers& power, float& value)
 {
     ExecuteScript<PlayerScript>([&](PlayerScript* script)
     {
-        script->OnAfterUpdateMaxPower(player, power, value);
+        script->OnAfterUpdateMaxPower(unit, power, value);
     });
 }
 
-void ScriptMgr::OnAfterUpdateMaxHealth(Player* player, float& value)
+void ScriptMgr::OnAfterUpdateMaxHealth(Unit * unit, float& value)
 {
     ExecuteScript<PlayerScript>([&](PlayerScript* script)
     {
-        script->OnAfterUpdateMaxHealth(player, value);
+        script->OnAfterUpdateMaxHealth(unit, value);
     });
 }
 
-void ScriptMgr::OnBeforeUpdateAttackPowerAndDamage(Player* player, float& level, float& val2, bool ranged)
+void ScriptMgr::OnBeforeUpdateAttackPowerAndDamage(Unit* unit, float& level, float& val2, bool ranged)
 {
     ExecuteScript<PlayerScript>([&](PlayerScript* script)
     {
-        script->OnBeforeUpdateAttackPowerAndDamage(player, level, val2, ranged);
+        script->OnBeforeUpdateAttackPowerAndDamage(unit, level, val2, ranged);
     });
 }
 
-void ScriptMgr::OnAfterUpdateAttackPowerAndDamage(Player* player, float& level, float& base_attPower, float& attPowerMod, float& attPowerMultiplier, bool ranged)
+void ScriptMgr::OnAfterUpdateAttackPowerAndDamage(Unit* unit, float& level, float& base_attPower, float& attPowerMod, float& attPowerMultiplier, bool ranged)
 {
     ExecuteScript<PlayerScript>([&](PlayerScript* script)
     {
-        script->OnAfterUpdateAttackPowerAndDamage(player, level, base_attPower, attPowerMod, attPowerMultiplier, ranged);
+        script->OnAfterUpdateAttackPowerAndDamage(unit, level, base_attPower, attPowerMod, attPowerMultiplier, ranged);
     });
 }
 

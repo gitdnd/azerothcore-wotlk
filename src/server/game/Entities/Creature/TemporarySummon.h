@@ -99,15 +99,6 @@ public:
     bool InitStatsForLevel(uint8 level);
     void InitSummon() override;
 
-    bool UpdateStats(Stats stat) override;
-    bool UpdateAllStats() override;
-    void UpdateArmor() override;
-    void UpdateMaxHealth() override;
-    void UpdateMaxPower(Powers power) override;
-    void UpdateAttackPowerAndDamage(bool ranged = false) override;
-    void UpdateDamagePhysical(WeaponAttackType attType) override;
-
-    std::string GetDebugInfo() const override;
 };
 
 class Puppet : public Minion

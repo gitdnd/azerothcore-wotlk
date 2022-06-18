@@ -413,7 +413,7 @@ public:
     virtual void Relocate(float x, float y, float z, float orientation)
     {
         Relocate(x, y, z);
-        m_orientation = orientation;
+        SetOrientation(orientation);
     }
 
     virtual void Relocate(const Position& pos)

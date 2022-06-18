@@ -1652,6 +1652,9 @@ public:
     [[nodiscard]] bool IsSpellFitByClassAndRace(uint32 spell_id) const;
     bool IsNeedCastPassiveSpellAtLearn(SpellInfo const* spellInfo) const;
 
+
+
+
     void SendProficiency(ItemClass itemClass, uint32 itemSubclassMask);
     void SendInitialSpells();
     void SendLearnPacket(uint32 spellId, bool learn);
@@ -1887,58 +1890,6 @@ public:
 
     uint32 GetSpellByProto(ItemTemplate* proto);
 
-    float GetHealthBonusFromStamina();
-    float GetManaBonusFromIntellect();
-
-    bool UpdateStats(Stats stat) override;
-    bool UpdateAllStats() override;
-    void ApplySpellPenetrationBonus(int32 amount, bool apply);
-    void UpdateResistances(uint32 school) override;
-    void UpdateArmor() override;
-    void UpdateMaxHealth() override;
-    void UpdateMaxPower(Powers power) override;
-    void ApplyFeralAPBonus(int32 amount, bool apply);
-    void UpdateAttackPowerAndDamage(bool ranged = false) override;
-    void UpdateShieldBlockValue();
-    void ApplySpellPowerBonus(int32 amount, bool apply);
-    void UpdateSpellDamageAndHealingBonus();
-    void ApplyRatingMod(CombatRating cr, int32 value, bool apply);
-    void UpdateRating(CombatRating cr);
-    void UpdateAllRatings();
-
-    void CalculateMinMaxDamage(WeaponAttackType attType, bool normalized, bool addTotalPct, float& minDamage, float& maxDamage, uint8 damageIndex) override;
-
-    void UpdateDefenseBonusesMod();
-    inline void RecalculateRating(CombatRating cr) { ApplyRatingMod(cr, 0, true);}
-    float GetMeleeCritFromAgility();
-    void GetDodgeFromAgility(float& diminishing, float& nondiminishing);
-    [[nodiscard]] float GetMissPercentageFromDefence() const;
-    float GetSpellCritFromIntellect();
-    float OCTRegenHPPerSpirit();
-    float OCTRegenMPPerSpirit();
-    [[nodiscard]] float GetRatingMultiplier(CombatRating cr) const;
-    [[nodiscard]] float GetRatingBonusValue(CombatRating cr) const;
-    uint32 GetBaseSpellPowerBonus() { return m_baseSpellPower; }
-    [[nodiscard]] int32 GetSpellPenetrationItemMod() const { return m_spellPenetrationItemMod; }
-
-    [[nodiscard]] float GetExpertiseDodgeOrParryReduction(WeaponAttackType attType) const;
-    void UpdateBlockPercentage();
-    void UpdateCritPercentage(WeaponAttackType attType);
-    void UpdateAllCritPercentages();
-    void UpdateParryPercentage();
-    void UpdateDodgePercentage();
-    void UpdateMeleeHitChances();
-    void UpdateRangedHitChances();
-    void UpdateSpellHitChances();
-
-    void UpdateAllSpellCritChances();
-    void UpdateSpellCritChance(uint32 school);
-    void UpdateArmorPenetration(int32 amount);
-    void UpdateExpertise(WeaponAttackType attType);
-    void ApplyManaRegenBonus(int32 amount, bool apply);
-    void ApplyHealthRegenBonus(int32 amount, bool apply);
-    void UpdateManaRegen();
-    void UpdateRuneRegen(RuneType rune);
 
     [[nodiscard]] ObjectGuid GetLootGUID() const { return m_lootGuid; }
     void SetLootGUID(ObjectGuid guid) { m_lootGuid = guid; }
@@ -2138,13 +2089,6 @@ public:
     [[nodiscard]] bool CanTameExoticPets() const { return IsGameMaster() || HasAuraType(SPELL_AURA_ALLOW_TAME_PET_TYPE); }
 
     void SetRegularAttackTime();
-    void SetBaseModValue(BaseModGroup modGroup, BaseModType modType, float value) { m_auraBaseMod[modGroup][modType] = value; }
-    void HandleBaseModValue(BaseModGroup modGroup, BaseModType modType, float amount, bool apply);
-    [[nodiscard]] float GetBaseModValue(BaseModGroup modGroup, BaseModType modType) const;
-    [[nodiscard]] float GetTotalBaseModValue(BaseModGroup modGroup) const;
-    [[nodiscard]] float GetTotalPercentageModValue(BaseModGroup modGroup) const { return m_auraBaseMod[modGroup][FLAT_MOD] + m_auraBaseMod[modGroup][PCT_MOD]; }
-    void _ApplyAllStatBonuses();
-    void _RemoveAllStatBonuses();
 
     void ResetAllPowers();
 
@@ -2451,6 +2395,7 @@ public:
 
     bool isAllowedToLoot(Creature const* creature);
 
+    void UpdateRuneRegen(RuneType rune);
     [[nodiscard]] DeclinedName const* GetDeclinedNames() const { return m_declinedname; }
     [[nodiscard]] uint8 GetRunesState() const { return m_runes->runeState; }
     [[nodiscard]] RuneType GetBaseRune(uint8 index) const { return RuneType(m_runes->runes[index].BaseRune); }
@@ -2551,8 +2496,6 @@ public:
     uint32 GetMountBlockId() { return m_MountBlockId; }
     void SetMountBlockId(uint32 mount) { m_MountBlockId = mount; }
 
-    [[nodiscard]] float GetRealParry() const { return m_realParry; }
-    [[nodiscard]] float GetRealDodge() const { return m_realDodge; }
     // mt maps
     [[nodiscard]] const PlayerTalentMap& GetTalentMap() const { return m_talents; }
     [[nodiscard]] uint32 GetNextSave() const { return m_nextSave; }
@@ -2586,8 +2529,6 @@ public:
     // Mount block bug
     uint32 m_MountBlockId;
     // Real stats
-    float m_realDodge;
-    float m_realParry;
 
     uint32 m_charmAISpells[NUM_CAI_SPELLS];
 
@@ -2753,13 +2694,6 @@ public:
 
     ActionButtonList m_actionButtons;
 
-    float m_auraBaseMod[BASEMOD_END][MOD_END];
-    int32 m_baseRatingValue[MAX_COMBAT_RATING];
-    uint32 m_baseSpellPower;
-    uint32 m_baseFeralAP;
-    uint32 m_baseManaRegen;
-    uint32 m_baseHealthRegen;
-    int32 m_spellPenetrationItemMod;
 
     SpellModList m_spellMods[MAX_SPELLMOD];
     //uint32 m_pad;

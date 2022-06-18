@@ -739,6 +739,7 @@ public:
     // Scripting system
     bool _scriptsLoaded;
     //void LoadScripts();
+	void CallScriptBeforeSpellLoadHandlers();
     void CallScriptBeforeCastTimeHandlers();
     void CallScriptBeforeCastHandlers();
     void CallScriptWhileCastHandlers();
@@ -824,6 +825,7 @@ public:
     std::map<MapDummy, std::optional<std::any>> triggerDummy = {};
     std::map<MapDummy, std::optional<std::any>>& GetTriggerDummy() { return triggerDummy; }
     void AddTriggerDummy(MapDummy key, std::optional<std::any> value) { triggerDummy.emplace(key, value); }
+    bool skip = false;
 };
 
 namespace Acore

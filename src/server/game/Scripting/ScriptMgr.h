@@ -1213,12 +1213,12 @@ public:
     //After buying something from any vendor
     virtual void OnAfterStoreOrEquipNewItem(Player* /*player*/, uint32 /*vendorslot*/, Item* /*item*/, uint8 /*count*/, uint8 /*bag*/, uint8 /*slot*/, ItemTemplate const* /*pProto*/, Creature* /*pVendor*/, VendorItem const* /*crItem*/, bool /*bStore*/) { };
 
-    virtual void OnAfterUpdateMaxPower(Player* /*player*/, Powers& /*power*/, float& /*value*/) { }
+    virtual void OnAfterUpdateMaxPower(Unit* /*player*/, Powers& /*power*/, float& /*value*/) { }
 
-    virtual void OnAfterUpdateMaxHealth(Player* /*player*/, float& /*value*/) { }
+    virtual void OnAfterUpdateMaxHealth(Unit* /*player*/, float& /*value*/) { }
 
-    virtual void OnBeforeUpdateAttackPowerAndDamage(Player* /*player*/, float& /*level*/, float& /*val2*/, bool /*ranged*/) { }
-    virtual void OnAfterUpdateAttackPowerAndDamage(Player* /*player*/, float& /*level*/, float& /*base_attPower*/, float& /*attPowerMod*/, float& /*attPowerMultiplier*/, bool /*ranged*/) { }
+    virtual void OnBeforeUpdateAttackPowerAndDamage(Unit* /*player*/, float& /*level*/, float& /*val2*/, bool /*ranged*/) { }
+    virtual void OnAfterUpdateAttackPowerAndDamage(Unit* /*player*/, float& /*level*/, float& /*base_attPower*/, float& /*attPowerMod*/, float& /*attPowerMultiplier*/, bool /*ranged*/) { }
 
     virtual void OnBeforeInitTalentForLevel(Player* /*player*/, uint8& /*level*/, uint32& /*talentPointsForLevel*/) { }
 
@@ -2291,10 +2291,10 @@ public: /* PlayerScript */
     void OnBeforeBuyItemFromVendor(Player* player, ObjectGuid vendorguid, uint32 vendorslot, uint32& item, uint8 count, uint8 bag, uint8 slot);
     void OnBeforeStoreOrEquipNewItem(Player* player, uint32 vendorslot, uint32& item, uint8 count, uint8 bag, uint8 slot, ItemTemplate const* pProto, Creature* pVendor, VendorItem const* crItem, bool bStore);
     void OnAfterStoreOrEquipNewItem(Player* player, uint32 vendorslot, Item* item, uint8 count, uint8 bag, uint8 slot, ItemTemplate const* pProto, Creature* pVendor, VendorItem const* crItem, bool bStore);
-    void OnAfterUpdateMaxPower(Player* player, Powers& power, float& value);
-    void OnAfterUpdateMaxHealth(Player* player, float& value);
-    void OnBeforeUpdateAttackPowerAndDamage(Player* player, float& level, float& val2, bool ranged);
-    void OnAfterUpdateAttackPowerAndDamage(Player* player, float& level, float& base_attPower, float& attPowerMod, float& attPowerMultiplier, bool ranged);
+    void OnAfterUpdateMaxPower(Unit* unit, Powers& power, float& value);
+    void OnAfterUpdateMaxHealth(Unit * unit, float& value);
+    void OnBeforeUpdateAttackPowerAndDamage(Unit* unit, float& level, float& val2, bool ranged);
+    void OnAfterUpdateAttackPowerAndDamage(Unit* unit, float& level, float& base_attPower, float& attPowerMod, float& attPowerMultiplier, bool ranged);
     void OnBeforeInitTalentForLevel(Player* player, uint8& level, uint32& talentPointsForLevel);
     void OnFirstLogin(Player* player);
     void OnSetMaxLevel(Player* player, uint32& maxPlayerLevel);

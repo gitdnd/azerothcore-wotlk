@@ -86,7 +86,7 @@ struct Position
     virtual void Relocate(float x, float y, float z, float orientation)
     {
         Relocate(x, y, z);
-        m_orientation = orientation;
+        SetOrientation(orientation);
     }
 
     virtual void Relocate(const Position& pos)
@@ -101,7 +101,7 @@ struct Position
 
     void RelocatePolarOffset(float angle, float dist, float z = 0.0f);
     void RelocateOffset(const Position& offset);
-    void SetOrientation(float orientation)
+    virtual void SetOrientation(float orientation)
     {
         m_orientation = orientation;
     }

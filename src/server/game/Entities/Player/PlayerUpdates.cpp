@@ -571,7 +571,7 @@ void Player::UpdateDefense()
         UpdateDefenseBonusesMod(); // update dependent from defense skill part
 }
 
-void Player::UpdateRating(CombatRating cr)
+void Unit::UpdateRating(CombatRating cr)
 {
     int32 amount = m_baseRatingValue[cr];
     // Apply bonus from SPELL_AURA_MOD_RATING_FROM_STAT
@@ -663,7 +663,7 @@ void Player::UpdateRating(CombatRating cr)
     }
 }
 
-void Player::UpdateAllRatings()
+void Unit::UpdateAllRatings()
 {
     for (int cr = 0; cr < MAX_COMBAT_RATING; ++cr)
         UpdateRating(CombatRating(cr));

@@ -321,6 +321,8 @@ public:
     // hooks to which you can attach your functions
     //
     // example: BeforeCast += SpellCastFn(class::function);
+    HookList<CastHandler> BeforeSpellLoad;
+    // example: BeforeCast += SpellCastFn(class::function);
     HookList<CastHandler> BeforeCastTime;
     // example: BeforeCast += SpellCastFn(class::function);
     HookList<CastHandler> BeforeCast;

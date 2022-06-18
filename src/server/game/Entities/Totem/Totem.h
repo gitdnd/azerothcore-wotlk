@@ -53,14 +53,7 @@ public:
     void SetTotemDuration(uint32 duration) { m_duration = duration; }
     TotemType GetTotemType() const { return m_type; }
 
-    bool UpdateStats(Stats /*stat*/) override { return true; }
-    bool UpdateAllStats() override { return true; }
-    void UpdateResistances(uint32 /*school*/) override {}
-    void UpdateArmor() override {}
-    void UpdateMaxHealth() override {}
-    void UpdateMaxPower(Powers /*power*/) override {}
-    void UpdateAttackPowerAndDamage(bool /*ranged*/) override {}
-    void UpdateDamagePhysical(WeaponAttackType /*attType*/) override {}
+
 
     bool IsImmunedToSpellEffect(SpellInfo const* spellInfo, uint32 index) const override;
 

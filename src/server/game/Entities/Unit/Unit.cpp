@@ -3441,7 +3441,6 @@ SpellMissInfo Unit::SpellHitResult(Unit* victim, SpellInfo const* spell, bool Ca
     return SPELL_MISS_NONE;
 }
 
-SpellMissInfo Unit::SpellHitResult(Unit* victim, Spell const* spell, bool CanReflect)
 {
     SpellInfo const* spellInfo = spell->GetSpellInfo();
 
@@ -3529,9 +3528,73 @@ SpellMissInfo Unit::SpellHitResult(Unit* victim, Spell const* spell, bool CanRef
     }
 
     return SPELL_MISS_NONE;
+void Unit::HandleBaseModValue(BaseModGroup modGroup, BaseModType modType, float amount, bool apply)
+    if (modGroup >= BASEMOD_END)
+    {
+        LOG_ERROR("entities.player", "ERROR in HandleBaseModValue(): non existed BaseModGroup!");
+        return;
+    }
+
+    switch (modType)
+    {
+    case FLAT_MOD:
+        m_auraBaseMod[modGroup][modType] += apply ? amount : -amount;
+        break;
+    case PCT_MOD:
+        ApplyPercentModFloatVar(m_auraBaseMod[modGroup][modType], amount, apply);
+        break;
+    }
+
+    if (!CanModifyStats())
+        return;
+
+    switch (modGroup)
+    {
+    case CRIT_PERCENTAGE:
+        UpdateCritPercentage(BASE_ATTACK);
+        break;
+    case RANGED_CRIT_PERCENTAGE:
+        UpdateCritPercentage(RANGED_ATTACK);
+        break;
+    case OFFHAND_CRIT_PERCENTAGE:
+        UpdateCritPercentage(OFF_ATTACK);
+        break;
+    case SHIELD_BLOCK_VALUE:
+        UpdateShieldBlockValue();
+        break;
+    default:
+        break;
+    }
 }
 
-uint32 Unit::GetDefenseSkillValue(Unit const* target) const
+float Unit::GetBaseModValue(BaseModGroup modGroup, BaseModType modType) const
+{
+    if (modGroup >= BASEMOD_END)
+    {
+        LOG_ERROR("entities.player", "trial to access non existed BaseModGroup!");
+        return 0.0f;
+    }
+
+    if (modType == PCT_MOD && m_auraBaseMod[modGroup][PCT_MOD] <= 0.0f)
+        return 0.0f;
+
+    return m_auraBaseMod[modGroup][modType];
+}
+
+float Unit::GetTotalBaseModValue(BaseModGroup modGroup) const
+{
+    if (modGroup >= BASEMOD_END)
+    {
+        LOG_ERROR("entities.player", "wrong BaseModGroup in GetTotalBaseModValue()!");
+        return 0.0f;
+    }
+
+    if (m_auraBaseMod[modGroup][PCT_MOD] <= 0.0f)
+        return 0.0f;
+
+    return m_auraBaseMod[modGroup][FLAT_MOD] * m_auraBaseMod[modGroup][PCT_MOD];
+}
+
 {
     if (GetTypeId() == TYPEID_PLAYER)
     {
@@ -3548,6 +3611,7 @@ uint32 Unit::GetDefenseSkillValue(Unit const* target) const
 
 float Unit::GetUnitDodgeChance() const
 {
+    return 0;
     if (GetTypeId() == TYPEID_PLAYER)
         return ToPlayer()->GetRealDodge(); //GetFloatValue(PLAYER_DODGE_PERCENTAGE);
     else
@@ -3565,6 +3629,7 @@ float Unit::GetUnitDodgeChance() const
 
 float Unit::GetUnitParryChance() const
 {
+    return 0;
     float chance = 0.0f;
 
     if (Player const* player = ToPlayer())
@@ -15495,7 +15560,7 @@ uint32 Unit::GetCreatePowers(Powers power) const
             return (GetTypeId() == TYPEID_PLAYER || !((Creature const*)this)->IsPet() || ((Pet const*)this)->getPetType() != HUNTER_PET ? 0 : 1050000);
         case POWER_RUNIC_POWER:
             if (this->GetTypeId() == TYPEID_PLAYER)
-                return this->GetStat(STAT_SPIRIT) * 100;
+                return this->GetStat(STAT_SPIRIT) * 10;
         case POWER_RUNE:
             return 0;
         case POWER_HEALTH:
@@ -20653,8 +20718,7 @@ void Unit::ExecuteDelayedUnitAINotifyEvent()
 
 void Unit::SetInFront(WorldObject const* target)
 {
-    if (!HasUnitState(UNIT_STATE_CANNOT_TURN))
-        SetOrientation(GetAngle(target));
+    SetOrientation(GetAngle(target));
 }
 
 void Unit::SetFacingTo(float ori)
@@ -21346,4 +21410,202 @@ std::string Unit::GetDebugInfo() const
         << " UnitMovementFlags: " << GetUnitMovementFlags() << " ExtraUnitMovementFlags: " << GetExtraUnitMovementFlags()
         << " Class: " << std::to_string(getClass());
     return sstr.str();
+float Unit::GetMeleeCritFromAgility()
+{
+    uint8 level = getLevel();
+    uint32 pclass = getClass();
+
+    if (level > GT_MAX_LEVEL)
+        level = GT_MAX_LEVEL;
+
+    GtChanceToMeleeCritBaseEntry const* critBase = sGtChanceToMeleeCritBaseStore.LookupEntry(pclass - 1);
+    GtChanceToMeleeCritEntry     const* critRatio = sGtChanceToMeleeCritStore.LookupEntry((pclass - 1) * GT_MAX_LEVEL + level - 1);
+    if (!critBase || !critRatio)
+        return 0.0f;
+
+    float crit = GetStat(STAT_AGILITY) * 0.001;
+    return crit * 100.0f;
+}
+
+void Unit::GetDodgeFromAgility(float& diminishing, float& nondiminishing)
+{
+    // Table for base dodge values
+    const float dodge_base[MAX_CLASSES] =
+    {
+        0.036640f, // Warrior
+        0.034943f, // Paladi
+        -0.040873f, // Hunter
+        0.020957f, // Rogue
+        0.034178f, // Priest
+        0.036640f, // DK
+        0.021080f, // Shaman
+        0.036587f, // Mage
+        0.024211f, // Warlock
+        0.0f,      // ??
+        0.056097f  // Druid
+    };
+    // Crit/agility to dodge/agility coefficient multipliers; 3.2.0 increased required agility by 15%
+    const float crit_to_dodge[MAX_CLASSES] =
+    {
+        0.85f / 1.15f,  // Warrior
+        1.00f / 1.15f,  // Paladin
+        1.11f / 1.15f,  // Hunter
+        2.00f / 1.15f,  // Rogue
+        1.00f / 1.15f,  // Priest
+        0.85f / 1.15f,  // DK
+        1.60f / 1.15f,  // Shaman
+        1.00f / 1.15f,  // Mage
+        0.97f / 1.15f,  // Warlock (?)
+        0.0f,           // ??
+        2.00f / 1.15f   // Druid
+    };
+
+    uint8 level = getLevel();
+    uint32 pclass = getClass();
+
+    if (level > GT_MAX_LEVEL)
+        level = GT_MAX_LEVEL;
+
+    // Dodge per agility is proportional to crit per agility, which is available from DBC files
+    GtChanceToMeleeCritEntry  const* dodgeRatio = sGtChanceToMeleeCritStore.LookupEntry((pclass - 1) * GT_MAX_LEVEL + level - 1);
+    if (!dodgeRatio || pclass > MAX_CLASSES)
+        return;
+
+    // TODO: research if talents/effects that increase total agility by x% should increase non-diminishing part
+    float base_agility = GetCreateStat(STAT_AGILITY) * m_auraModifiersGroup[UNIT_MOD_STAT_START + static_cast<uint16>(STAT_AGILITY)][BASE_PCT];
+    float bonus_agility = GetStat(STAT_AGILITY) - base_agility;
+
+    // calculate diminishing (green in char screen) and non-diminishing (white) contribution
+    diminishing = 0.0f;
+    nondiminishing = 0.0f;
+}
+
+float Unit::GetSpellCritFromIntellect()
+{
+    uint8 level = getLevel();
+    uint32 pclass = getClass();
+
+    if (level > GT_MAX_LEVEL)
+        level = GT_MAX_LEVEL;
+
+    GtChanceToSpellCritBaseEntry const* critBase = sGtChanceToSpellCritBaseStore.LookupEntry(pclass - 1);
+    GtChanceToSpellCritEntry     const* critRatio = sGtChanceToSpellCritStore.LookupEntry((pclass - 1) * GT_MAX_LEVEL + level - 1);
+    if (!critBase || !critRatio)
+        return 0.0f;
+
+    float crit = GetStat(STAT_INTELLECT) * 0.001;
+    return crit * 100.0f;
+}
+
+float Unit::GetRatingMultiplier(CombatRating cr) const
+{
+    uint8 level = getLevel();
+
+    if (level > GT_MAX_LEVEL)
+        level = GT_MAX_LEVEL;
+
+    GtCombatRatingsEntry const* Rating = sGtCombatRatingsStore.LookupEntry(cr * GT_MAX_LEVEL + level - 1);
+    // gtOCTClassCombatRatingScalarStore.dbc starts with 1, CombatRating with zero, so cr+1
+    GtOCTClassCombatRatingScalarEntry const* classRating = sGtOCTClassCombatRatingScalarStore.LookupEntry((getClass() - 1) * GT_MAX_RATING + cr + 1);
+    if (!Rating || !classRating)
+        return 1.0f;                                        // By default use minimum coefficient (not must be called)
+
+    return 1.0f;
+}
+
+float Unit::GetRatingBonusValue(CombatRating cr) const
+{
+    return float(GetUInt32Value(static_cast<uint16>(PLAYER_FIELD_COMBAT_RATING_1) + cr)) * GetRatingMultiplier(cr);
+}
+
+float Unit::GetExpertiseDodgeOrParryReduction(WeaponAttackType attType) const
+{
+    switch (attType)
+    {
+    case BASE_ATTACK:
+        return GetUInt32Value(PLAYER_EXPERTISE) / 4.0f;
+    case OFF_ATTACK:
+        return GetUInt32Value(PLAYER_OFFHAND_EXPERTISE) / 4.0f;
+    default:
+        break;
+    }
+    return 0.0f;
+}
+
+float Unit::OCTRegenHPPerSpirit()
+{
+    return 0; // because I need HP to only regen from items.
+
+    uint8 level = getLevel();
+    uint32 pclass = getClass();
+
+    if (level > GT_MAX_LEVEL)
+        level = GT_MAX_LEVEL;
+
+    GtOCTRegenHPEntry     const* baseRatio = sGtOCTRegenHPStore.LookupEntry((pclass - 1) * GT_MAX_LEVEL + level - 1);
+    GtRegenHPPerSptEntry  const* moreRatio = sGtRegenHPPerSptStore.LookupEntry((pclass - 1) * GT_MAX_LEVEL + level - 1);
+    if (!baseRatio || !moreRatio)
+        return 0.0f;
+
+    // Formula from PaperDollFrame script
+    float spirit = GetStat(STAT_SPIRIT);
+    float baseSpirit = spirit;
+    if (baseSpirit > 50)
+        baseSpirit = 50;
+    float moreSpirit = spirit - baseSpirit;
+    float regen = baseSpirit + moreSpirit;
+    return spirit;
+}
+
+float Unit::OCTRegenMPPerSpirit()
+{
+    uint8 level = getLevel();
+    uint32 pclass = getClass();
+
+    if (level > GT_MAX_LEVEL)
+        level = GT_MAX_LEVEL;
+
+    //    GtOCTRegenMPEntry     const* baseRatio = sGtOCTRegenMPStore.LookupEntry((pclass-1)*GT_MAX_LEVEL + level-1);
+    GtRegenMPPerSptEntry  const* moreRatio = sGtRegenMPPerSptStore.LookupEntry((pclass - 1) * GT_MAX_LEVEL + level - 1);
+    if (!moreRatio)
+        return 0.0f;
+
+    // Formula get from PaperDollFrame script
+    float spirit = GetStat(STAT_SPIRIT);
+    float regen = spirit * moreRatio->ratio;
+    return regen;
+}
+
+void Unit::ApplyRatingMod(CombatRating cr, int32 value, bool apply)
+{
+    float oldRating = m_baseRatingValue[cr];
+    m_baseRatingValue[cr] += (apply ? value : -value);
+    // explicit affected values
+    if (cr == CR_HASTE_MELEE || cr == CR_HASTE_RANGED || cr == CR_HASTE_SPELL)
+    {
+        float const mult = GetRatingMultiplier(cr);
+        float const oldVal = oldRating * mult;
+        float const newVal = m_baseRatingValue[cr] * mult;
+        switch (cr)
+        {
+        case CR_HASTE_MELEE:
+            ApplyAttackTimePercentMod(BASE_ATTACK, oldVal, false);
+            ApplyAttackTimePercentMod(OFF_ATTACK, oldVal, false);
+            ApplyAttackTimePercentMod(BASE_ATTACK, newVal, true);
+            ApplyAttackTimePercentMod(OFF_ATTACK, newVal, true);
+            break;
+        case CR_HASTE_RANGED:
+            ApplyAttackTimePercentMod(RANGED_ATTACK, oldVal, false);
+            ApplyAttackTimePercentMod(RANGED_ATTACK, newVal, true);
+            break;
+        case CR_HASTE_SPELL:
+            ApplyCastTimePercentMod(oldVal, false);
+            ApplyCastTimePercentMod(newVal, true);
+            break;
+        default:
+            break;
+        }
+    }
+
+    UpdateRating(cr);
 }

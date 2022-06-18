@@ -3441,6 +3441,11 @@ bool Spell::UpdateChanneledTargetList()
 
 SpellCastResult Spell::prepare(SpellCastTargets const* targets, AuraEffect const* triggeredByAura)
 {
+    InitExplicitTargets(*targets);
+    CallScriptBeforeSpellLoadHandlers();
+    if (skip)
+        return SPELL_FAILED_UNKNOWN;
+
     if (m_CastItem)
     {
         m_castItemGUID = m_CastItem->GetGUID();
@@ -3450,7 +3455,9 @@ SpellCastResult Spell::prepare(SpellCastTargets const* targets, AuraEffect const
         m_castItemGUID = ObjectGuid::Empty;
     }
 
-    InitExplicitTargets(*targets);
+
+
+
 
     if (!sScriptMgr->CanPrepare(this, targets, triggeredByAura))
     {
@@ -8417,9 +8424,6 @@ void Spell::SetSpellValue(SpellValueMod mod, int32 value)
         case SPELLVALUE_FORCED_CRIT_RESULT:
             m_spellValue->ForcedCritResult = (bool)value;
             break;
-        case SPELLVALUE_SPELL_TIME:
-            SetSpellTimer(value);
-            break;
     }
 }
 
@@ -8505,6 +8509,21 @@ void Spell::LoadScripts()
         LOG_DEBUG("spells.aura", "Spell::LoadScripts: Script `{}` for spell `{}` is loaded now", (*itr)->_GetScriptName()->c_str(), m_spellInfo->Id);
         (*itr)->Register();
         ++itr;
+    }
+}
+
+void Spell::CallScriptBeforeSpellLoadHandlers()
+{
+    for (std::list<SpellScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
+    {
+        (*scritr)->_PrepareScriptCall(SPELL_SCRIPT_HOOK_BEFORE_CAST_TIME);
+        std::list<SpellScript::CastHandler>::iterator hookItrEnd = (*scritr)->BeforeSpellLoad.end(), hookItr = (*scritr)->BeforeSpellLoad.begin();
+        for (; hookItr != hookItrEnd; ++hookItr)
+        {
+            (*hookItr).Call(*scritr);
+        }
+
+        (*scritr)->_FinishScriptCall();
     }
 }
 

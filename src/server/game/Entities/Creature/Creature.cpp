@@ -224,7 +224,7 @@ Creature::Creature(bool isWorldObject): Unit(isWorldObject), MovableMapObject(),
     _isMissingSwimmingFlagOutOfCombat(false), m_assistanceTimer(0), _playerDamageReq(0), _damagedByPlayer(false)
 {
     m_regenTimer = CREATURE_REGEN_INTERVAL;
-    m_valuesCount = UNIT_END;
+    m_valuesCount = PLAYER_END; // REMEMBER TO OPTIMIZE THIS LATER CUZ I SURE WONT RIGHT NOW LMAO
 
     for (uint8 i = 0; i < MAX_CREATURE_SPELLS; ++i)
         m_spells[i] = 0;
@@ -3490,7 +3490,7 @@ bool Creature::IsMovementPreventedByCasting() const
 {
     Spell* spell = m_currentSpells[CURRENT_CHANNELED_SPELL];
     // first check if currently a movement allowed channel is active and we're not casting
-    if (spell && spell->getState() != SPELL_STATE_FINISHED && spell->IsChannelActive() && spell->GetSpellInfo()->IsActionAllowedChannel())
+    if (spell && spell->getState() != SPELL_STATE_FINISHED && (spell->IsChannelActive() || HasUnitState(UNIT_STATE_CASTING)) && (spell->GetSpellInfo()->IsMoveAllowedChannel() || !(spell->GetSpellInfo()->InterruptFlags & SPELL_INTERRUPT_FLAG_MOVEMENT)))
     {
         return false;
     }

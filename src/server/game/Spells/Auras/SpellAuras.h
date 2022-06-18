@@ -21,6 +21,8 @@
 #include "SpellAuraDefines.h"
 #include "Unit.h"
 
+enum class MapDummy : uint8;
+
 class Unit;
 class SpellInfo;
 struct SpellModifier;
@@ -273,6 +275,11 @@ private:
     Unit::AuraApplicationList m_removedApplications;
 
     SpellInfo const* m_triggeredByAuraSpellInfo;
+
+public:
+    std::map<MapDummy, std::optional<std::any>> triggerDummy = {};
+    std::map<MapDummy, std::optional<std::any>>& GetTriggerDummy() { return triggerDummy; }
+    void AddTriggerDummy(MapDummy key, std::optional<std::any> value) { triggerDummy.emplace(key, value); }
 };
 
 class UnitAura : public Aura
@@ -296,6 +303,7 @@ public:
 
 private:
     DiminishingGroup m_AuraDRGroup: 8;              // Diminishing
+    
 };
 
 class DynObjAura : public Aura
