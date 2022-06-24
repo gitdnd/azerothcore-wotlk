@@ -522,6 +522,9 @@ enum AuraScriptHookType
     AURA_SCRIPT_HOOK_AFTER_PROC,
     /*AURA_SCRIPT_HOOK_APPLY,
     AURA_SCRIPT_HOOK_REMOVE, */
+    AURA_SCRIPT_RESOURCE_CHANGE,
+    AURA_SCRIPT_MOVEMENT_PACKET,
+    AURA_SCRIPT_AURA_ADDREMOVE,
 };
 /*
 #define HOOK_AURA_EFFECT_START HOOK_AURA_EFFECT_APPLY
@@ -547,6 +550,9 @@ public:
         typedef bool(CLASSNAME::*AuraCheckProcFnType)(ProcEventInfo&); \
         typedef void(CLASSNAME::*AuraProcFnType)(ProcEventInfo&); \
         typedef void(CLASSNAME::*AuraEffectProcFnType)(AuraEffect const*, ProcEventInfo&); \
+        typedef void(CLASSNAME::*OnResourceChangeFnType)(Powers power, int amount, PowerChangeReason reason, std::variant<Spell*, Aura*> reasonObj); \
+        typedef void(CLASSNAME::*OnMovementPacketFnType)(); \
+        typedef void(CLASSNAME::*AuraAddRemoveFnType)(Aura* aura, bool added); \
 
     AURASCRIPT_FUNCTION_TYPE_DEFINES(AuraScript)
 
@@ -670,7 +676,32 @@ public:
     private:
         AuraEffectProcFnType _EffectHandlerScript;
     };
+    class OnResourceChangeHandler
+    {
+    public:
+        OnResourceChangeHandler(OnResourceChangeFnType onResourceChangeScript);
+        void Call(AuraScript* auraScript, Powers power, int amount, PowerChangeReason reason, std::variant<Spell*, Aura*> reasonObj);
+    private:
+        OnResourceChangeFnType _OnResouceChangeHandlerScript;
+    };
 
+    class OnMovementPacketHandler
+    {
+    public:
+        OnMovementPacketHandler(OnMovementPacketFnType onMoevementPacketScript);
+        void Call(AuraScript* auraScript);
+    private:
+        OnMovementPacketFnType _OnMovementPacketHandlerScript;
+    };
+
+    class AuraAddRemoveHandler
+    {
+    public:
+        AuraAddRemoveHandler(AuraAddRemoveFnType auraAddRemoveScript);
+        void Call(AuraScript* auraScript, Aura* aura, bool added);
+    private:
+        AuraAddRemoveFnType _AuraAddRemoveHandlerScript;
+    };
 #define AURASCRIPT_FUNCTION_CAST_DEFINES(CLASSNAME) \
         class CheckAreaTargetFunction : public AuraScript::CheckAreaTargetHandler { public: CheckAreaTargetFunction(AuraCheckAreaTargetFnType _pHandlerScript) : AuraScript::CheckAreaTargetHandler((AuraScript::AuraCheckAreaTargetFnType)_pHandlerScript) {} }; \
         class AuraDispelFunction : public AuraScript::AuraDispelHandler { public: AuraDispelFunction(AuraDispelFnType _pHandlerScript) : AuraScript::AuraDispelHandler((AuraScript::AuraDispelFnType)_pHandlerScript) {} }; \
@@ -686,6 +717,9 @@ public:
         class CheckProcHandlerFunction : public AuraScript::CheckProcHandler { public: CheckProcHandlerFunction(AuraCheckProcFnType handlerScript) : AuraScript::CheckProcHandler((AuraScript::AuraCheckProcFnType)handlerScript) {} }; \
         class AuraProcHandlerFunction : public AuraScript::AuraProcHandler { public: AuraProcHandlerFunction(AuraProcFnType handlerScript) : AuraScript::AuraProcHandler((AuraScript::AuraProcFnType)handlerScript) {} }; \
         class EffectProcHandlerFunction : public AuraScript::EffectProcHandler { public: EffectProcHandlerFunction(AuraEffectProcFnType effectHandlerScript, uint8 effIndex, uint16 effName) : AuraScript::EffectProcHandler((AuraScript::AuraEffectProcFnType)effectHandlerScript, effIndex, effName) {} }; \
+        class OnResourceChangeFunction : public AuraScript::OnResourceChangeHandler { public: OnResourceChangeFunction(OnResourceChangeFnType onResourceChangeScript) : AuraScript::OnResourceChangeHandler((AuraScript::OnResourceChangeFnType)onResourceChangeScript) {} }; \
+        class OnMovementPacketFunction : public AuraScript::OnMovementPacketHandler { public: OnMovementPacketFunction(OnMovementPacketFnType onMovementPacketScript) : AuraScript::OnMovementPacketHandler((AuraScript::OnMovementPacketFnType)onMovementPacketScript) {} }; \
+        class AuraAddRemoveFunction : public AuraScript::AuraAddRemoveHandler { public: AuraAddRemoveFunction(AuraAddRemoveFnType auraAddRemoveScript) : AuraScript::AuraAddRemoveHandler((AuraScript::AuraAddRemoveFnType)auraAddRemoveScript) {} }; \
 
 #define PrepareAuraScript(CLASSNAME) AURASCRIPT_FUNCTION_TYPE_DEFINES(CLASSNAME) AURASCRIPT_FUNCTION_CAST_DEFINES(CLASSNAME)
 
@@ -849,6 +883,24 @@ public:
     // where function is: void function (AuraEffect const* aurEff, ProcEventInfo& procInfo);
     HookList<EffectProcHandler> AfterEffectProc;
 #define AuraEffectProcFn(F, I, N) EffectProcHandlerFunction(&F, I, N)
+
+    // executed after resource changes proced
+    // example: OnResourceChange += OnResourceChangeFn(class::function);
+    // where function is: void function (Powers power, int amount, PowerChangeReason reason, std::variant<Spell*, Aura*> reasonObj);
+    HookList<OnResourceChangeHandler> OnResourceChange;
+#define OnResourceChangeFn(F) OnResourceChangeFunction(&F)
+
+    // executed on movement packet update
+    // example: OnMovementPacket += OnMovementPacketFn(class::function);
+    // where function is: void function();
+    HookList<OnMovementPacketHandler> OnMovementPacket;
+#define OnMovementPacketFn(F) OnMovementPacketFunction(&F)
+
+    // executed on another aura being added or removed
+    // example: AfterEffectProc += OnMovementPacket(class::function);
+    // where function is: void function(Aura* aura, bool added);
+    HookList<AuraAddRemoveHandler> AuraAddRemove;
+#define AuraAddRemoveFn(F) AuraAddRemoveFunction(&F)
 
     // AuraScript interface - hook/effect execution manipulators
 

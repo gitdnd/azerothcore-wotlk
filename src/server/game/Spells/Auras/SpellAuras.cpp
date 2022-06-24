@@ -842,7 +842,7 @@ void Aura::Update(uint32 diff, Unit* caster)
                     else
                     {
                         if (int32(caster->GetPower(powertype)) >= ManaPerSecond)
-                            caster->ModifyPower(powertype, -ManaPerSecond);
+                            caster->ModifyPower(powertype, -ManaPerSecond, true, PowerChangeReason::REASON_AURA_EFFECT, this);
                         else
                         {
                             Remove();
@@ -2747,6 +2747,52 @@ void Aura::CallScriptAfterEffectProcHandlers(AuraEffect const* aurEff, AuraAppli
         (*scritr)->_FinishScriptCall();
     }
 }
+
+bool Aura::CallScriptOnResourceChange(Powers power, int amount, PowerChangeReason reason, std::variant<Spell*, Aura*> reasonObj)
+{
+    for (std::list<AuraScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
+    {
+        (*scritr)->_PrepareScriptCall(AURA_SCRIPT_RESOURCE_CHANGE);
+        std::list<AuraScript::OnResourceChangeHandler>::iterator hookItrEnd = (*scritr)->OnResourceChange.end(), hookItr = (*scritr)->OnResourceChange.begin();
+        for (; hookItr != hookItrEnd; ++hookItr)
+            hookItr->Call(*scritr, power, amount, reason, reasonObj);
+
+        (*scritr)->_FinishScriptCall();
+    }
+    if (IsRemoved())
+        return false;
+    return true;
+}
+bool Aura::CallScriptOnMovementPacket()
+{
+    for (std::list<AuraScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
+    {
+        (*scritr)->_PrepareScriptCall(AURA_SCRIPT_MOVEMENT_PACKET);
+        std::list<AuraScript::OnMovementPacketHandler>::iterator hookItrEnd = (*scritr)->OnMovementPacket.end(), hookItr = (*scritr)->OnMovementPacket.begin();
+        for (; hookItr != hookItrEnd; ++hookItr)
+            hookItr->Call(*scritr);
+
+        (*scritr)->_FinishScriptCall();
+    }
+    if (IsRemoved())
+        return false;
+    return true;
+}
+bool Aura::CallScriptAuraAddRemove(Aura* aura, bool added)
+{
+    for (std::list<AuraScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
+    {
+        (*scritr)->_PrepareScriptCall(AURA_SCRIPT_AURA_ADDREMOVE);
+        std::list<AuraScript::AuraAddRemoveHandler>::iterator hookItrEnd = (*scritr)->AuraAddRemove.end(), hookItr = (*scritr)->AuraAddRemove.begin();
+        for (; hookItr != hookItrEnd; ++hookItr)
+            hookItr->Call(*scritr, aura, added);
+
+        (*scritr)->_FinishScriptCall();
+    }
+    if (IsRemoved())
+        return false;
+    return true;
+} 
 
 void Aura::SetTriggeredByAuraSpellInfo(SpellInfo const* triggeredByAuraSpellInfo)
 {

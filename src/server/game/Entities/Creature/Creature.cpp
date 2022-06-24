@@ -971,7 +971,7 @@ void Creature::Regenerate(Powers power)
 
     addvalue += GetTotalAuraModifierByMiscValue(SPELL_AURA_MOD_POWER_REGEN, power) * (power == POWER_FOCUS ? PET_FOCUS_REGEN_INTERVAL.count() : CREATURE_REGEN_INTERVAL) / (5 * IN_MILLISECONDS);
 
-    ModifyPower(power, int32(addvalue));
+    ModifyPower(power, int32(addvalue), true, PowerChangeReason::REASON_REGENERATION);
 }
 
 void Creature::RegenerateHealth()
@@ -1765,7 +1765,10 @@ void Creature::LoadEquipment(int8 id, bool force /*= false*/)
         if (force)
         {
             for (uint8 i = 0; i < MAX_EQUIPMENT_ITEMS; ++i)
+            {
                 SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + i, 0);
+                itemTemplateEquipped[i] = nullptr;
+            }
             m_equipmentId = 0;
         }
         return;
@@ -1774,10 +1777,12 @@ void Creature::LoadEquipment(int8 id, bool force /*= false*/)
     EquipmentInfo const* einfo = sObjectMgr->GetEquipmentInfo(GetEntry(), id);
     if (!einfo)
         return;
-
     m_equipmentId = id;
     for (uint8 i = 0; i < 3; ++i)
+    {
         SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + i, einfo->ItemEntry[i]);
+        itemTemplateEquipped[i] = ObjectMgr::instance()->GetItemTemplate(einfo->ItemEntry[i]);
+    }
 }
 
 bool Creature::hasQuest(uint32 quest_id) const

@@ -937,6 +937,36 @@ void AuraScript::EffectProcHandler::Call(AuraScript* auraScript, AuraEffect cons
     (auraScript->*_EffectHandlerScript)(aurEff, eventInfo);
 }
 
+AuraScript::OnResourceChangeHandler::OnResourceChangeHandler(OnResourceChangeFnType onResourceChangeScript)
+{
+    _OnResouceChangeHandlerScript = onResourceChangeScript;
+}
+
+void AuraScript::OnResourceChangeHandler::Call(AuraScript* auraScript, Powers power, int amount, PowerChangeReason reason, std::variant<Spell*, Aura*> reasonObj)
+{
+    (auraScript->*_OnResouceChangeHandlerScript)(power, amount, reason, reasonObj);
+}
+
+AuraScript::OnMovementPacketHandler::OnMovementPacketHandler(OnMovementPacketFnType onMovementPacketScript)
+{
+    _OnMovementPacketHandlerScript = onMovementPacketScript;
+}
+
+void AuraScript::OnMovementPacketHandler::Call(AuraScript* auraScript)
+{
+    (auraScript->*_OnMovementPacketHandlerScript)();
+}
+
+AuraScript::AuraAddRemoveHandler::AuraAddRemoveHandler(AuraAddRemoveFnType auraAddRemoveScript)
+{
+    _AuraAddRemoveHandlerScript = auraAddRemoveScript;
+}
+
+void AuraScript::AuraAddRemoveHandler::Call(AuraScript* auraScript, Aura* aura, bool added)
+{
+    (auraScript->*_AuraAddRemoveHandlerScript)(aura, added);
+}
+
 bool AuraScript::_Load(Aura* aura)
 {
     m_aura = aura;

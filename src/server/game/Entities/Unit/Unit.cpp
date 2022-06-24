@@ -399,6 +399,59 @@ Unit::~Unit()
     HandleSafeUnitPointersOnDelete(this);
 }
 
+void Unit::Relocate(float x, float y)
+{
+    m_positionXprev = m_positionX;
+    m_positionYprev = m_positionY;
+    Position::Relocate(x, y);
+
+    std::vector< AuraApplicationMap::iterator> passed = {};
+    AuraApplicationMap appliedAurasCopy = m_appliedAuras;
+    for (AuraApplicationMap::iterator it = appliedAurasCopy.begin(); it != appliedAurasCopy.end(); )
+    {
+        if (it->second)
+        {
+            bool succ = it->second->GetBase()->CallScriptOnMovementPacket();
+            if (!succ)
+            {
+                appliedAurasCopy.erase(it);
+                int remaining = -1;
+                bool exit = false;
+                for (AuraApplicationMap::iterator it2 = appliedAurasCopy.begin(); it2 != appliedAurasCopy.end();)
+                {
+                    for (auto o : passed)
+                    {
+                        if (o == it2)
+                        {
+                            ++it2;
+                            remaining++;
+                        }
+                        else
+                        {
+                            passed.erase(passed.begin() + remaining + 1, passed.end());
+                            exit = true;
+                            break;
+                        }
+                    }
+                    if (exit)
+                        break;
+                }
+                if (remaining >= 0)
+                {
+                    it = passed[remaining];
+                    ++it;
+                }
+                else
+                    it = appliedAurasCopy.begin();
+                continue;
+            }
+        }
+        passed.push_back(it);
+        ++it;
+    }
+
+}
+
 void Unit::Update(uint32 p_time)
 {
     sScriptMgr->OnUnitUpdate(this, p_time);
@@ -4791,6 +4844,7 @@ void Unit::RemoveAura(AuraApplication* aurApp, AuraRemoveMode mode)
         else
             ++iter;
     }
+
 }
 
 void Unit::RemoveAura(Aura* aura, AuraRemoveMode mode)
@@ -4799,6 +4853,51 @@ void Unit::RemoveAura(Aura* aura, AuraRemoveMode mode)
         return;
     if (AuraApplication* aurApp = aura->GetApplicationOfTarget(GetGUID()))
         RemoveAura(aurApp, mode);
+  
+    std::vector< AuraApplicationMap::iterator> passed = {};
+    AuraApplicationMap appliedAurasCopy = m_appliedAuras;
+    for (AuraApplicationMap::iterator it = appliedAurasCopy.begin(); it != appliedAurasCopy.end(); )
+    {
+        if (it->second)
+        {
+            bool succ = it->second->GetBase()->CallScriptAuraAddRemove(aura, false);
+            if (!succ)
+            {
+                appliedAurasCopy.erase(it);
+                int remaining = -1;
+                bool exit = false;
+                for (AuraApplicationMap::iterator it2 = appliedAurasCopy.begin(); it2 != appliedAurasCopy.end();)
+                {
+                    for (auto o : passed)
+                    {
+                        if (o == it2)
+                        {
+                            ++it2;
+                            remaining++;
+                        }
+                        else
+                        {
+                            passed.erase(passed.begin() + remaining + 1, passed.end());
+                            exit = true;
+                            break;
+                        }
+                    }
+                    if (exit)
+                        break;
+                }
+                if (remaining >= 0)
+                {
+                    it = passed[remaining];
+                    ++it;
+                }
+                else
+                    it = appliedAurasCopy.begin();
+                continue;
+            }
+        }
+        passed.push_back(it);
+        ++it;
+    }  
 }
 
 void Unit::RemoveOwnedAuras(std::function<bool(Aura const*)> const& check)
@@ -14069,7 +14168,7 @@ int32 Unit::GetHealthGain(int32 dVal)
 }
 
 // returns negative amount on power reduction
-int32 Unit::ModifyPower(Powers power, int32 dVal, bool withPowerUpdate /*= true*/)
+int32 Unit::ModifyPower(Powers power, int32 dVal, bool withPowerUpdate /*= true*/, PowerChangeReason reason, std::variant<Spell*, Aura*> reasonObj)
 {
     if (dVal == 0)
         return 0;
@@ -14097,17 +14196,65 @@ int32 Unit::ModifyPower(Powers power, int32 dVal, bool withPowerUpdate /*= true*
         SetPower(power, maxPower, withPowerUpdate);
         gain = maxPower - curPower;
     }
+    if (gain != 0)
+    {
+
+        std::vector< AuraApplicationMap::iterator> passed = {};
+        AuraApplicationMap appliedAurasCopy = m_appliedAuras;
+        for (AuraApplicationMap::iterator it = appliedAurasCopy.begin(); it != appliedAurasCopy.end(); )
+        {
+            if (it->second)
+            {
+                bool succ = it->second->GetBase()->CallScriptOnResourceChange(power, gain, reason, reasonObj);
+                if (!succ)
+                {
+                    appliedAurasCopy.erase(it);
+                    int remaining = -1;
+                    bool exit = false;
+                    for (AuraApplicationMap::iterator it2 = appliedAurasCopy.begin(); it2 != appliedAurasCopy.end();)
+                    {
+                        for (auto o : passed)
+                        {
+                            if (o == it2)
+                            {
+                                ++it2;
+                                remaining++;
+                            }
+                            else
+                            {
+                                passed.erase(passed.begin() + remaining + 1, passed.end());
+                                exit = true;
+                                break;
+                            }
+                        }
+                        if (exit)
+                            break;
+                    }
+                    if (remaining >= 0)
+                    {
+                        it = passed[remaining];
+                        ++it;
+                    }
+                    else
+                        it = appliedAurasCopy.begin();
+                    continue;
+                }
+            }
+            passed.push_back(it);
+            ++it;
+        } 
+    }
 
     return gain;
 }
 
 // returns negative amount on power reduction
-int32 Unit::ModifyPowerPct(Powers power, float pct, bool apply)
+int32 Unit::ModifyPowerPct(Powers power, float pct, bool apply, PowerChangeReason reason, std::variant<Spell*, Aura*> reasonObj)
 {
     float amount = (float)GetMaxPower(power);
     ApplyPercentModFloatVar(amount, pct, apply);
 
-    return ModifyPower(power, (int32)amount - (int32)GetMaxPower(power));
+    return ModifyPower(power, (int32)amount - (int32)GetMaxPower(power), true, reason, reasonObj);
 }
 
 bool Unit::IsAlwaysVisibleFor(WorldObject const* seer) const
@@ -18995,6 +19142,8 @@ Aura* Unit::AddAura(uint32 spellId, Unit* target)
     if (!target->IsAlive() && !spellInfo->HasAttribute(SPELL_ATTR0_PASSIVE) && !spellInfo->HasAttribute(SPELL_ATTR2_ALLOW_DEAD_TARGET))
         return nullptr;
 
+ 
+
     return AddAura(spellInfo, MAX_EFFECT_MASK, target);
 }
 
@@ -19016,8 +19165,51 @@ Aura* Unit::AddAura(SpellInfo const* spellInfo, uint8 effMask, Unit* target)
 
     if (Aura* aura = Aura::TryRefreshStackOrCreate(spellInfo, effMask, target, this))
     {
-        aura->ApplyForTargets();
-        return aura;
+        std::vector< AuraApplicationMap::iterator> passed = {};
+        AuraApplicationMap appliedAurasCopy = m_appliedAuras;
+        for (AuraApplicationMap::iterator it = appliedAurasCopy.begin(); it != appliedAurasCopy.end(); )
+        {
+            if (it->second)
+            {
+                bool succ = it->second->GetBase()->CallScriptAuraAddRemove(aura, true);
+                if (!succ)
+                {
+                    appliedAurasCopy.erase(it);
+                    int remaining = -1;
+                    bool exit = false;
+                    for (AuraApplicationMap::iterator it2 = appliedAurasCopy.begin(); it2 != appliedAurasCopy.end();)
+                    {
+                        for (auto o : passed)
+                        {
+                            if (o == it2)
+                            {
+                                ++it2;
+                                remaining++;
+                            }
+                            else
+                            {
+                                passed.erase(passed.begin() + remaining + 1, passed.end());
+                                exit = true;
+                                break;
+                            }
+                        }
+                        if (exit)
+                            break;
+                    }
+                    if (remaining >= 0)
+                    {
+                        it = passed[remaining];
+                        ++it;
+                    }
+                    else
+                        it = appliedAurasCopy.begin();
+                    continue;
+                }
+            }
+            passed.push_back(it);
+            ++it;
+        }
+        return aura; 
     }
     return nullptr;
 }
@@ -19664,7 +19856,27 @@ void Unit::JumpTo(WorldObject* obj, float speedZ)
     float speedXY = GetExactDist2d(x, y) * 10.0f / speedZ;
     GetMotionMaster()->MoveJump(x, y, z, speedXY, speedZ);
 }
+void Unit::Roll(float speedXY, float speedZ, float yaw)
+{
+    float angle = (yaw - M_PI);
+    if (GetTypeId() == TYPEID_UNIT)
+        GetMotionMaster()->MoveJumpTo(angle, speedXY, speedZ);
+    else
+    {
+        float vcos = cos(angle + GetOrientation());
+        float vsin = std::sin(angle + GetOrientation());
 
+        WorldPacket data(SMSG_MOVE_KNOCK_BACK, (8 + 4 + 4 + 4 + 4 + 4));
+        data << GetPackGUID();
+        data << uint32(0);      // Sequence
+        data << float(vcos);    // x direction
+        data << float(vsin);    // y direction
+        data << float(speedXY); // Horizontal speed
+        data << float(-speedZ); // Z Movement speed (vertical)
+
+        ToPlayer()->GetSession()->SendPacket(&data);
+    }
+}
 bool Unit::HandleSpellClick(Unit* clicker, int8 seatId)
 {
     Creature* creature = ToCreature();
@@ -20018,7 +20230,8 @@ void Unit::BuildMovementPacket(ByteBuffer* data) const
     *data << GetPositionY();
     *data << GetPositionZ();
     *data << GetOrientation();
-
+     
+      
     // 0x00000200
     if (GetUnitMovementFlags() & MOVEMENTFLAG_ONTRANSPORT)
     {
@@ -20059,6 +20272,7 @@ void Unit::BuildMovementPacket(ByteBuffer* data) const
     // 0x04000000
     if (GetUnitMovementFlags() & MOVEMENTFLAG_SPLINE_ELEVATION)
         *data << (float)m_movementInfo.splineElevation;
+    
 }
 
 bool Unit::IsFalling() const
@@ -20273,7 +20487,7 @@ void Unit::RewardRage(uint32 damage, uint32 weaponSpeedHitFactor, bool attacker)
 
     addRage *= sWorld->getRate(RATE_POWER_RAGE_INCOME);
 
-    ModifyPower(POWER_RAGE, uint32(addRage * 10));
+    ModifyPower(POWER_RAGE, uint32(addRage * 10), true, PowerChangeReason::REASON_ATTACK_GENERATED);
 }
 
 void Unit::StopAttackFaction(uint32 faction_id)

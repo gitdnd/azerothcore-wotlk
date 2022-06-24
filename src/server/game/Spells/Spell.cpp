@@ -3442,9 +3442,6 @@ bool Spell::UpdateChanneledTargetList()
 SpellCastResult Spell::prepare(SpellCastTargets const* targets, AuraEffect const* triggeredByAura)
 {
     InitExplicitTargets(*targets);
-    CallScriptBeforeSpellLoadHandlers();
-    if (skip)
-        return SPELL_FAILED_UNKNOWN;
 
     if (m_CastItem)
     {
@@ -3515,6 +3512,14 @@ SpellCastResult Spell::prepare(SpellCastTargets const* targets, AuraEffect const
     }
 
     LoadScripts();
+
+    CallScriptBeforeSpellLoadHandlers();
+    if (skip)
+    {
+        finish(false);
+        cancel();
+        return SPELL_FAILED_UNKNOWN;
+    }
 
     OnSpellLaunch();
 
@@ -5334,9 +5339,9 @@ void Spell::TakePower()
     }
 
     if (hit)
-        m_caster->ModifyPower(PowerType, -m_powerCost);
+        m_caster->ModifyPower(PowerType, -m_powerCost, true, PowerChangeReason::REASON_SPELL_COST, this);
     else
-        m_caster->ModifyPower(PowerType, -irand(0, m_powerCost / 4));
+        m_caster->ModifyPower(PowerType, -irand(0, m_powerCost / 4), true, PowerChangeReason::REASON_SPELL_COST, this);
 
     // Set the five second timer
     if (PowerType == POWER_MANA && m_powerCost > 0)
@@ -5494,7 +5499,7 @@ void Spell::TakeRunePower(bool didHit)
     // you can gain some runic power when use runes
     if (didHit)
         if (int32 rp = int32(runeCostData->runePowerGain * sWorld->getRate(RATE_POWER_RUNICPOWER_INCOME)))
-            player->ModifyPower(POWER_RUNIC_POWER, int32(rp));
+            player->ModifyPower(POWER_RUNIC_POWER, int32(rp), true, PowerChangeReason::REASON_SPELL_GENERATED, this);
 }
 
 void Spell::TakeReagents()

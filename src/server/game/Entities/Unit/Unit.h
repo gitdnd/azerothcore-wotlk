@@ -35,6 +35,7 @@
 #include <functional>
 #include <optional>
 #include <utility>
+#include <variant>
 
 #define WORLD_TRIGGER   12999
 
@@ -1293,6 +1294,12 @@ private:
 
 class Unit : public WorldObject
 {
+    float m_positionXprev = 0;
+    float m_positionYprev = 0;
+    float m_positionZprev = 0;
+
+    float m_orientationprev = 0;
+
 public:
     typedef std::unordered_set<Unit*> AttackerSet;
     typedef std::set<Unit*> ControlSet;
@@ -1318,6 +1325,43 @@ public:
 
     ~Unit() override;
 
+    void Relocate(float x, float y);
+    void Relocate(float x, float y, float z)
+    {
+        m_positionZprev = m_positionZ;
+        Position::Relocate(x, y, z);
+    }
+    virtual void Relocate(float x, float y, float z, float orientation)
+    {
+        Relocate(x, y, z);
+        SetOrientation(orientation);
+    }
+
+    virtual void Relocate(const Position& pos)
+    {
+        Relocate(pos.m_positionX, pos.m_positionY, pos.m_positionZ, pos.m_orientation);
+    }
+
+    virtual void Relocate(const Position* pos)
+    {
+        Relocate(pos->m_positionX, pos->m_positionY, pos->m_positionZ, pos->m_orientation);
+    }
+
+    void GetOldPosition(float& x, float& y, float& z) const
+    {
+        x = m_positionXprev;
+        y = m_positionYprev;
+        z = m_positionZprev;
+    }
+    virtual void SetOrientation(float orientation)
+    {
+        if (!HasUnitState(UNIT_STATE_CANNOT_TURN))
+        {
+            m_orientationprev = m_orientation;
+            m_orientation = orientation;
+        }
+    }
+    float GetOldOrientation() { return m_orientationprev; }
     UnitAI* GetAI() { return i_AI; }
     void SetAI(UnitAI* newAI) { i_AI = newAI; }
 
@@ -1380,13 +1424,7 @@ public:
             return *(m_attackers.begin());
 
         return nullptr;
-    }
-
-    void SetOrientation(float orientation)
-    {
-        if (!HasUnitState(UNIT_STATE_CANNOT_TURN))
-            m_orientation = orientation;
-    }
+    } 
 
     bool Attack(Unit* victim, bool meleeAttack);
     void CastStop(uint32 except_spellid = 0, bool withInstant = true);
@@ -1476,8 +1514,8 @@ public:
     void SetPower(Powers power, uint32 val, bool withPowerUpdate = true);
     void SetMaxPower(Powers power, uint32 val);
     // returns the change in power
-    int32 ModifyPower(Powers power, int32 val, bool withPowerUpdate = true);
-    int32 ModifyPowerPct(Powers power, float pct, bool apply = true);
+    int32 ModifyPower(Powers power, int32 val, bool withPowerUpdate = true, PowerChangeReason reason = PowerChangeReason::REASON_NONE, std::variant<Spell*, Aura*> reasonObj = (Aura*)nullptr);
+    int32 ModifyPowerPct(Powers power, float pct, bool apply = true, PowerChangeReason reason = PowerChangeReason::REASON_NONE, std::variant<Spell*, Aura*> reasonObj = (Aura*)nullptr);
 
     [[nodiscard]] uint32 GetAttackTime(WeaponAttackType att) const
     {
@@ -1785,6 +1823,7 @@ public:
     void KnockbackFrom(float x, float y, float speedXY, float speedZ);
     void JumpTo(float speedXY, float speedZ, bool forward = true);
     void JumpTo(WorldObject* obj, float speedZ);
+    void Roll(float speedXY, float speedZ, float yaw);
 
     void SendMonsterMove(float NewPosX, float NewPosY, float NewPosZ, uint32 TransitTime, SplineFlags sf = SPLINEFLAG_WALK_MODE); // pussywizard: need to just send packet, with no movement/spline
     void MonsterMoveWithSpeed(float x, float y, float z, float speed);

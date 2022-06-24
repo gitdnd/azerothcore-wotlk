@@ -2,4 +2,15 @@ REPLACE INTO `spell_script_names` (`spell_id`, `ScriptName`) VALUES
 	(100002, 'spell_elk_attack_hit'),
 	(100003, 'spell_elk_attack'),
 	(100006, 'spell_elk_deflect'),
-	(100008, 'spell_elk_deflect');
+	(100008, 'spell_elk_deflect'),
+	(100011, 'spell_elk_double_jump'),
+	(100013, 'spell_elk_rush'),
+	(100015, 'spell_elk_double_jump'),
+	(100017, 'spell_elk_double_jump'),
+	(100018, 'spell_elk_double_jump'),
+	(100019, 'spell_elk_double_jump'),
+	(100020, 'spell_elk_double_jump'),
+	(100021, 'spell_elk_double_jump'),
+	(100022, 'spell_elk_double_jump'),
+	(100023, 'spell_elk_sprint_aura'),
+	(100024, 'spell_elk_dash_aura');

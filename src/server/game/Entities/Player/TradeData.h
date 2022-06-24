@@ -64,7 +64,7 @@ public:                                                 // constructors
 private:                                                // internal functions
     void Update(bool for_trader = true);
 
-private:                                                // fields
+protected:                                                // fields
     Player*    m_player;                                // Player who own of this TradeData
     Player*    m_trader;                                // Player who trade with m_player
 

@@ -5078,15 +5078,26 @@ void Spell::EffectLeapBack(SpellEffIndex effIndex)
     float speedz = damage / 10.0f;
     //1891: Disengage
     m_caster->JumpTo(speedxy, speedz, m_spellInfo->SpellFamilyName != SPELLFAMILY_HUNTER);
+    
+    if (m_caster->GetTypeId() == TYPEID_PLAYER)
+    {
+        sScriptMgr->AnticheatSetUnderACKmount(m_caster->ToPlayer());
+        m_caster->ToPlayer()->SetFallInformation(GameTime::GetGameTime().count(), m_caster->GetPositionZ());
+    } 
+}
+
+void Spell::EffectRoll(SpellEffIndex effIndex, float extraSpeed)
+{
+    float speedxy = m_spellInfo->Effects[effIndex].MiscValue / 10.0f + extraSpeed;
+    float speedz = damage / 10.0f;
+
+    m_caster->Roll(speedxy, speedz, float(m_spellInfo->Effects[effIndex].MiscValueB)/100.0f);
 
     if (m_caster->GetTypeId() == TYPEID_PLAYER)
     {
         sScriptMgr->AnticheatSetUnderACKmount(m_caster->ToPlayer());
-    }
-
-    // xinef: changes fall time
-    if (m_caster->GetTypeId() == TYPEID_PLAYER)
         m_caster->ToPlayer()->SetFallInformation(GameTime::GetGameTime().count(), m_caster->GetPositionZ());
+    } 
 }
 
 void Spell::EffectQuestClear(SpellEffIndex effIndex)

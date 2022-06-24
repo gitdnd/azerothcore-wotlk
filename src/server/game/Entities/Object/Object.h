@@ -395,43 +395,6 @@ protected:
     explicit WorldObject(bool isWorldObject); //note: here it means if it is in grid object list or world object list
 public:
 
-    float m_positionXprev = 0;
-    float m_positionYprev = 0;
-    float m_positionZprev = 0;
-
-    void Relocate(float x, float y)
-    {
-        m_positionXprev = m_positionX;
-        m_positionYprev = m_positionY;
-        Position::Relocate(x, y);
-    }
-    void Relocate(float x, float y, float z)
-    {
-        m_positionZprev = m_positionZ;
-        Position::Relocate(x, y, z);
-    }
-    virtual void Relocate(float x, float y, float z, float orientation)
-    {
-        Relocate(x, y, z);
-        SetOrientation(orientation);
-    }
-
-    virtual void Relocate(const Position& pos)
-    {
-        Relocate(pos.m_positionX, pos.m_positionY, pos.m_positionZ, pos.m_orientation);
-    }
-
-    virtual void Relocate(const Position* pos)
-    {
-        Relocate(pos->m_positionX, pos->m_positionY, pos->m_positionZ, pos->m_orientation);
-    }
-
-    void GetOldPosition(float& x, float& y, float& z) const
-    {
-        x = m_positionXprev;
-        y = m_positionYprev;
-        z = m_positionZprev;
-    }
     ~WorldObject() override;
 
     virtual void Update(uint32 /*time_diff*/);

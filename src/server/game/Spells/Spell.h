@@ -339,6 +339,7 @@ public:
     void EffectJump(SpellEffIndex effIndex);
     void EffectJumpDest(SpellEffIndex effIndex);
     void EffectLeapBack(SpellEffIndex effIndex);
+    void EffectRoll(SpellEffIndex effIndex, float extraSpeed = 0);
     void EffectQuestClear(SpellEffIndex effIndex);
     void EffectTeleUnitsFaceCaster(SpellEffIndex effIndex);
     void EffectLearnSkill(SpellEffIndex effIndex);
@@ -531,7 +532,7 @@ public:
     void HandleEffects(Unit* pUnitTarget, Item* pItemTarget, GameObject* pGOTarget, uint32 i, SpellEffectHandleMode mode);
     void HandleThreatSpells();
 
-    SpellInfo const* const m_spellInfo;
+    const SpellInfo* m_spellInfo;
     Item* m_CastItem;
     Item* m_weaponItem;
     ObjectGuid m_castItemGUID;
@@ -586,6 +587,7 @@ public:
     Unit* GetCaster() const { return m_caster; }
     Unit* GetOriginalCaster() const { return m_originalCaster; }
     SpellInfo const* GetSpellInfo() const { return m_spellInfo; }
+	void SetSpellInfo(const SpellInfo* newInfo) { m_spellInfo = newInfo; }
     int32 GetPowerCost() const { return m_powerCost; }
 
     bool UpdatePointers();                              // must be used at call Spell code after time delay (non triggered spell cast/update spell call/etc)
@@ -826,6 +828,8 @@ public:
     std::map<MapDummy, std::optional<std::any>>& GetTriggerDummy() { return triggerDummy; }
     void AddTriggerDummy(MapDummy key, std::optional<std::any> value) { triggerDummy.emplace(key, value); }
     bool skip = false;
+
+    void ModifyDamage(int amount) { damage += amount; }
 };
 
 namespace Acore

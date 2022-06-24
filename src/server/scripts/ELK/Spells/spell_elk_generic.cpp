@@ -274,7 +274,112 @@ class spell_elk_deflect : public SpellScript
         BeforeCastTime += SpellCastFn(spell_elk_deflect::SpamCheck);
     }
 };
- 
+
+class spell_elk_double_jump : public SpellScript
+{
+    PrepareSpellScript(spell_elk_double_jump);
+    
+    void DoubleJump()
+    {
+        auto caster = GetCaster();
+        if (caster->HasAura(100016))
+            return;
+        auto spell = GetSpell();
+        spell->ModifyDamage(spell->m_spellInfo->Effects[0].BasePoints * 1.25);
+        spell->EffectRoll(EFFECT_0, caster->GetSpeed(MOVE_RUN) - 7);
+        caster->AddAura(100016, caster);
+    }
+    void Register() override
+    {
+
+        AfterCast += SpellCastFn(spell_elk_double_jump::DoubleJump);
+    }
+};
+
+class spell_elk_rush : public SpellScript
+{
+    PrepareSpellScript(spell_elk_rush);
+
+    void Rush()
+    {
+        auto caster = GetCaster();
+        auto spell = GetSpell();
+        spell->EffectRoll(EFFECT_0);
+    }
+    void Register() override
+    {
+        AfterCast += SpellCastFn(spell_elk_rush::Rush);
+    }
+};
+
+class spell_elk_sprint_aura : public AuraScript
+{
+    PrepareAuraScript(spell_elk_sprint_aura);
+    Unit* caster;
+    void Cast(AuraEffect const*  /*aurEff*/, AuraEffectHandleModes  /*mode*/)
+    {
+        caster = GetCaster();
+    }
+    void MovePacket()
+    {
+        if (caster->IsFalling())
+            return;
+        float facing = abs(caster->NormalizeOrientation(caster->GetOldOrientation()) - caster->NormalizeOrientation(caster->GetOrientation()));
+        float x, y, z = 0;
+        caster->GetOldPosition(x, y, z);
+        if (facing < 0.7)
+        {
+            float angle = abs(Position(x, y, z, caster->GetOldOrientation()).GetRelativeAngle(caster->GetPositionX(), caster->GetPositionY()));
+            if (angle < 0.7)
+            {
+                return;
+            }
+        } 
+        caster->RemoveAura(GetAura());
+    }
+    void EnergyCheck(AuraEffect const*  /*aurEff*/)
+    {
+        if(caster->GetPower(POWER_ENERGY) < abs(GetSpellInfo()->Effects[1].BasePoints))
+            caster->RemoveAura(GetAura());
+    }
+    void Register() override
+    {
+        OnEffectPeriodic += AuraEffectPeriodicFn(spell_elk_sprint_aura::EnergyCheck, EFFECT_1, SPELL_AURA_PERIODIC_ENERGIZE);
+        OnEffectApply += AuraEffectApplyFn(spell_elk_sprint_aura::Cast, EFFECT_0, SPELL_AURA_MOD_INCREASE_SPEED, AURA_EFFECT_HANDLE_REAL);
+        OnMovementPacket += OnMovementPacketFn(spell_elk_sprint_aura::MovePacket);
+    }
+};
+class spell_elk_dash_aura : public AuraScript
+{
+    PrepareAuraScript(spell_elk_dash_aura);
+    Unit* caster;
+    void Absorb(AuraEffect* aurEff, DamageInfo& dmgInfo, uint32& absorbAmount)
+    {
+        dmgInfo.ModifyDamage(-1 * dmgInfo.GetDamage());
+    }
+    void Cast(AuraEffect const*  /*aurEff*/, AuraEffectHandleModes  /*mode*/)
+    {
+        caster = GetCaster();
+    }
+    void MovePacket()
+    {
+        float x, y, z = 0;
+        caster->GetOldPosition(x, y, z);
+        float degree = abs(Position(x, y, z, 0).GetRelativeAngle(caster->GetPositionX(), caster->GetPositionY()));
+        if ((degree > 2.35 && degree < 3.926991) || (degree > 0.78 && degree < 5.49))
+        {
+            return;
+        }  
+        GetAura()->Remove();
+    } 
+    void Register() override
+    {
+        OnEffectApply += AuraEffectApplyFn(spell_elk_dash_aura::Cast, EFFECT_0, SPELL_AURA_MOD_INCREASE_SPEED, AURA_EFFECT_HANDLE_REAL);
+        OnMovementPacket += OnMovementPacketFn(spell_elk_dash_aura::MovePacket);
+        OnEffectAbsorb += AuraEffectAbsorbFn(spell_elk_dash_aura::Absorb, EFFECT_1);
+    }
+
+};
 
 
 void AddSC_elk_spell_scripts()
@@ -282,5 +387,10 @@ void AddSC_elk_spell_scripts()
     RegisterSpellScript(spell_elk_attack);
     RegisterSpellScript(spell_elk_attack_hit);
     RegisterSpellAndAuraScriptPair(spell_elk_deflect, spell_elk_deflect_aura);
+    RegisterSpellScript(spell_elk_double_jump);
+    RegisterSpellScript(spell_elk_rush);
+    RegisterSpellScript(spell_elk_sprint_aura);
+    RegisterSpellScript(spell_elk_dash_aura);
+    
 
 }

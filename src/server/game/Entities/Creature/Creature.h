@@ -378,6 +378,7 @@ public:
 
     std::string GetDebugInfo() const override;
 
+    std::vector<const ItemTemplate*> GetWeaponEquippedEntry() { return itemTemplateEquipped; }
 protected:
     bool CreateFromProto(ObjectGuid::LowType guidlow, uint32 Entry, uint32 vehId, const CreatureData* data = nullptr);
     bool InitEntry(uint32 entry, const CreatureData* data = nullptr);
@@ -436,6 +437,7 @@ protected:
     bool CanAlwaysSee(WorldObject const* obj) const override;
     bool IsAlwaysDetectableFor(WorldObject const* seer) const override;
 
+    std::vector<const ItemTemplate*> itemTemplateEquipped = {nullptr, nullptr, nullptr};
 private:
     void ForcedDespawn(uint32 timeMSToDespawn = 0, Seconds forcedRespawnTimer = 0s);
 

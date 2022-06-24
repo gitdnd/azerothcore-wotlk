@@ -16,49 +16,69 @@ enum OutsideSpells
 {
 
 };
-enum Spells
+ enum Spells : uint32
 {
-    ATTACK_HIT =            100002,
-    ATTACK =                100003,
-    ATTACK_SLOW_DEBUFF =    100004,
-    ANIMATION_RESET =       100005,
-    SPELL_DEFLECT =         100006,
-    DEFLECT_FATIGUE =       100007,
-    SPELL_DEFLECT_SHORT =   100008,
-    SPELL_CRUSADER_STRIKE,
-    SPELL_UNDEATH_STRIKE
+    ATTACK_HIT =                100002,
+    ATTACK =                    100003,
+    ATTACK_SLOW_DEBUFF =        100004,
+    ANIMATION_RESET =           100005,
+    SPELL_DEFLECT =             100006,
+    DEFLECT_FATIGUE =           100007,
+    SPELL_DEFLECT_SHORT =       100008,
+    CRITICAL_ATTACK =           100010,
+    SPELL_DOUBLE_JUMP_BACK =    100011,
+    SPELL_FEL_RUSH_BUFF =       100012,
+    ATTACK1H =                  100025,
+    ATTACK2HL =                 100026,
+    ATTACK1HP =                 100027,
+    ATTACKOFF =                 100028,
+    ATTACKOFFP =                100029,
+    ATTACKUNARMED =             100030,
+    ATTACKSHIELD =              100031,
+    CRITICAL_ATTACK1H =         100032,
+    CRITICAL_ATTACKUNARMED =    100033,
+    CRITICAL_ATTACKMUTILATE =   100034,
+    DEFLECT2HL =                100035,
+    DEFLECT1H =                 100036,
+    DEFLECTUNARMED =            100037,
+    DEFLECTSHEILDBLOCK =        100038,
 };
 enum SpellsC // Creature Spells.
 {
-    MIND_FLAY =             150001,
-    REJUVINATION =          150002,
-    FIREBALL =              150003,
-    THROW =                 150004,
-    FRENZY =                150005,
-    SHADOW_WORD_PAIN =      150006,
-    ARCANE_BOLT =           150007,
-    FEATHER_BURST =         150008,
-    SUNDER_ARMOR =          150009,
-    MIND_BLAST =            150010,
-    WITHERED_TOUCH =        150011,
-    EVASION =               150012,
-    HEAD_CRACK =            150013,
-    POISON =                150014,
-    SLOW =                  150015,
-    DECAYED_AGILITY =       150016,
-    FAERIE_FIRE =           150017,
-    MOONFIRE =              150018,
-    ARCANE_RESIDUE =        150019,
-    CHAIN_LIGHTNING =       150020,
-    FROST_SHOCK =           150021,
-    HEALING_WAVE =          150022,
-    WITHER_STRIKE =         150023,
-    FLASH_HEAL =            150024,
-    LIGHTNING_BOLT =        150025,
-    WRATH =                 150026,
-    FEAR =                  150027,
-    ARCANE_MISSILES =       150028,
-    ARCANE_TORRENT =        150029,
+    MIND_FLAY =                 150001,
+    REJUVINATION =              150002,
+    FIREBALL =                  150003,
+    THROW =                     150004,
+    FRENZY =                    150005,
+    SHADOW_WORD_PAIN =          150006,
+    ARCANE_BOLT =               150007,
+    FEATHER_BURST =             150008,
+    SUNDER_ARMOR =              150009,
+    MIND_BLAST =                150010,
+    WITHERED_TOUCH =            150011,
+    EVASION =                   150012,
+    HEAD_CRACK =                150013,
+    POISON =                    150014,
+    SLOW =                      150015,
+    DECAYED_AGILITY =           150016,
+    FAERIE_FIRE =               150017,
+    MOONFIRE =                  150018,
+    ARCANE_RESIDUE =            150019,
+    CHAIN_LIGHTNING =           150020,
+    FROST_SHOCK =               150021,
+    HEALING_WAVE =              150022,
+    WITHER_STRIKE =             150023,
+    FLASH_HEAL =                150024,
+    LIGHTNING_BOLT =            150025,
+    WRATH =                     150026,
+    FEAR =                      150027,
+    ARCANE_MISSILES =           150028,
+    ARCANE_TORRENT =            150029,
+};
+enum SpellClass : uint32
+{
+    SPELL_CRUSADER_STRIKE,
+    SPELL_UNDEATH_STRIKE
 };
 
 
@@ -67,9 +87,116 @@ class spell_elk_attack : public SpellScript
 {
     PrepareSpellScript(spell_elk_attack);
     Unit* caster;
+    Spell* spell;
+
+
+
+
+
+    void SpellClick()
+    {
+        spell = GetSpell();
+        caster = GetCaster();
+        Spell* curAtk = caster->GetCurrentSpell(CURRENT_CHANNELED_SPELL);
+        if (curAtk)
+        {
+            if (curAtk->m_spellInfo->Id == ATTACK)
+            {
+                spell->skip = true;
+                return;
+            }
+        }
+        else
+        {
+            curAtk = caster->GetCurrentSpell(CURRENT_GENERIC_SPELL);
+            if (curAtk)
+            {
+                if (curAtk->m_spellInfo->Id == ATTACK_HIT)
+                {
+                    spell->skip = true;
+                    return;
+                }
+            }
+        }
+        if (caster->IsPlayer())
+        {
+
+        }
+        else
+        {
+            Creature* creature = caster->ToCreature();
+            if (creature)
+            {
+                int weps = 0;
+                int anim = RAND(1, 4);
+                int animSpell = ATTACK;
+                auto weapons = creature->GetWeaponEquippedEntry();
+                if (weapons[0])
+                { 
+                    weps += 1;
+
+                    switch (weapons[0]->GetSkill())
+                    {
+                    case SKILL_AXES:
+                    case SKILL_SWORDS:
+                    case SKILL_MACES:
+                        animSpell = ATTACK1H;
+                    case SKILL_FISHING:
+                    case SKILL_2H_AXES:
+                    case SKILL_2H_SWORDS:
+                    case SKILL_2H_MACES:
+                        animSpell = ATTACK;
+                    case SKILL_POLEARMS:
+                    case SKILL_STAVES:
+                        animSpell = ATTACK2HL;
+                    case SKILL_DAGGERS:
+                        animSpell = ATTACK1HP;
+                    case SKILL_SHIELD:
+                        animSpell = ATTACKSHIELD;
+                    case SKILL_FIST_WEAPONS:
+                    default:
+                        animSpell = ATTACKUNARMED;
+                    }
+
+                }
+
+                if (weapons[1])
+                {
+                    weps += 2;
+
+                    switch (weapons[1]->GetSkill())
+                    {
+                    case SKILL_AXES:
+                    case SKILL_SWORDS:
+                    case SKILL_MACES:
+                        animSpell = ATTACKOFF;
+                    case SKILL_FISHING:
+                    case SKILL_2H_AXES:
+                    case SKILL_2H_SWORDS:
+                    case SKILL_2H_MACES:
+                        animSpell = ATTACKOFF;
+                    case SKILL_POLEARMS:
+                    case SKILL_STAVES:
+                        animSpell = ATTACKOFFP;
+                    case SKILL_DAGGERS:
+                        animSpell = ATTACKOFFP;
+                    case SKILL_SHIELD:
+                        animSpell = ATTACKSHIELD;
+                    case SKILL_FIST_WEAPONS:
+                    default:
+                        animSpell = ATTACKUNARMED;
+                    }
+                }
+                if (weps == 0)
+                    spell->SetSpellInfo(SpellMgr::instance()->GetSpellInfo(ATTACKUNARMED));
+                else
+                    spell->SetSpellInfo(SpellMgr::instance()->GetSpellInfo(animSpell));
+
+            }
+        }
+    }
     void SpellBegin()
     {
-        caster = GetCaster();
     }
     virtual void AttackUnique()
     {
@@ -79,9 +206,11 @@ class spell_elk_attack : public SpellScript
     {
         caster->CastSpell(caster, ATTACK_HIT, false);
         AttackUnique();
+        spell->cancel(true);
     }
     virtual void Register()
     {
+        BeforeSpellLoad += SpellCastFn(spell_elk_attack::SpellClick);
         BeforeCast += SpellCastFn(spell_elk_attack::SpellBegin);
         AfterFullChannel += SpellCastFn(spell_elk_attack::AttackHit);
     }
