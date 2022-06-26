@@ -21,12 +21,7 @@ class spell_elk_attack_hit : public SpellScript
     void SpellBegin()
     {
         Spell* spell = GetSpell();
-        caster = GetCaster();
-        if (caster->isMoving())
-        {
-            int dodge = caster->GetRealDodge() / 2;
-            spell->ModifySpellValue(SPELLVALUE_RADIUS_MOD, 100 * dodge);
-        }
+        caster = GetCaster(); 
         spellMap = spell->GetTriggerDummy();
         auto& inAir = spellMap[MapDummy::WasInAir];
         if (inAir.has_value())
@@ -85,8 +80,7 @@ class spell_elk_attack_hit : public SpellScript
 
         {
         case 0:
-            break;
-            break;
+            break; 
         case SPELL_UNDEATH_STRIKE:
         {
             caster->CastSpell(victim, 1, true);

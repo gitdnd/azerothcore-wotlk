@@ -388,7 +388,7 @@ bool ItemTemplate::HasSpellPowerStat() const
                 case SPELL_AURA_MOD_SPELL_DAMAGE_OF_STAT_PERCENT:
                 case SPELL_AURA_MOD_SPELL_DAMAGE_OF_ATTACK_POWER:
                 case SPELL_AURA_MOD_DAMAGE_TAKEN:
-                    if (!(spellInfo->Effects[j].MiscValue & SPELL_SCHOOL_MASK_SPELL))
+                    if (!(spellInfo->Effects[j].MiscValue & SPELL_SCHOOL_MASK_MAGIC))
                     {
                         return false;
                     }

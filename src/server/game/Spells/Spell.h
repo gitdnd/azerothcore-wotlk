@@ -812,6 +812,8 @@ public:
     double rand_norm()                      { return m_caster->GetMap()->mtRand.randExc(); }
     double rand_chance()                    { return m_caster->GetMap()->mtRand.randExc(100.0); }
 #endif
+
+    uint8 development = 1;
 public:
     Unit* GetCastTarget() { return unitTarget; }
     SpellDestination* GetDestTargets(int index)
@@ -821,15 +823,21 @@ public:
         else
             return nullptr;
     }
+    void SetDevelopment(uint8 dev);
+    uint8 GetDevelopment() { return development; }
+
     int32 GetSpellTimer() { return m_timer; };
     void ModifySpellTimer(int32 amount) { m_timer += amount; };
     void SetSpellTimer(int32 amount) { m_timer = amount; };
+    void ModifyDamage(int amount) { damage += amount; }
+
     std::map<MapDummy, std::optional<std::any>> triggerDummy = {};
     std::map<MapDummy, std::optional<std::any>>& GetTriggerDummy() { return triggerDummy; }
     void AddTriggerDummy(MapDummy key, std::optional<std::any> value) { triggerDummy.emplace(key, value); }
+
     bool skip = false;
 
-    void ModifyDamage(int amount) { damage += amount; }
+
 };
 
 namespace Acore

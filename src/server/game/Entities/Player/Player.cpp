@@ -305,21 +305,7 @@ Player::Player(WorldSession* session): Unit(true), m_mover(this)
         for (uint8 g = 0; g < MAX_GLYPH_SLOT_INDEX; ++g)
             m_Glyphs[i][g] = 0;
     }
-
-    for (uint8 i = 0; i < BASEMOD_END; ++i)
-    {
-        m_auraBaseMod[i][FLAT_MOD] = 0.0f;
-        m_auraBaseMod[i][PCT_MOD] = 1.0f;
-    }
-
-    for (uint8 i = 0; i < MAX_COMBAT_RATING; i++)
-        m_baseRatingValue[i] = 0;
-
-    m_baseSpellPower = 0;
-    m_baseFeralAP = 0;
-    m_baseManaRegen = 0;
-    m_baseHealthRegen = 0;
-    m_spellPenetrationItemMod = 0;
+     
 
     // Honor System
     m_lastHonorUpdateTime = GameTime::GetGameTime().count();
@@ -393,8 +379,6 @@ Player::Player(WorldSession* session): Unit(true), m_mover(this)
     // Ours
     m_NeedToSaveGlyphs = false;
     m_MountBlockId = 0;
-    m_realDodge = 0.0f;
-    m_realParry = 0.0f;
     m_pendingSpectatorForBG = 0;
     m_pendingSpectatorInviteInstanceId = 0;
 
@@ -2843,7 +2827,7 @@ void Player::AddNewMailDeliverTime(time_t deliver_time)
     }
 }
 
-bool Player::addTalent(uint32 spellId, uint8 addSpecMask, uint8 oldTalentRank)
+bool Player::addTalent(uint32 spellId, uint8 addSpecMask, uint8 oldTalentRank, uint8 development)
 {
     SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
     if (!SpellMgr::CheckSpellValid(spellInfo, spellId, true))
@@ -2867,8 +2851,15 @@ bool Player::addTalent(uint32 spellId, uint8 addSpecMask, uint8 oldTalentRank)
 
     // xinef: add talent auras and spells
     if (GetActiveSpecMask() & addSpecMask)
-        _addTalentAurasAndSpells(spellId);
+        _addTalentAurasAndSpells(spellId, development);
 
+    auto entry = std::find_if(std::begin(m_spells), std::end(m_spells),
+        [&](std::pair<uint32, PlayerSpell*> const& spell) { return spell.first == spellId; } ) ;
+  
+    if (entry != GetSpellMap().end() && (*entry).second)
+    {
+        (*entry).second->development = development;
+    }
     // xinef: find the spell on our talent map
     PlayerTalentMap::iterator itr = m_talents.find(spellId);
 
@@ -2881,18 +2872,22 @@ bool Player::addTalent(uint32 spellId, uint8 addSpecMask, uint8 oldTalentRank)
         newTalent->specMask = addSpecMask;
         newTalent->talentID = talentInfo->TalentID;
         newTalent->inSpellBook = talentInfo->addToSpellBook && !spellInfo->HasAttribute(SPELL_ATTR0_PASSIVE) && !spellInfo->HasEffect(SPELL_EFFECT_LEARN_SPELL);
-
+        newTalent->development = development;
         m_talents[spellId] = newTalent;
         return true;
     }
     // xinef: if current mask does not cover addMask, add it to iterator and save changes to DB
-    else if (!(itr->second->specMask & addSpecMask))
+    else
     {
-        itr->second->specMask |= addSpecMask;
-        if (itr->second->State != PLAYERSPELL_NEW)
-            itr->second->State = PLAYERSPELL_CHANGED;
+        itr->second->development = development;
+        if (!(itr->second->specMask & addSpecMask))
+        {
+            itr->second->specMask |= addSpecMask;
+            if (itr->second->State != PLAYERSPELL_NEW)
+                itr->second->State = PLAYERSPELL_CHANGED;
 
-        return true;
+            return true;
+        }
     }
 
     return false;
@@ -2954,20 +2949,36 @@ void Player::_removeTalentAurasAndSpells(uint32 spellId)
     }
 }
 
-void Player::_addTalentAurasAndSpells(uint32 spellId)
+void Player::_addTalentAurasAndSpells(uint32 spellId, uint8 development)
 {
     // pussywizard: spells learnt from talents are added as TEMPORARY, so not saved to db (only the talent itself is saved)
     SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
     if (spellInfo->HasEffect(SPELL_EFFECT_LEARN_SPELL))
     {
-        for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+        uint8 i = 0;
+        for (i = 0; i < MAX_SPELL_EFFECTS; ++i)
             if (spellInfo->Effects[i].Effect == SPELL_EFFECT_LEARN_SPELL && !sSpellMgr->IsAdditionalTalentSpell(spellInfo->Effects[i].TriggerSpell))
-                _addSpell(spellInfo->Effects[i].TriggerSpell, SPEC_MASK_ALL, true);
+            {
+                _addSpell(spellInfo->Effects[i].TriggerSpell, SPEC_MASK_ALL, true); 
+            }
+        auto entry = std::find_if(std::begin(m_spells), std::end(m_spells),
+            [&](std::pair<uint32, PlayerSpell*> const& spell) { return spell.first == spellInfo->Effects[i].TriggerSpell; });
+
+        if (entry != GetSpellMap().end() && (*entry).second)
+        {
+            (*entry).second->development = development;
+        }
     }
     else if (spellInfo->IsPassive() || (spellInfo->HasAttribute(SPELL_ATTR0_DO_NOT_DISPLAY) && spellInfo->Stances))
     {
         if (IsNeedCastPassiveSpellAtLearn(spellInfo))
             CastSpell(this, spellId, true);
+
+        auto aura = GetAura(spellId);
+        if (aura)
+        {
+            aura->SetDevelopment(development);
+        }
     }
 }
 
@@ -13016,7 +13027,7 @@ void Player::ConvertRune(uint8 index, RuneType newType)
 
     WorldPacket data(SMSG_CONVERT_RUNE, 2);
     data << uint8(index);
-    data << uint8(newType);
+    data << uint8(RUNE_DEATH);
     GetSession()->SendPacket(&data);
 }
 
@@ -13027,7 +13038,7 @@ void Player::ResyncRunes(uint8 count)
     for (uint32 i = 0; i < count; ++i)
     {
         data << uint8(GetCurrentRune(i));                   // rune type
-        data << uint8(255 - (GetRuneCooldown(i) * 51));     // passed cooldown time (0-255)
+        data << uint8(255 - (GetRuneCooldown(i) / 39.3f));     // passed cooldown time (0-255)
     }
     GetSession()->SendPacket(&data);
 }
@@ -13041,12 +13052,12 @@ void Player::AddRunePower(uint8 index)
 
 static RuneType runeSlotTypes[MAX_RUNES] =
 {
-    /*0*/ RUNE_BLOOD,
-    /*1*/ RUNE_BLOOD,
-    /*2*/ RUNE_UNHOLY,
-    /*3*/ RUNE_UNHOLY,
-    /*4*/ RUNE_FROST,
-    /*5*/ RUNE_FROST
+    /*0*/ RUNE_DEATH,
+    /*1*/ RUNE_DEATH,
+    /*2*/ RUNE_DEATH,
+    /*3*/ RUNE_DEATH,
+    /*4*/ RUNE_DEATH,
+    /*5*/ RUNE_DEATH
 };
 
 void Player::InitRunes()
@@ -13057,7 +13068,7 @@ void Player::InitRunes()
     m_runes = new Runes;
 
     m_runes->runeState = 0;
-    m_runes->lastUsedRune = RUNE_BLOOD;
+    m_runes->lastUsedRune = RUNE_DEATH;
 
     for (uint8 i = 0; i < MAX_RUNES; ++i)
     {
@@ -13067,6 +13078,13 @@ void Player::InitRunes()
         SetGracePeriod(i, 0);                                          // xinef: reset grace period
         SetRuneConvertAura(i, nullptr);
         m_runes->SetRuneState(i);
+
+        WorldPacket data(SMSG_CONVERT_RUNE, 2);
+        data << uint8(i);
+        data << uint8(RUNE_DEATH);
+        GetSession()->SendPacket(&data);
+
+        ResyncRunes(MAX_RUNES);
     }
 
     for (uint8 i = 0; i < NUM_RUNE_TYPES; ++i)
@@ -13533,19 +13551,9 @@ void Player::LearnTalent(uint32 talentId, uint32 talentRank, bool command /*= fa
 {
     uint32 CurTalentPoints = GetFreeTalentPoints();
 
-    if (!command)
-    {
-        // xinef: check basic data
-        if (!CurTalentPoints)
-        {
-            return;
-        }
-
-        if (talentRank >= MAX_TALENT_RANK)
-        {
-            return;
-        }
-    }
+    // xinef: check basic data
+    if (CurTalentPoints == 0)
+        return; 
 
     TalentEntry const* talentInfo = sTalentStore.LookupEntry(talentId);
     if (!talentInfo)
@@ -13560,70 +13568,35 @@ void Player::LearnTalent(uint32 talentId, uint32 talentRank, bool command /*= fa
         return;
 
     // xinef: find current talent rank
-    uint32 currentTalentRank = 0;
-    for (uint8 rank = 0; rank < MAX_TALENT_RANK; ++rank)
-    {
-        if (talentInfo->RankID[rank] && HasTalent(talentInfo->RankID[rank], GetActiveSpec()))
-        {
-            currentTalentRank = rank + 1;
-            break;
-        }
-    }
+    uint8 development = 0;
 
-    // xinef: we already have same or higher rank talent learned
-    if (currentTalentRank >= talentRank + 1)
+    PlayerTalentMap::iterator itr = m_talents.find(talentInfo->RankID[0]);
+    if (itr != m_talents.end())
+        development = (*itr).second->development;
+    development++;
+     
+    // xinef: check if we have enough free talent points
+    uint32 talentPointsChange = 1;
+    if (CurTalentPoints < talentPointsChange)
         return;
-
-    uint32 talentPointsChange = (talentRank - currentTalentRank + 1);
-    if (!command)
-    {
-        // xinef: check if we have enough free talent points
-        if (CurTalentPoints < talentPointsChange)
-        {
-            return;
-        }
-    }
 
     // xinef: check if talent deponds on another talent
     if (talentInfo->DependsOn > 0)
         if (TalentEntry const* depTalentInfo = sTalentStore.LookupEntry(talentInfo->DependsOn))
         {
-            bool hasEnoughRank = false;
-            for (uint8 rank = talentInfo->DependsOnRank; rank < MAX_TALENT_RANK; rank++)
+            bool hasEnoughRank = false; 
+            PlayerTalentMap::iterator itrDe = m_talents.find(depTalentInfo->RankID[0]);
+            if (itrDe != m_talents.end() && itrDe->second->development >= development)
             {
-                if (depTalentInfo->RankID[rank] != 0)
-                    if (HasTalent(depTalentInfo->RankID[rank], GetActiveSpec()))
-                    {
-                        hasEnoughRank = true;
-                        break;
-                    }
-            }
-
+                hasEnoughRank = true;
+            } 
             // xinef: does not have enough talent points spend in required talent
             if (!hasEnoughRank)
                 return;
         }
 
-    if (!command)
-    {
-        // xinef: check amount of points spent in current talent tree
-        // xinef: be smart and quick
-        uint32 spentPoints = 0;
-        if (talentInfo->Row > 0)
-        {
-            const PlayerTalentMap& talentMap = GetTalentMap();
-            for (PlayerTalentMap::const_iterator itr = talentMap.begin(); itr != talentMap.end(); ++itr)
-                if (TalentSpellPos const* talentPos = GetTalentSpellPos(itr->first))
-                    if (TalentEntry const* itrTalentInfo = sTalentStore.LookupEntry(talentPos->talent_id))
-                        if (itrTalentInfo->TalentTab == talentInfo->TalentTab)
-                            if (itr->second->State != PLAYERSPELL_REMOVED && itr->second->IsInSpec(GetActiveSpec())) // pussywizard
-                                spentPoints += talentPos->rank + 1;
-        }
-
-        // xinef: we do not have enough talent points to add talent of this tier
-        if (spentPoints < (talentInfo->Row * MAX_TALENT_RANK))
-            return;
-    }
+    // xinef: check amount of points spent in current talent tree
+    // xinef: be smart and quick 
 
     // xinef: hacking attempt, tries to learn unknown rank
     uint32 spellId = talentInfo->RankID[talentRank];
@@ -13652,17 +13625,14 @@ void Player::LearnTalent(uint32 talentId, uint32 talentRank, bool command /*= fa
             if (sSpellMgr->IsAdditionalTalentSpell(spellInfo->Effects[i].TriggerSpell))
                 learnSpell(spellInfo->Effects[i].TriggerSpell);
 
-    addTalent(spellId, GetActiveSpecMask(), currentTalentRank);
+    addTalent(spellId, GetActiveSpecMask(), 0, development);
 
     // xinef: update free talent points count
     m_usedTalentCount += talentPointsChange;
-
-    if (!command)
-    {
-        SetFreeTalentPoints(CurTalentPoints - talentPointsChange);
-    }
+    SetFreeTalentPoints(CurTalentPoints - talentPointsChange);
 
     sScriptMgr->OnPlayerLearnTalents(this, talentId, talentRank, spellId);
+    SendTalentsInfoData(false);
 }
 
 void Player::LearnPetTalent(ObjectGuid petGuid, uint32 talentId, uint32 talentRank)
@@ -13919,14 +13889,14 @@ void Player::BuildPlayerTalentsInfoData(WorldPacket* data)
         uint8 talentIdCount = 0;
         size_t pos = data->wpos();
         *data << uint8(talentIdCount);                      // [PH], talentIdCount
-
+         
         const PlayerTalentMap& talentMap = GetTalentMap();
         for (PlayerTalentMap::const_iterator itr = talentMap.begin(); itr != talentMap.end(); ++itr)
             if (TalentSpellPos const* talentPos = GetTalentSpellPos(itr->first))
                 if (itr->second->State != PLAYERSPELL_REMOVED && itr->second->IsInSpec(specIdx)) // pussywizard
                 {
                     *data << uint32(talentPos->talent_id);  // Talent.dbc
-                    *data << uint8(talentPos->rank);        // talentMaxRank (0-4)
+                    *data << uint8(0);        // talentMaxRank (0-4)
                     ++talentIdCount;
                 }
 
@@ -14603,7 +14573,8 @@ void Player::_LoadTalents(PreparedQueryResult result)
             // xinef: checked
             uint32 spellId = (*result)[0].Get<uint32>();
             uint8 specMask = (*result)[1].Get<uint8>();
-            addTalent(spellId, specMask, 0);
+            uint8 development = (*result)[2].Get<uint8>();
+            addTalent(spellId, specMask, 0, development);
             TalentSpellPos const* talentPos = GetTalentSpellPos(spellId);
             ASSERT(talentPos);
 
@@ -14643,6 +14614,7 @@ void Player::_SaveTalents(CharacterDatabaseTransaction trans)
             stmt->SetData(0, GetGUID().GetCounter());
             stmt->SetData(1, itr->first);
             stmt->SetData(2, itr->second->specMask);
+            stmt->SetData(3, itr->second->development);
             trans->Append(stmt);
         }
 
@@ -14738,7 +14710,7 @@ void Player::ActivateSpec(uint8 spec)
         if (!itr->second->IsInSpec(oldSpec) && !itr->second->inSpellBook)
             SendLearnPacket(itr->first, true);
 
-        _addTalentAurasAndSpells(itr->first);
+        _addTalentAurasAndSpells(itr->first, itr->second->development);
         TalentSpellPos const* talentPos = GetTalentSpellPos(itr->first);
         spentTalents += talentPos->rank + 1;
 

@@ -77,8 +77,8 @@ enum SpellsC // Creature Spells.
 };
 enum SpellClass : uint32
 {
-    SPELL_CRUSADER_STRIKE,
-    SPELL_UNDEATH_STRIKE
+    SPELL_CRUSADER_STRIKE = 999999,
+    SPELL_UNDEATH_STRIKE = 999998,
 };
 
 
@@ -120,7 +120,93 @@ class spell_elk_attack : public SpellScript
         }
         if (caster->IsPlayer())
         {
+            Player* player = caster->ToPlayer();
+            if (player)
+            {
+                int weps = 0;
+                int anim = RAND(1, 4);
+                int animSpell = ATTACK;
+                auto wep1 = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND); 
+                auto wep2 = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND);
+                std::vector<const ItemTemplate*> weapons = {nullptr, nullptr};
+                if (wep1)
+                    weapons[0] = wep1->GetTemplate();
+                if (wep2)
+                    weapons[1] = wep2->GetTemplate();
+                if (weapons[0])
+                {
+                    weps += 1;
 
+                    switch (weapons[0]->GetSkill())
+                    {
+                    case SKILL_AXES:
+                    case SKILL_SWORDS:
+                    case SKILL_MACES:
+                        animSpell = ATTACK1H;
+                        break;
+                    case SKILL_FISHING:
+                    case SKILL_2H_AXES:
+                    case SKILL_2H_SWORDS:
+                    case SKILL_2H_MACES:
+                        animSpell = ATTACK;
+                        break;
+                    case SKILL_POLEARMS:
+                    case SKILL_STAVES:
+                        animSpell = ATTACK2HL;
+                        break;
+                    case SKILL_DAGGERS:
+                        animSpell = ATTACK1HP;
+                        break;
+                    case SKILL_SHIELD:
+                        animSpell = ATTACKSHIELD;
+                        break;
+                    case SKILL_FIST_WEAPONS:
+                    default:
+                        animSpell = ATTACKUNARMED;
+                        break;
+                    }
+
+                }
+
+                if (weapons[1])
+                {
+                    weps += 2;
+
+                    switch (weapons[1]->GetSkill())
+                    {
+                    case SKILL_AXES:
+                    case SKILL_SWORDS:
+                    case SKILL_MACES:
+                        animSpell = ATTACKOFF;
+                        break;
+                    case SKILL_FISHING:
+                    case SKILL_2H_AXES:
+                    case SKILL_2H_SWORDS:
+                    case SKILL_2H_MACES:
+                        animSpell = ATTACKOFF;
+                        break;
+                    case SKILL_POLEARMS:
+                    case SKILL_STAVES:
+                        animSpell = ATTACKOFFP;
+                        break;
+                    case SKILL_DAGGERS:
+                        animSpell = ATTACKOFFP;
+                        break;
+                    case SKILL_SHIELD:
+                        animSpell = ATTACKSHIELD;
+                        break;
+                    case SKILL_FIST_WEAPONS: 
+                    default:
+                        animSpell = ATTACKUNARMED;
+                        break;
+                    }
+                }
+                if (weps == 0)
+                    spell->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(ATTACKUNARMED));
+                else
+                    spell->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(animSpell));
+
+            }
         }
         else
         {
@@ -188,9 +274,9 @@ class spell_elk_attack : public SpellScript
                     }
                 }
                 if (weps == 0)
-                    spell->SetSpellInfo(SpellMgr::instance()->GetSpellInfo(ATTACKUNARMED));
+                    spell->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(ATTACKUNARMED));
                 else
-                    spell->SetSpellInfo(SpellMgr::instance()->GetSpellInfo(animSpell));
+                    spell->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(animSpell));
 
             }
         }
@@ -206,7 +292,6 @@ class spell_elk_attack : public SpellScript
     {
         caster->CastSpell(caster, ATTACK_HIT, false);
         AttackUnique();
-        spell->cancel(true);
     }
     virtual void Register()
     {

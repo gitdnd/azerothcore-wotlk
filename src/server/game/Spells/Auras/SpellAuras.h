@@ -274,12 +274,16 @@ protected:
     bool m_isSingleTarget: 1;                       // true if it's a single target spell and registered at caster - can change at spell steal for example
     bool m_isUsingCharges: 1;
 
+    uint8 development = 1;
 private:
     Unit::AuraApplicationList m_removedApplications;
 
     SpellInfo const* m_triggeredByAuraSpellInfo;
 
 public:
+    void SetDevelopment(uint8 dev) { development = dev; RecalculateAmountOfEffects(); }
+    uint8 GetDevelopment() { return development; }
+
     std::map<MapDummy, std::optional<std::any>> triggerDummy = {};
     std::map<MapDummy, std::optional<std::any>>& GetTriggerDummy() { return triggerDummy; }
     void AddTriggerDummy(MapDummy key, std::optional<std::any> value) { triggerDummy.emplace(key, value); }

@@ -408,8 +408,7 @@ int32 SpellEffectInfo::CalcValue(Unit const* caster, int32 const* bp, Unit const
 {
     float basePointsPerLevel = RealPointsPerLevel;
     int32 basePoints = bp ? *bp : BasePoints;
-    int32 randomPoints = int32(DieSides);
-
+    int32 randomPoints = int32(DieSides); 
     // base amount modification based on spell lvl vs caster lvl
     // xinef: added basePointsPerLevel check
     if (caster && basePointsPerLevel != 0.0f)
@@ -448,12 +447,13 @@ int32 SpellEffectInfo::CalcValue(Unit const* caster, int32 const* bp, Unit const
     // random damage
     if (caster)
     {
+
         // bonus amount from combo points
         if (uint8 comboPoints = caster->GetComboPoints())
         {
             value += PointsPerComboPoint * comboPoints;
         }
-
+        
         value = caster->ApplyEffectModifiers(_spellInfo, _effIndex, value);
 
         // amount multiplication based on caster's level
@@ -465,12 +465,12 @@ int32 SpellEffectInfo::CalcValue(Unit const* caster, int32 const* bp, Unit const
             switch (Effect)
             {
                 case SPELL_EFFECT_SCHOOL_DAMAGE:
-                case SPELL_EFFECT_DUMMY:
-                case SPELL_EFFECT_POWER_DRAIN:
                 case SPELL_EFFECT_HEALTH_LEECH:
                 case SPELL_EFFECT_HEAL:
+                case SPELL_EFFECT_POWER_BURN: 
+                case SPELL_EFFECT_DUMMY:
+                case SPELL_EFFECT_POWER_DRAIN:
                 case SPELL_EFFECT_WEAPON_DAMAGE:
-                case SPELL_EFFECT_POWER_BURN:
                 case SPELL_EFFECT_SCRIPT_EFFECT:
                 case SPELL_EFFECT_NORMALIZED_WEAPON_DMG:
                 case SPELL_EFFECT_FORCE_CAST_WITH_VALUE:
@@ -485,13 +485,13 @@ int32 SpellEffectInfo::CalcValue(Unit const* caster, int32 const* bp, Unit const
             switch (ApplyAuraName)
             {
                 case SPELL_AURA_PERIODIC_DAMAGE:
-                case SPELL_AURA_DUMMY:
                 case SPELL_AURA_PERIODIC_HEAL:
                 case SPELL_AURA_DAMAGE_SHIELD:
                 case SPELL_AURA_PROC_TRIGGER_DAMAGE:
                 case SPELL_AURA_PERIODIC_LEECH:
+                case SPELL_AURA_SCHOOL_ABSORB: 
+                case SPELL_AURA_DUMMY:
                 case SPELL_AURA_PERIODIC_MANA_LEECH:
-                case SPELL_AURA_SCHOOL_ABSORB:
                 case SPELL_AURA_PERIODIC_TRIGGER_SPELL_WITH_VALUE:
                     canEffectScale = true;
                     break;
@@ -506,6 +506,26 @@ int32 SpellEffectInfo::CalcValue(Unit const* caster, int32 const* bp, Unit const
                 if (spellScaler && casterScaler)
                     value *= casterScaler->ratio / spellScaler->ratio;
             }
+        }
+        switch (Effect)
+        {
+        case SPELL_EFFECT_SCHOOL_DAMAGE:
+        case SPELL_EFFECT_HEALTH_LEECH:
+        case SPELL_EFFECT_HEAL:
+        case SPELL_EFFECT_POWER_BURN:
+            value = int(float(value) * (1.f + (float)caster->SpellBaseDamageBonusDone(_spellInfo->GetSchoolMask()) / 100.f));
+            break;
+        }
+        switch (ApplyAuraName)
+        {
+        case SPELL_AURA_PERIODIC_DAMAGE:
+        case SPELL_AURA_PERIODIC_HEAL:
+        case SPELL_AURA_DAMAGE_SHIELD:
+        case SPELL_AURA_PROC_TRIGGER_DAMAGE:
+        case SPELL_AURA_PERIODIC_LEECH:
+        case SPELL_AURA_SCHOOL_ABSORB:
+            value = int(float(value) * (1.f + (float)caster->SpellBaseDamageBonusDone(_spellInfo->GetSchoolMask()) / 100.f));
+            break;
         }
     }
 

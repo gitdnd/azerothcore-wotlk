@@ -13,4 +13,11 @@ REPLACE INTO `spell_script_names` (`spell_id`, `ScriptName`) VALUES
 	(100021, 'spell_elk_double_jump'),
 	(100022, 'spell_elk_double_jump'),
 	(100023, 'spell_elk_sprint_aura'),
-	(100024, 'spell_elk_dash_aura');
+	(100024, 'spell_elk_dash_aura'),
+	(100025, 'spell_elk_attack'),
+	(100026, 'spell_elk_attack'),
+	(100027, 'spell_elk_attack'),
+	(100028, 'spell_elk_attack'),
+	(100029, 'spell_elk_attack'),
+	(100030, 'spell_elk_attack'),
+	(100031, 'spell_elk_attack');

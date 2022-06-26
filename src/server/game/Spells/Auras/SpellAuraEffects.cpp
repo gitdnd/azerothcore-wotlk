@@ -565,7 +565,7 @@ int32 AuraEffect::CalculateAmount(Unit* caster)
                 break;
         }
 
-    amount *= GetBase()->GetStackAmount();
+    amount *= GetBase()->GetStackAmount() * GetBase()->GetDevelopment();
     return amount;
 }
 
@@ -4007,8 +4007,8 @@ void AuraEffect::HandleModTargetResistance(AuraApplication const* aurApp, uint8 
     if (target->GetTypeId() == TYPEID_PLAYER && (GetMiscValue() & SPELL_SCHOOL_MASK_NORMAL))
         target->ApplyModInt32Value(PLAYER_FIELD_MOD_TARGET_PHYSICAL_RESISTANCE, GetAmount(), apply);
 
-    // show as spell penetration only full spell penetration bonuses (all resistances except armor and holy
-    if (target->GetTypeId() == TYPEID_PLAYER && (GetMiscValue() & SPELL_SCHOOL_MASK_SPELL) == SPELL_SCHOOL_MASK_SPELL)
+    // edited to include holy.
+    if (target->GetTypeId() == TYPEID_PLAYER && (GetMiscValue() & SPELL_SCHOOL_MASK_MAGIC) == SPELL_SCHOOL_MASK_MAGIC)
         target->ApplyModInt32Value(PLAYER_FIELD_MOD_TARGET_RESISTANCE, GetAmount(), apply);
 }
 
@@ -4166,12 +4166,12 @@ void AuraEffect::HandleModTotalPercentStat(AuraApplication const* aurApp, uint8 
         {
             if (i == STAT_STRENGTH || i == STAT_STAMINA)
             {
-                if (apply && (target->GetTypeId() == TYPEID_PLAYER || target->IsPet()))
+                if (apply)
                     target->ApplyStatPercentBuffMod(Stats(i), value, apply);
 
                 target->HandleStatModifier(UnitMods(UNIT_MOD_STAT_START + i), TOTAL_PCT, value, apply);
 
-                if (!apply && (target->GetTypeId() == TYPEID_PLAYER || target->IsPet()))
+                if (!apply)
                     target->ApplyStatPercentBuffMod(Stats(i), value, apply);
             }
         }
@@ -4182,12 +4182,12 @@ void AuraEffect::HandleModTotalPercentStat(AuraApplication const* aurApp, uint8 
     {
         if (GetMiscValue() == i || GetMiscValue() == -1)
         {
-            if (apply && (target->GetTypeId() == TYPEID_PLAYER || target->IsPet()))
+            if (apply)
                 target->ApplyStatPercentBuffMod(Stats(i), value, apply);
 
             target->HandleStatModifier(UnitMods(UNIT_MOD_STAT_START + i), TOTAL_PCT, value, apply);
 
-            if (!apply && (target->GetTypeId() == TYPEID_PLAYER || target->IsPet()))
+            if (!apply)
                 target->ApplyStatPercentBuffMod(Stats(i), value, apply);
         }
     }
@@ -4250,7 +4250,7 @@ void AuraEffect::HandleModPowerRegen(AuraApplication const* aurApp, uint8 mode, 
     if (GetMiscValue() == POWER_MANA)
         target->ToPlayer()->UpdateManaRegen();
     else if (GetMiscValue() == POWER_RUNE)
-        target->ToPlayer()->UpdateRuneRegen(RuneType(GetMiscValueB()));
+        target->ToPlayer()->UpdateRuneRegen(RUNE_DEATH);
     // other powers are not immediate effects - implemented in Player::Regenerate, Creature::Regenerate
 }
 

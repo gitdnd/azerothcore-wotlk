@@ -2198,7 +2198,7 @@ public:
     float OCTRegenMPPerSpirit();
     [[nodiscard]] float GetRatingMultiplier(CombatRating cr) const;
     [[nodiscard]] float GetRatingBonusValue(CombatRating cr) const;
-    uint32 GetBaseSpellPowerBonus() { return m_baseSpellPower; }
+    uint32 GetBaseSpellPowerBonus() const { return m_baseSpellPower; }
     [[nodiscard]] int32 GetSpellPenetrationItemMod() const { return m_spellPenetrationItemMod; }
     void UpdateDamagePhysical(WeaponAttackType attType);
 
@@ -2303,7 +2303,7 @@ public:
     Unit* GetMagicHitRedirectTarget(Unit* victim, SpellInfo const* spellInfo);
     Unit* GetMeleeHitRedirectTarget(Unit* victim, SpellInfo const* spellInfo = nullptr);
 
-    int32 SpellBaseDamageBonusDone(SpellSchoolMask schoolMask);
+    int32 SpellBaseDamageBonusDone(SpellSchoolMask schoolMask) const;
     int32 SpellBaseDamageBonusTaken(SpellSchoolMask schoolMask, bool isDoT = false);
     float SpellPctDamageModsDone(Unit* victim, SpellInfo const* spellProto, DamageEffectType damagetype);
     uint32 SpellDamageBonusDone(Unit* victim, SpellInfo const* spellProto, uint32 pdamage, DamageEffectType damagetype, uint8 effIndex, float TotalMod = 0.0f, uint32 stack = 1);

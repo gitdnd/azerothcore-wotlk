@@ -130,6 +130,7 @@ struct PlayerSpell
     bool Active            : 1; // UPPER CASE TO CAUSE CONSOLE ERRORS (CHECK EVERY USAGE)! lower rank of a spell are not useable, but learnt
     uint8 specMask         : 8;
     bool IsInSpec(uint8 spec) { return (specMask & (1 << spec)); }
+    uint8 development = 0;
 };
 
 struct PlayerTalent
@@ -139,6 +140,7 @@ struct PlayerTalent
     uint32 talentID;
     bool inSpellBook;
     bool IsInSpec(uint8 spec) { return (specMask & (1 << spec)); }
+    uint8 development = 1;
 };
 
 enum TalentTree // talent tabs
@@ -1683,11 +1685,11 @@ public:
     void LearnTalent(uint32 talentId, uint32 talentRank, bool command = false);
     void LearnPetTalent(ObjectGuid petGuid, uint32 talentId, uint32 talentRank);
 
-    bool addTalent(uint32 spellId, uint8 addSpecMask, uint8 oldTalentRank);
+    bool addTalent(uint32 spellId, uint8 addSpecMask, uint8 oldTalentRank, uint8 development = 1);
     void _removeTalent(PlayerTalentMap::iterator& itr, uint8 specMask);
     void _removeTalent(uint32 spellId, uint8 specMask);
     void _removeTalentAurasAndSpells(uint32 spellId);
-    void _addTalentAurasAndSpells(uint32 spellId);
+    void _addTalentAurasAndSpells(uint32 spellId, uint8 development);
     [[nodiscard]] bool HasTalent(uint32 spell_id, uint8 spec) const;
 
     [[nodiscard]] uint32 CalculateTalentsPoints() const;

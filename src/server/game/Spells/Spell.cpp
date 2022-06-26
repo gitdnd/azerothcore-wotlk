@@ -5405,30 +5405,21 @@ SpellCastResult Spell::CheckRuneCost(uint32 RuneCostID)
     if (src->NoRuneCost())
         return SPELL_CAST_OK;
 
-    int32 runeCost[NUM_RUNE_TYPES];                         // blood, frost, unholy, death
+    int32 runeCost = 0;                         // blood, frost, unholy, death
 
     for (uint32 i = 0; i < RUNE_DEATH; ++i)
     {
-        runeCost[i] = src->RuneCost[i];
-        if (Player* modOwner = m_caster->GetSpellModOwner())
-            modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_COST, runeCost[i], this);
+        runeCost += src->RuneCost[i]; 
     }
-
-    runeCost[RUNE_DEATH] = MAX_RUNES;                       // calculated later
 
     for (uint32 i = 0; i < MAX_RUNES; ++i)
     {
         RuneType rune = player->GetCurrentRune(i);
-        if ((player->GetRuneCooldown(i) == 0) && (runeCost[rune] > 0))
-            runeCost[rune]--;
+        if ((player->GetRuneCooldown(i) == 0) && (runeCost > 0))
+            runeCost--;
     }
-
-    for (uint32 i = 0; i < RUNE_DEATH; ++i)
-        if (runeCost[i] > 0)
-            runeCost[RUNE_DEATH] += runeCost[i];
-
-    if (runeCost[RUNE_DEATH] > MAX_RUNES)
-        return SPELL_FAILED_NO_POWER;                       // not sure if result code is correct
+    if(runeCost > 0)
+        return SPELL_FAILED_NO_POWER;
 
     return SPELL_CAST_OK;
 }
@@ -5445,61 +5436,35 @@ void Spell::TakeRunePower(bool didHit)
     Player* player = m_caster->ToPlayer();
     m_runesState = player->GetRunesState();                 // store previous state
 
-    int32 runeCost[NUM_RUNE_TYPES];                         // blood, frost, unholy, death
+    int32 runeCost = 0;                         // blood, frost, unholy, death
 
     for (uint32 i = 0; i < RUNE_DEATH; ++i)
     {
-        runeCost[i] = runeCostData->RuneCost[i];
-        if (Player* modOwner = m_caster->GetSpellModOwner())
-            modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_COST, runeCost[i], this);
+        runeCost += runeCostData->RuneCost[i]; 
     }
-
-    runeCost[RUNE_DEATH] = 0;                               // calculated later
+                                   // calculated later
 
     for (uint32 i = 0; i < MAX_RUNES; ++i)
     {
         RuneType rune = player->GetCurrentRune(i);
-        if (!player->GetRuneCooldown(i) && runeCost[rune] > 0)
+        if (!player->GetRuneCooldown(i) && runeCost > 0)
         {
             player->SetRuneCooldown(i, didHit ? player->GetRuneBaseCooldown(i, false) : uint32(RUNE_MISS_COOLDOWN));
             player->SetLastUsedRune(rune);
-            runeCost[rune]--;
+            runeCost--;
         }
     }
 
     // Xinef: firstly consume death runes of base type
     // Xinef: in second loop consume all available
-    for (uint8 loop = 0; loop < 2; ++loop)
-    {
-        runeCost[RUNE_DEATH] = runeCost[RUNE_BLOOD] + runeCost[RUNE_UNHOLY] + runeCost[RUNE_FROST];
-        if (runeCost[RUNE_DEATH] > 0)
-        {
-            for (uint8 i = 0; i < MAX_RUNES; ++i)
-            {
-                RuneType rune = player->GetCurrentRune(i);
-                if (!player->GetRuneCooldown(i) && rune == RUNE_DEATH && (loop ? true : (runeCost[player->GetBaseRune(i)] > 0)))
-                {
-                    player->SetRuneCooldown(i, didHit ? player->GetRuneBaseCooldown(i, false) : uint32(RUNE_MISS_COOLDOWN));
-                    player->SetLastUsedRune(rune);
-                    runeCost[rune]--;
-                    if (!loop)
-                        runeCost[player->GetBaseRune(i)]--;
-
-                    // keep Death Rune type if missed
-                    if (didHit)
-                        player->RestoreBaseRune(i);
-
-                    if (runeCost[RUNE_DEATH] == 0)
-                        break;
-                }
-            }
-        }
-    }
+      
 
     // you can gain some runic power when use runes
     if (didHit)
         if (int32 rp = int32(runeCostData->runePowerGain * sWorld->getRate(RATE_POWER_RUNICPOWER_INCOME)))
             player->ModifyPower(POWER_RUNIC_POWER, int32(rp), true, PowerChangeReason::REASON_SPELL_GENERATED, this);
+
+    player->ResyncRunes(MAX_RUNES);
 }
 
 void Spell::TakeReagents()
@@ -8399,6 +8364,13 @@ SpellCastResult Spell::CanOpenLock(uint32 effIndex, uint32 lockId, SkillType& sk
         return SPELL_FAILED_BAD_TARGETS;
 
     return SPELL_CAST_OK;
+}
+
+void Spell::SetDevelopment(uint8 dev)
+{
+    development = dev;
+    if (m_spellAura)
+        m_spellAura->SetDevelopment(development);
 }
 
 void Spell::SetSpellValue(SpellValueMod mod, int32 value)
