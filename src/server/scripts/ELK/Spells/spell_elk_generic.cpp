@@ -290,19 +290,39 @@ class spell_elk_double_jump : public SpellScript
     }
 };
 
-class spell_elk_rush : public SpellScript
+class spell_elk_rush_aura : public AuraScript
 {
-    PrepareSpellScript(spell_elk_rush);
+    PrepareAuraScript(spell_elk_rush_aura);
 
-    void Rush()
+    Player* caster = nullptr;
+    void SpellApply(AuraEffect const* aurEff, AuraEffectHandleModes mode)
+    {
+        if (GetCaster()->IsPlayer())
+            caster = GetCaster()->ToPlayer();
+        else
+            GetAura()->Remove();
+    }
+    void MovePacket()
+    {
+        if (!caster)
+            return;
+        if (caster->IsFalling())
+            return;
+        else
+        {
+            GetAura()->Remove();
+        }
+    };
+    void RushEnd(AuraEffect const* aurEff, AuraEffectHandleModes mode)
     {
         auto caster = GetCaster();
-        auto spell = GetSpell();
-        spell->EffectRoll(EFFECT_0);
-    }
+        caster->CastSpell(caster, DISENGAGE_MINI_HOP, true); 
+    }  
     void Register() override
     {
-        AfterCast += SpellCastFn(spell_elk_rush::Rush);
+        AfterEffectRemove += AuraEffectRemoveFn(spell_elk_rush_aura::RushEnd, EFFECT_0, SPELL_AURA_PERIODIC_TRIGGER_SPELL, AURA_EFFECT_HANDLE_REAL);
+        OnMovementPacket += OnMovementPacketFn(spell_elk_rush_aura::MovePacket);
+        OnEffectApply += AuraEffectApplyFn(spell_elk_rush_aura::SpellApply, EFFECT_0, SPELL_AURA_PERIODIC_TRIGGER_SPELL, AURA_EFFECT_HANDLE_REAL);
     }
 };
 
@@ -382,7 +402,7 @@ void AddSC_elk_spell_scripts()
     RegisterSpellScript(spell_elk_attack_hit);
     RegisterSpellAndAuraScriptPair(spell_elk_deflect, spell_elk_deflect_aura);
     RegisterSpellScript(spell_elk_double_jump);
-    RegisterSpellScript(spell_elk_rush);
+    RegisterSpellScript(spell_elk_rush_aura);
     RegisterSpellScript(spell_elk_sprint_aura);
     RegisterSpellScript(spell_elk_dash_aura);
     

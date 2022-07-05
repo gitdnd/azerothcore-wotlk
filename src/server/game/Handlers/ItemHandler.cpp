@@ -1243,6 +1243,7 @@ void WorldSession::SendItemEnchantTimeUpdate(ObjectGuid Playerguid, ObjectGuid I
     data << Playerguid;
     SendPacket(&data);
 }
+ 
 
 void WorldSession::HandleItemNameQueryOpcode(WorldPacket& recvData)
 {
@@ -1319,7 +1320,7 @@ void WorldSession::HandleWrapItemOpcode(WorldPacket& recvData)
         return;
     }
 
-    if (item->GetGuidValue(ITEM_FIELD_GIFTCREATOR))        // HasFlag(ITEM_FIELD_FLAGS, ITEM_FLAGS_WRAPPED);
+    if (item->GetGifter())        // HasFlag(ITEM_FIELD_FLAGS, ITEM_FLAGS_WRAPPED);
     {
         _player->SendEquipError(EQUIP_ERR_WRAPPED_CANT_BE_WRAPPED, item, nullptr);
         return;
@@ -1382,7 +1383,7 @@ void WorldSession::HandleWrapItemOpcode(WorldPacket& recvData)
             item->SetEntry(21831);
             break;
     }
-    item->SetGuidValue(ITEM_FIELD_GIFTCREATOR, _player->GetGUID());
+    item->SetGifter(_player->GetGUID());
     item->SetUInt32Value(ITEM_FIELD_FLAGS, ITEM_FIELD_FLAG_WRAPPED);
     item->SetState(ITEM_CHANGED, _player);
 

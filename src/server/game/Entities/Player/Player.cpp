@@ -173,7 +173,7 @@ Player::Player(WorldSession* session): Unit(true), m_mover(this)
 
     m_usedTalentCount = 0;
     m_questRewardTalentCount = 0;
-    m_extraBonusTalentCount = 0;
+    m_talentMod = 0;
 
     m_regenTimer = 0;
     m_regenTimerCount = 0;
@@ -345,6 +345,7 @@ Player::Player(WorldSession* session): Unit(true), m_mover(this)
 
     m_runes = nullptr;
 
+    m_falling = false;
     m_lastFallTime = 0;
     m_lastFallZ = 0;
 
@@ -2107,7 +2108,7 @@ GameObject* Player::GetGameObjectIfCanInteractWith(ObjectGuid guid, GameobjectTy
 bool Player::IsFalling() const
 {
     // Xinef: Added !IsInFlight check
-    return GetPositionZ() < m_lastFallZ && !IsInFlight();
+    return m_falling && !IsInFlight();
 }
 
 void Player::SetInWater(bool apply)
@@ -2501,12 +2502,7 @@ void Player::InitTalentForLevel()
 {
     uint32 talentPointsForLevel = CalculateTalentsPoints();
 
-    // xinef: more talent points that we have are used, reset
-    if (m_usedTalentCount > talentPointsForLevel)
-        resetTalents(true);
-    // xinef: else, recalculate free talent points count
-    else
-        SetFreeTalentPoints(talentPointsForLevel - m_usedTalentCount);
+    SetFreeTalentPoints(talentPointsForLevel - m_usedTalentCount);
 
     if (!GetSession()->PlayerLoading())
         SendTalentsInfoData(false);                         // update at client
@@ -3649,6 +3645,9 @@ uint32 Player::resetTalentsCost() const
 
 bool Player::resetTalents(bool noResetCost)
 {
+    return false;
+    //currently not using it, need to remake it to account for counting talent points through modTalent
+
     sScriptMgr->OnPlayerTalentsReset(this, noResetCost);
 
     // xinef: remove at login flag upon talents reset
@@ -5677,7 +5676,8 @@ void Player::RewardExtraBonusTalentPoints(uint32 bonusTalentPoints)
 {
     if (bonusTalentPoints)
     {
-        m_extraBonusTalentCount += bonusTalentPoints;
+        m_talentMod += bonusTalentPoints;
+        CalculateTalentsPoints();
     }
 }
 
@@ -6197,7 +6197,7 @@ void Player::_ApplyItemMods(Item* item, uint8 slot, bool apply)
     if (attacktype < MAX_ATTACK)
         _ApplyWeaponDependentAuraMods(item, WeaponAttackType(attacktype), apply);
 
-    _ApplyItemBonuses(proto, slot, apply);
+    _ApplyItemBonuses(item, proto, slot, apply);
 
     if (slot == EQUIPMENT_SLOT_RANGED)
         _ApplyAmmoBonuses();
@@ -6208,7 +6208,7 @@ void Player::_ApplyItemMods(Item* item, uint8 slot, bool apply)
     LOG_DEBUG("entities.player.items", "_ApplyItemMods complete.");
 }
 
-void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply, bool only_level_scale /*= false*/)
+void Player::_ApplyItemBonuses(Item* item, ItemTemplate const* proto, uint8 slot, bool apply, bool only_level_scale /*= false*/)
 {
     if (slot >= INVENTORY_SLOT_BAG_END || !proto)
         return;
@@ -6266,8 +6266,9 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
         }
 
         if (val == 0)
-            continue;
-
+            continue; 
+        val *= 100 + proto->ItemLevel + item->GetLvlTotal();
+        val /= 100;
         switch (statType)
         {
             case ITEM_MOD_MANA:
@@ -6424,6 +6425,10 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
 
     // If set ScalingStatValue armor get it or use item armor
     uint32 armor = proto->Armor;
+
+    armor *= 100 + proto->ItemLevel + item->GetLvlTotal();
+    armor /= 100;
+
     if (ssv)
     {
         if (uint32 ssvarmor = ssv->getArmorMod(ScalingStatValue))
@@ -7149,7 +7154,7 @@ void Player::_RemoveAllItemMods()
             if (attacktype < MAX_ATTACK)
                 _ApplyWeaponDependentAuraMods(m_items[i], WeaponAttackType(attacktype), false);
 
-            _ApplyItemBonuses(proto, i, false);
+            _ApplyItemBonuses(m_items[i], proto, i, false);
 
             if (i == EQUIPMENT_SLOT_RANGED)
                 _ApplyAmmoBonuses();
@@ -7178,7 +7183,7 @@ void Player::_ApplyAllItemMods()
             if (attacktype < MAX_ATTACK)
                 _ApplyWeaponDependentAuraMods(m_items[i], WeaponAttackType(attacktype), true);
 
-            _ApplyItemBonuses(proto, i, true);
+            _ApplyItemBonuses(m_items[i], proto, i, true);
 
             if (i == EQUIPMENT_SLOT_RANGED)
                 _ApplyAmmoBonuses();
@@ -13231,23 +13236,9 @@ uint32 Player::CalculateTalentsPoints() const
 {
     uint32 base_talent = GetLevel() < 10 ? 0 : GetLevel() - 9;
 
-    uint32 talentPointsForLevel = 0;
-    if (getClass() != CLASS_DEATH_KNIGHT || GetMapId() != 609)
-    {
-        talentPointsForLevel = base_talent;
-    }
-    else
-    {
-        talentPointsForLevel = GetLevel() < 56 ? 0 : GetLevel() - 55;
-        talentPointsForLevel += m_questRewardTalentCount;
-
-        if (talentPointsForLevel > base_talent)
-        {
-            talentPointsForLevel = base_talent;
-        }
-    }
-
-    talentPointsForLevel += m_extraBonusTalentCount;
+    uint32 talentPointsForLevel = m_questRewardTalentCount + base_talent;
+     
+    talentPointsForLevel += m_talentMod;
     return uint32(talentPointsForLevel * sWorld->getRate(RATE_TALENT));
 }
 
@@ -13458,6 +13449,7 @@ void Player::HandleFall(MovementInfo const& movementInfo)
     {
         RemoveAura(100016);
     }
+    m_falling = false;
 
     //Players with low fall distance, Feather Fall or physical immunity (charges used) are ignored
     // 14.57 can be calculated by resolving damageperc formula below to 0
@@ -14366,6 +14358,7 @@ void Player::_SaveCharacter(bool create, CharacterDatabaseTransaction trans)
         stmt->SetData(index++, GetByteValue(PLAYER_FIELD_BYTES, 2));
         stmt->SetData(index++, m_grantableLevels);
         stmt->SetData(index++, _innTriggerId);
+        stmt->SetData(index++, m_talentMod);
     }
     else
     {
@@ -14509,6 +14502,7 @@ void Player::_SaveCharacter(bool create, CharacterDatabaseTransaction trans)
         stmt->SetData(index++, IsInWorld() && !GetSession()->PlayerLogout() ? 1 : 0);
         // Index
         stmt->SetData(index++, GetGUID().GetCounter());
+        stmt->SetData(index++, m_talentMod);
     }
 
     trans->Append(stmt);
@@ -14710,10 +14704,8 @@ void Player::ActivateSpec(uint8 spec)
         if (!itr->second->IsInSpec(oldSpec) && !itr->second->inSpellBook)
             SendLearnPacket(itr->first, true);
 
-        _addTalentAurasAndSpells(itr->first, itr->second->development);
-        TalentSpellPos const* talentPos = GetTalentSpellPos(itr->first);
-        spentTalents += talentPos->rank + 1;
-
+        _addTalentAurasAndSpells(itr->first, itr->second->development); 
+        spentTalents += itr->second->development;
         removedSpecAuras.erase(itr->first);
     }
 

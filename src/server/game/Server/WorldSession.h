@@ -469,7 +469,7 @@ public:
 
     //Item Enchantment
     void SendEnchantmentLog(ObjectGuid target, ObjectGuid caster, uint32 itemId, uint32 enchantId);
-    void SendItemEnchantTimeUpdate(ObjectGuid Playerguid, ObjectGuid Itemguid, uint32 slot, uint32 Duration);
+    void SendItemEnchantTimeUpdate(ObjectGuid Playerguid, ObjectGuid Itemguid, uint32 slot, uint32 Duration); 
 
     //Taxi
     void SendTaxiStatus(ObjectGuid guid);

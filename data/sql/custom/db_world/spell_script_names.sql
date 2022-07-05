@@ -4,7 +4,7 @@ REPLACE INTO `spell_script_names` (`spell_id`, `ScriptName`) VALUES
 	(100006, 'spell_elk_deflect'),
 	(100008, 'spell_elk_deflect'),
 	(100011, 'spell_elk_double_jump'),
-	(100013, 'spell_elk_rush'),
+	(100012, 'spell_elk_rush_aura'),
 	(100015, 'spell_elk_double_jump'),
 	(100017, 'spell_elk_double_jump'),
 	(100018, 'spell_elk_double_jump'),

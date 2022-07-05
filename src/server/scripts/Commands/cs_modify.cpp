@@ -369,7 +369,7 @@ public:
                 return false;
             }
 
-            target->ToPlayer()->SetFreeTalentPoints(talentPoints);
+            target->ToPlayer()->RewardExtraBonusTalentPoints(talentPoints);
             target->ToPlayer()->SendTalentsInfoData(false);
             return true;
         }

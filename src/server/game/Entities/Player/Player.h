@@ -889,6 +889,7 @@ enum PlayerLoginQueryIndex
     PLAYER_LOGIN_QUERY_LOAD_CORPSE_LOCATION         = 35,
     PLAYER_LOGIN_QUERY_LOAD_CHARACTER_SETTINGS      = 36,
     PLAYER_LOGIN_QUERY_LOAD_PET_SLOTS               = 37,
+    PLAYER_LOGIN_QUERY_LOAD_TALENT_POINTS           = 38,
     MAX_PLAYER_LOGIN_QUERY
 };
 
@@ -2104,7 +2105,7 @@ public:
     void _RemoveAllItemMods();
     void _ApplyAllItemMods();
     void _ApplyAllLevelScaleItemMods(bool apply);
-    void _ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply, bool only_level_scale = false);
+    void _ApplyItemBonuses(Item* item, ItemTemplate const* proto, uint8 slot, bool apply, bool only_level_scale = false);
     void _ApplyWeaponDamage(uint8 slot, ItemTemplate const* proto, ScalingStatValuesEntry const* ssv, bool apply);
     void _ApplyAmmoBonuses();
     bool EnchantmentFitsRequirements(uint32 enchantmentcondition, int8 slot);
@@ -2229,9 +2230,10 @@ public:
     WorldObject* m_seer;
     std::set<Unit*> m_isInSharedVisionOf;
     void SetFallInformation(uint32 time, float z)
-    {
+    { 
         m_lastFallTime = time;
         m_lastFallZ = z;
+        m_falling = true;
     }
     void HandleFall(MovementInfo const& movementInfo);
 
@@ -2754,7 +2756,7 @@ public:
     time_t m_resetTalentsTime;
     uint32 m_usedTalentCount;
     uint32 m_questRewardTalentCount;
-    uint32 m_extraBonusTalentCount;
+    uint32 m_talentMod;
 
     // Social
     PlayerSocial* m_social;
@@ -2819,6 +2821,7 @@ private:
 
     void UpdateCharmedAI();
 
+    bool m_falling;
     uint32 m_lastFallTime;
     float  m_lastFallZ;
 

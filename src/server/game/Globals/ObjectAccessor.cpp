@@ -22,6 +22,7 @@
 #include "GameObject.h"
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
+#include "Item.h"
 #include "Log.h"
 #include "Map.h"
 #include "MapInstanced.h"

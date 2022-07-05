@@ -174,7 +174,7 @@ enum EnchantmentSlot
     PROP_ENCHANTMENT_SLOT_2         = 9,                    // used with RandomSuffix and RandomProperty
     PROP_ENCHANTMENT_SLOT_3         = 10,                   // used with RandomSuffix and RandomProperty
     PROP_ENCHANTMENT_SLOT_4         = 11,                   // used with RandomSuffix and RandomProperty
-    MAX_ENCHANTMENT_SLOT            = 12
+    MAX_ENCHANTMENT_SLOT            = 12, 
 };
 
 #define MAX_VISIBLE_ITEM_OFFSET       2                     // 2 fields per visible item (entry+enchantment)
@@ -352,6 +352,17 @@ public:
     void AddToObjectUpdate() override;
     void RemoveFromObjectUpdate() override;
 
+    void SetLvlBonus(uint16 bonus) { m_iLvlBonus = bonus; }
+    void ModLvlBonus(uint16 bonus) { m_iLvlBonus += bonus; }
+    uint16 GetLvlBonus() { return m_iLvlBonus; }
+    void SetLvlExpense(uint16 bonus) { m_iLvlExpense = bonus; }
+    void ModLvlExpense(uint16 bonus) { m_iLvlExpense += bonus; }
+    uint16 GetLvlExpense() { return m_iLvlExpense; }
+    uint16 GetLvlTotal() { return m_iLvlBonus + GetTemplate()->ItemLevel; }
+
+    void SetGifter(ObjectGuid player) { gifter = player; }
+    ObjectGuid GetGifter() const { return gifter; }
+
     [[nodiscard]] uint32 GetScriptId() const { return GetTemplate()->ScriptId; }
 
     std::string GetDebugInfo() const override;
@@ -367,5 +378,9 @@ private:
     uint32 m_paidMoney;
     uint32 m_paidExtendedCost;
     AllowedLooterSet allowedGUIDs;
+    uint16 m_iLvlBonus;
+    uint16 m_iLvlExpense;
+
+    ObjectGuid gifter;
 };
 #endif

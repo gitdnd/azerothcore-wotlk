@@ -31,8 +31,8 @@ uint32 ItemUpdateFieldFlags[CONTAINER_END] =
     UF_FLAG_PUBLIC,                                         // ITEM_FIELD_CONTAINED+1
     UF_FLAG_PUBLIC,                                         // ITEM_FIELD_CREATOR
     UF_FLAG_PUBLIC,                                         // ITEM_FIELD_CREATOR+1
-    UF_FLAG_PUBLIC,                                         // ITEM_FIELD_GIFTCREATOR
-    UF_FLAG_PUBLIC,                                         // ITEM_FIELD_GIFTCREATOR+1
+    UF_FLAG_PUBLIC,                                         // ITEM_FIELD_VISIBLE_GUID
+    UF_FLAG_PUBLIC,                                         // ITEM_FIELD_VISIBLE_GUID+1
     UF_FLAG_OWNER | UF_FLAG_ITEM_OWNER,                     // ITEM_FIELD_STACK_COUNT
     UF_FLAG_OWNER | UF_FLAG_ITEM_OWNER,                     // ITEM_FIELD_DURATION
     UF_FLAG_OWNER | UF_FLAG_ITEM_OWNER,                     // ITEM_FIELD_SPELL_CHARGES
@@ -82,7 +82,7 @@ uint32 ItemUpdateFieldFlags[CONTAINER_END] =
     UF_FLAG_OWNER | UF_FLAG_ITEM_OWNER,                     // ITEM_FIELD_DURABILITY
     UF_FLAG_OWNER | UF_FLAG_ITEM_OWNER,                     // ITEM_FIELD_MAXDURABILITY
     UF_FLAG_PUBLIC,                                         // ITEM_FIELD_CREATE_PLAYED_TIME
-    UF_FLAG_NONE,                                           // ITEM_FIELD_PAD
+    UF_FLAG_NONE,                                           // ITEM_FIELD_PAD 
     UF_FLAG_PUBLIC,                                         // CONTAINER_FIELD_NUM_SLOTS
     UF_FLAG_NONE,                                           // CONTAINER_ALIGN_PAD
     UF_FLAG_PUBLIC,                                         // CONTAINER_FIELD_SLOT_1

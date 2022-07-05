@@ -279,6 +279,10 @@ Item::Item()
     m_refundRecipient = 0;
     m_paidMoney = 0;
     m_paidExtendedCost = 0;
+
+    m_iLvlBonus = 0;
+    m_iLvlExpense = 0;
+
 }
 
 bool Item::Create(ObjectGuid::LowType guidlow, uint32 itemid, Player const* owner)
@@ -305,6 +309,8 @@ bool Item::Create(ObjectGuid::LowType guidlow, uint32 itemid, Player const* owne
     SetUInt32Value(ITEM_FIELD_DURATION, itemProto->Duration);
     SetUInt32Value(ITEM_FIELD_CREATE_PLAYED_TIME, 0);
     sScriptMgr->OnItemCreate(this, itemProto, owner);
+     
+    SetGuidValue(ITEM_FIELD_VISIBLE_GUID, GetGUID()); 
     return true;
 }
 
@@ -352,7 +358,7 @@ void Item::SaveToDB(CharacterDatabaseTransaction trans)
                 stmt->SetData(  index, GetEntry());
                 stmt->SetData(++index, GetOwnerGUID().GetCounter());
                 stmt->SetData(++index, GetGuidValue(ITEM_FIELD_CREATOR).GetCounter());
-                stmt->SetData(++index, GetGuidValue(ITEM_FIELD_GIFTCREATOR).GetCounter());
+                stmt->SetData(++index, GetGifter().GetCounter());
                 stmt->SetData(++index, GetCount());
                 stmt->SetData(++index, GetUInt32Value(ITEM_FIELD_DURATION));
 
@@ -444,8 +450,9 @@ bool Item::LoadFromDB(ObjectGuid::LowType guid, ObjectGuid owner_guid, Field* fi
 
     bool need_save = false;                                 // need explicit save data at load fixes
     SetGuidValue(ITEM_FIELD_CREATOR, ObjectGuid::Create<HighGuid::Player>(fields[0].Get<uint32>()));
-    SetGuidValue(ITEM_FIELD_GIFTCREATOR, ObjectGuid::Create<HighGuid::Player>(fields[1].Get<uint32>()));
+    SetGifter(ObjectGuid::Create<HighGuid::Player>(fields[1].Get<uint32>()));
     SetCount(fields[2].Get<uint32>());
+    SetGuidValue(ITEM_FIELD_VISIBLE_GUID, GetGUID());
 
     uint32 duration = fields[3].Get<uint32>();
     SetUInt32Value(ITEM_FIELD_DURATION, duration);
@@ -1125,7 +1132,7 @@ Item* Item::CloneItem(uint32 count, Player const* player) const
         return nullptr;
 
     newItem->SetUInt32Value(ITEM_FIELD_CREATOR,      GetUInt32Value(ITEM_FIELD_CREATOR));
-    newItem->SetUInt32Value(ITEM_FIELD_GIFTCREATOR,  GetUInt32Value(ITEM_FIELD_GIFTCREATOR));
+    newItem->SetGifter(GetGifter());
     newItem->SetUInt32Value(ITEM_FIELD_FLAGS,        GetUInt32Value(ITEM_FIELD_FLAGS) & ~(ITEM_FIELD_FLAG_REFUNDABLE | ITEM_FIELD_FLAG_BOP_TRADEABLE));
     newItem->SetUInt32Value(ITEM_FIELD_DURATION,     GetUInt32Value(ITEM_FIELD_DURATION));
     return newItem;

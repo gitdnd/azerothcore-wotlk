@@ -28,6 +28,7 @@ enum OutsideSpells
     CRITICAL_ATTACK =           100010,
     SPELL_DOUBLE_JUMP_BACK =    100011,
     SPELL_FEL_RUSH_BUFF =       100012,
+    DISENGAGE_MINI_HOP =        100014,
     ATTACK1H =                  100025,
     ATTACK2HL =                 100026,
     ATTACK1HP =                 100027,
@@ -38,10 +39,11 @@ enum OutsideSpells
     CRITICAL_ATTACK1H =         100032,
     CRITICAL_ATTACKUNARMED =    100033,
     CRITICAL_ATTACKMUTILATE =   100034,
-    DEFLECT2HL =                100035,
+    CRITICAL_ATTACK2H =         100035,
     DEFLECT1H =                 100036,
     DEFLECTUNARMED =            100037,
     DEFLECTSHEILDBLOCK =        100038,
+    DEFLECT2HL =                100039,
 };
 enum SpellsC // Creature Spells.
 {

@@ -17,6 +17,7 @@
 
 #include "Common.h"
 #include "GameTime.h"
+#include "Item.h"
 #include "Log.h"
 #include "MapMgr.h"
 #include "NPCHandler.h"
@@ -36,32 +37,59 @@ void WorldSession::SendNameQueryOpcode(ObjectGuid guid)
     data << guid.WriteAsPacked();
     if (!playerData)
     {
-        data << uint8(1);                           // name unknown
-        SendPacket(&data);
-        return;
+        if (!GetPlayer())
+        {
+            data << uint8(1);                           // name unknown
+            SendPacket(&data);
+            return;
+        }
+        Item* item = GetPlayer()->GetItemByGuid(guid);
+        if (item)
+        {
+            std::ostringstream os;
+            os << guid.GetRawValue();
+            std::string name =  os.str();
+            data << uint8(0);                               // name known
+            data << name;                  // item id as name
+            data << uint8(0);                               // realm name - only set for cross realm interaction (such as Battlegrounds)
+            data << uint8(0);
+            data << uint8(0);
+            data << uint8(0); 
+            data << uint8(0);                           // Name is not declined
+
+            SendPacket(&data);
+        }
+        else
+        {
+            data << uint8(1);                           // name unknown
+            SendPacket(&data);
+            return;
+        }
     }
-
-    Player* player = ObjectAccessor::FindConnectedPlayer(guid);
-
-    data << uint8(0);                               // name known
-    data << playerData->Name;                       // played name
-    data << uint8(0);                               // realm name - only set for cross realm interaction (such as Battlegrounds)
-    data << uint8(player ? player->getRace() : playerData->Race);
-    data << uint8(playerData->Sex);
-    data << uint8(playerData->Class);
-
-    // pussywizard: optimization
-    /*Player* player = ObjectAccessor::FindConnectedPlayer(guid);
-    if (DeclinedName const* names = (player ? player->GetDeclinedNames() : nullptr))
+    else
     {
-        data << uint8(1);                           // Name is declined
-        for (uint8 i = 0; i < MAX_DECLINED_NAME_CASES; ++i)
-            data << names->name[i];
-    }
-    else*/
-    data << uint8(0);                           // Name is not declined
+        Player* player = ObjectAccessor::FindConnectedPlayer(guid);
 
-    SendPacket(&data);
+        data << uint8(0);                               // name known
+        data << playerData->Name;                       // played name
+        data << uint8(0);                               // realm name - only set for cross realm interaction (such as Battlegrounds)
+        data << uint8(player ? player->getRace() : playerData->Race);
+        data << uint8(playerData->Sex);
+        data << uint8(playerData->Class);
+
+        // pussywizard: optimization
+        /*Player* player = ObjectAccessor::FindConnectedPlayer(guid);
+        if (DeclinedName const* names = (player ? player->GetDeclinedNames() : nullptr))
+        {
+            data << uint8(1);                           // Name is declined
+            for (uint8 i = 0; i < MAX_DECLINED_NAME_CASES; ++i)
+                data << names->name[i];
+        }
+        else*/
+        data << uint8(0);                           // Name is not declined
+
+        SendPacket(&data);
+    }
 }
 
 void WorldSession::HandleNameQueryOpcode(WorldPacket& recvData)
