@@ -57,7 +57,7 @@ protected:
 class CasterAI : public CombatAI
 {
 public:
-    explicit CasterAI(Creature* c) : CombatAI(c) { m_attackDist = MELEE_RANGE; }
+    explicit CasterAI(Creature* c) : CombatAI(c) { m_attackDist = 0; }
     void InitializeAI() override;
     void AttackStart(Unit* victim) override { AttackStartCaster(victim, m_attackDist); }
     void UpdateAI(uint32 diff) override;

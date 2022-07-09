@@ -193,6 +193,14 @@ void ScriptMgr::OnPlayerLearnSpell(Player* player, uint32 spellID)
     });
 }
 
+void ScriptMgr::OnRuneResync(Player* player)
+{
+    ExecuteScript<PlayerScript>([&](PlayerScript* script)
+        {
+            script->OnRuneResync(player);
+        });
+}
+
 void ScriptMgr::OnPlayerForgotSpell(Player* player, uint32 spellID)
 {
     ExecuteScript<PlayerScript>([&](PlayerScript* script)

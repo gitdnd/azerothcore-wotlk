@@ -5822,27 +5822,21 @@ void Spell::EffectQuestStart(SpellEffIndex effIndex)
 void Spell::EffectActivateRune(SpellEffIndex effIndex)
 {
     if (effectHandleMode != SPELL_EFFECT_HANDLE_LAUNCH)
-        return;
-
-    if (m_caster->GetTypeId() != TYPEID_PLAYER)
-        return;
-
-    Player* player = m_caster->ToPlayer();
-
-    if (player->getClass() != CLASS_DEATH_KNIGHT)
-        return;
+        return; 
+     
+     
 
     // needed later
-    m_runesState = m_caster->ToPlayer()->GetRunesState();
+    m_runesState = m_caster->GetRunesState();
 
     uint32 count = damage;
     if (count == 0) count = 1;
     for (uint32 j = 0; j < MAX_RUNES && count > 0; ++j)
     {
-        if (player->GetRuneCooldown(j))
+        if (m_caster->GetRuneCooldown(j))
         { 
-            player->SetRuneCooldown(j, 0);
-            player->SetGracePeriod(j, player->IsInCombat()); // xinef: reset grace period
+            m_caster->SetRuneCooldown(j, 0);
+            m_caster->SetGracePeriod(j, m_caster->IsInCombat()); // xinef: reset grace period
             --count;
         }
     }
@@ -5853,13 +5847,13 @@ void Spell::EffectActivateRune(SpellEffIndex effIndex)
         for (uint32 l = 0; l < MAX_RUNES && count > 0; ++l)
         {
             // Check if both runes are on cd as that is the only time when this needs to come into effect
-            if ((player->GetRuneCooldown(l) &&  (player->GetRuneCooldown(l + 1) )  ) )
+            if ((m_caster->GetRuneCooldown(l) &&  (m_caster->GetRuneCooldown(l + 1) )  ) )
             {
                 // Should always update the rune with the lowest cd
-                if (player->GetRuneCooldown(l) >= player->GetRuneCooldown(l + 1))
+                if (m_caster->GetRuneCooldown(l) >= m_caster->GetRuneCooldown(l + 1))
                     l++;
-                player->SetRuneCooldown(l, 0);
-                player->SetGracePeriod(l, player->IsInCombat()); // xinef: reset grace period
+                m_caster->SetRuneCooldown(l, 0);
+                m_caster->SetGracePeriod(l, m_caster->IsInCombat()); // xinef: reset grace period
                 --count;
             }
             else
@@ -5876,16 +5870,16 @@ void Spell::EffectActivateRune(SpellEffIndex effIndex)
 
         for (uint32 i = 0; i < MAX_RUNES; ++i)
         {
-            if (player->GetRuneCooldown(i) && (player->GetCurrentRune(i) == RUNE_DEATH))
+            if (m_caster->GetRuneCooldown(i) && (m_caster->GetCurrentRune(i) == RUNE_DEATH))
             {
-                player->SetRuneCooldown(i, 0);
-                player->SetGracePeriod(i, player->IsInCombat()); // xinef: reset grace period
+                m_caster->SetRuneCooldown(i, 0);
+                m_caster->SetGracePeriod(i, m_caster->IsInCombat()); // xinef: reset grace period
             }
         }
     }
 
     // is needed to push through to the client that the rune is active
-    //player->ResyncRunes(MAX_RUNES);
+    //m_caster->ResyncRunes(MAX_RUNES);
     m_caster->CastSpell(m_caster, 47804, true);
 }
 

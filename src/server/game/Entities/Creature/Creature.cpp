@@ -224,7 +224,6 @@ Creature::Creature(bool isWorldObject): Unit(isWorldObject), MovableMapObject(),
     _isMissingSwimmingFlagOutOfCombat(false), m_assistanceTimer(0), _playerDamageReq(0), _damagedByPlayer(false)
 {
     m_regenTimer = CREATURE_REGEN_INTERVAL;
-    m_valuesCount = PLAYER_END; // REMEMBER TO OPTIMIZE THIS LATER CUZ I SURE WONT RIGHT NOW LMAO
 
     for (uint8 i = 0; i < MAX_CREATURE_SPELLS; ++i)
         m_spells[i] = 0;
@@ -1599,7 +1598,7 @@ bool Creature::CreateFromProto(ObjectGuid::LowType guidlow, uint32 Entry, uint32
 
     SetOriginalEntry(Entry);
 
-    Object::_Create(guidlow, Entry, (vehId || normalInfo->VehicleId) ? HighGuid::Vehicle : HighGuid::Unit);
+    Unit::_Create(guidlow, Entry, (vehId || normalInfo->VehicleId) ? HighGuid::Vehicle : HighGuid::Unit);
 
     // Xinef: select proper vehicle id
     if (!vehId)

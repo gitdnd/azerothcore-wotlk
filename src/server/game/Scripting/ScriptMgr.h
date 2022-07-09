@@ -1045,6 +1045,9 @@ public:
     // Called when a player learned new spell
     virtual void OnLearnSpell(Player* /*player*/, uint32 /*spellID*/) {}
 
+    // Called when a player learned new spell
+    virtual void OnRuneResync(Player* /*player*/) {}
+
     // Called when a player forgot spell
     virtual void OnForgotSpell(Player* /*player*/, uint32 /*spellID*/) {}
 
@@ -2234,6 +2237,7 @@ public: /* PlayerScript */
     bool OnPlayerReputationChange(Player* player, uint32 factionID, int32& standing, bool incremental);
     void OnPlayerReputationRankChange(Player* player, uint32 factionID, ReputationRank newRank, ReputationRank oldRank, bool increased);
     void OnPlayerLearnSpell(Player* player, uint32 spellID);
+    void OnRuneResync(Player* player);
     void OnPlayerForgotSpell(Player* player, uint32 spellID);
     void OnPlayerDuelRequest(Player* target, Player* challenger);
     void OnPlayerDuelStart(Player* player1, Player* player2);

@@ -231,9 +231,6 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petEntry, uint32 petnumber, bool c
     bool forceLoadFromDB = false;
     sScriptMgr->OnBeforeLoadPetFromDB(owner, petEntry, petnumber, current, forceLoadFromDB);
 
-    if (!forceLoadFromDB && (owner->getClass() == CLASS_DEATH_KNIGHT && !owner->CanSeeDKPet())) // DK Pet exception
-        return false;
-
     SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(petInfo->CreatedBySpellId);
 
     bool isTemporarySummon = spellInfo && spellInfo->GetDuration() > 0;
@@ -726,8 +723,6 @@ void Pet::Update(uint32 diff)
                         if (!spellInfo)
                             return;
                         float max_range = GetSpellMaxRangeForTarget(tempspellTarget, spellInfo);
-                        if (spellInfo->RangeEntry->Flags == SPELL_RANGE_MELEE)
-                            max_range -= 2 * MIN_MELEE_REACH;
 
                         if (IsWithinLOSInMap(tempspellTarget) && GetDistance(tempspellTarget) < max_range)
                         {
@@ -1030,17 +1025,8 @@ bool Guardian::InitStatsForLevel(uint8 petlevel)
         if (IsPet())
         {
             if (petType == MAX_PET_TYPE)
-            {
-                // The petType was not overwritten by the hook, continue with default initialization
-                if (owner->getClass() == CLASS_WARLOCK ||
-                        owner->getClass() == CLASS_SHAMAN ||          // Fire Elemental
-                        owner->getClass() == CLASS_DEATH_KNIGHT ||    // Risen Ghoul
-                        owner->getClass() == CLASS_MAGE)              // Water Elemental with glyph
-                    petType = SUMMON_PET;
-                else if (owner->getClass() == CLASS_HUNTER)
-                {
-                    petType = HUNTER_PET;
-                }
+            { 
+                petType = HUNTER_PET; 
             }
 
             if (petType == HUNTER_PET)
@@ -2227,25 +2213,7 @@ void Pet::ToggleAutocast(SpellInfo const* spellInfo, bool apply)
 
 bool Pet::IsPermanentPetFor(Player* owner) const
 {
-    switch (getPetType())
-    {
-        case SUMMON_PET:
-            switch (owner->getClass())
-            {
-                case CLASS_WARLOCK:
-                    return GetCreatureTemplate()->type == CREATURE_TYPE_DEMON;
-                case CLASS_DEATH_KNIGHT:
-                    return GetCreatureTemplate()->type == CREATURE_TYPE_UNDEAD;
-                case CLASS_MAGE:
-                    return GetEntry() == 37994;
-                default:
-                    return false;
-            }
-        case HUNTER_PET:
-            return true;
-        default:
-            return false;
-    }
+    return true;
 }
 
 bool Pet::Create(ObjectGuid::LowType guidlow, Map* map, uint32 phaseMask, uint32 Entry, uint32 pet_number)
@@ -2255,7 +2223,7 @@ bool Pet::Create(ObjectGuid::LowType guidlow, Map* map, uint32 phaseMask, uint32
 
     SetPhaseMask(phaseMask, false);
 
-    Object::_Create(guidlow, pet_number, HighGuid::Pet);
+    Unit::_Create(guidlow, pet_number, HighGuid::Pet);
 
     m_spawnId = guidlow;
     m_originalEntry = Entry;

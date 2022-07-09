@@ -1043,6 +1043,49 @@ enum CommandStates
 #define UNIT_ACTION_BUTTON_TYPE(X)   ((uint32(X) & 0xFF000000) >> 24)
 #define MAKE_UNIT_ACTION_BUTTON(A, T) (uint32(A) | (uint32(T) << 24))
 
+
+#define MAX_RUNES       6
+
+enum RuneCooldowns
+{
+    RUNE_BASE_COOLDOWN = 10000,
+    RUNE_GRACE_PERIOD = 2500,     // xinef: maximum possible grace period 
+};
+
+enum RuneType
+{
+    RUNE_BLOOD = 0,
+    RUNE_UNHOLY = 1,
+    RUNE_FROST = 2,
+    RUNE_DEATH = 3,
+    NUM_RUNE_TYPES = 4
+};
+
+struct RuneInfo
+{
+    uint8 BaseRune;
+    uint8 CurrentRune;
+    uint32 Cooldown;
+    uint32 GracePeriod;
+    AuraEffect const* ConvertAura;
+};
+
+struct Runes
+{
+    RuneInfo runes[MAX_RUNES];
+    uint8 runeState;                                        // mask of available runes
+    RuneType lastUsedRune;
+
+    void SetRuneState(uint8 index, bool set = true)
+    {
+        if (set)
+            runeState |= (1 << index);                      // usable
+        else
+            runeState &= ~(1 << index);                     // on cooldown
+    }
+};
+
+
 struct UnitActionBarEntry
 {
     UnitActionBarEntry() : packedData(uint32(ACT_DISABLED) << 24) {}
@@ -1294,6 +1337,8 @@ private:
 
 class Unit : public WorldObject
 {
+protected:
+    void _Create(const ObjectGuid::LowType& guidlow, const uint32& entry, const HighGuid& guidhigh);
     float m_positionXprev = 0;
     float m_positionYprev = 0;
     float m_positionZprev = 0;
@@ -1393,8 +1438,7 @@ public:
     [[nodiscard]] bool haveOffhandWeapon() const;
     [[nodiscard]] bool CanDualWield() const { return m_canDualWield; }
     virtual void SetCanDualWield(bool value) { m_canDualWield = value; }
-    [[nodiscard]] float GetCombatReach() const override { return m_floatValues[UNIT_FIELD_COMBATREACH]; }
-    [[nodiscard]] float GetMeleeReach() const { float reach = m_floatValues[UNIT_FIELD_COMBATREACH]; return reach > MIN_MELEE_REACH ? reach : MIN_MELEE_REACH; }
+    [[nodiscard]] float GetCombatReach() const override { return m_floatValues[UNIT_FIELD_COMBATREACH]; } 
     [[nodiscard]] bool IsWithinRange(Unit const* obj, float dist) const;
     bool IsWithinCombatRange(Unit const* obj, float dist2compare) const;
     bool IsWithinMeleeRange(Unit const* obj, float dist = 0.f) const;
@@ -1439,8 +1483,8 @@ public:
     void CombatStopWithPets(bool includingCast = false);
     void StopAttackFaction(uint32 faction_id);
     void StopAttackingInvalidTarget();
-    Unit* SelectNearbyTarget(Unit* exclude = nullptr, float dist = NOMINAL_MELEE_RANGE) const;
-    Unit* SelectNearbyNoTotemTarget(Unit* exclude = nullptr, float dist = NOMINAL_MELEE_RANGE) const;
+    Unit* SelectNearbyTarget(Unit* exclude = nullptr, float dist = 0) const;
+    Unit* SelectNearbyNoTotemTarget(Unit* exclude = nullptr, float dist = 0) const;
     void SendMeleeAttackStop(Unit* victim = nullptr);
     void SendMeleeAttackStart(Unit* victim, Player* sendTo = nullptr);
 
@@ -1654,7 +1698,7 @@ public:
     [[nodiscard]] float GetUnitMissChance(WeaponAttackType attType)     const;
     float GetUnitCriticalChance(WeaponAttackType attackType, Unit const* victim) const;
     int32 GetMechanicResistChance(SpellInfo const* spell);
-    [[nodiscard]] bool CanUseAttackType(uint8 attacktype) const
+    [[nodiscard]] bool CanUseAttackType(WeaponAttackType attacktype) const
     {
         switch (attacktype)
         {
@@ -2223,6 +2267,29 @@ public:
     void _ApplyAllStatBonuses();
     void _RemoveAllStatBonuses();
 
+    void UpdateRuneRegen(RuneType rune);
+    [[nodiscard]] uint8 GetRunesState() const { return m_runes->runeState; }
+    [[nodiscard]] RuneType GetBaseRune(uint8 index) const { return RuneType(m_runes->runes[index].BaseRune); }
+    [[nodiscard]] RuneType GetCurrentRune(uint8 index) const { return RuneType(m_runes->runes[index].CurrentRune); }
+    [[nodiscard]] uint32 GetRuneCooldown(uint8 index) const { return m_runes->runes[index].Cooldown; }
+    [[nodiscard]] uint32 GetGracePeriod(uint8 index) const { return m_runes->runes[index].GracePeriod; }
+    uint32 GetRuneBaseCooldown(uint8 index, bool skipGrace);
+    [[nodiscard]] bool IsBaseRuneSlotsOnCooldown(RuneType runeType) const;
+    RuneType GetLastUsedRune() { return m_runes->lastUsedRune; }
+    void SetLastUsedRune(RuneType type) { m_runes->lastUsedRune = type; }
+    void SetBaseRune(uint8 index, RuneType baseRune) { m_runes->runes[index].BaseRune = baseRune; }
+    void SetCurrentRune(uint8 index, RuneType currentRune) { m_runes->runes[index].CurrentRune = currentRune; }
+    void SetRuneCooldown(uint8 index, uint32 cooldown) { m_runes->runes[index].Cooldown = cooldown; m_runes->SetRuneState(index, (cooldown == 0)); }
+    void SetGracePeriod(uint8 index, uint32 period) { m_runes->runes[index].GracePeriod = period; }
+    void SetRuneConvertAura(uint8 index, AuraEffect const* aura) { m_runes->runes[index].ConvertAura = aura; }
+    void AddRuneByAuraEffect(uint8 index, RuneType newType, AuraEffect const* aura) { SetRuneConvertAura(index, aura); ConvertRune(index, newType); }
+    void RemoveRunesByAuraEffect(AuraEffect const* aura);
+    void RestoreBaseRune(uint8 index);
+    void ConvertRune(uint8 index, RuneType newType);
+    virtual void ResyncRunes(uint8 count) {};
+    void AddRunePower(uint8 index);
+    void InitRunes();
+
     float GetTotalAttackPowerValue(WeaponAttackType attType, Unit* pVictim = nullptr) const;
     [[nodiscard]] float GetWeaponDamageRange(WeaponAttackType attType, WeaponDamageRange type, uint8 damageIndex = 0) const;
     void SetBaseWeaponDamage(WeaponAttackType attType, WeaponDamageRange damageRange, float value, uint8 damageIndex = 0) { m_weaponDamage[attType][damageRange][damageIndex] = value; }
@@ -2661,6 +2728,9 @@ protected:
     bool IsAlwaysVisibleFor(WorldObject const* seer) const override;
     bool IsAlwaysDetectableFor(WorldObject const* seer) const override;
     bool _instantCast;
+
+    Runes* m_runes;
+    uint16 m_runeCount;
 
 private:
     bool IsTriggeredAtSpellProcEvent(Unit* victim, Aura* aura, WeaponAttackType attType, bool isVictim, bool active, SpellProcEventEntry const*& spellProcEvent, ProcEventInfo const& eventInfo);

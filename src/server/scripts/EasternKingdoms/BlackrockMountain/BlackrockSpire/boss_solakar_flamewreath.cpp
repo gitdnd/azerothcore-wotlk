@@ -147,7 +147,7 @@ public:
                     AttackStart(victim);
                 }
 
-                if (me->GetDistance2d(me->GetVictim()) > me->GetMeleeReach())
+                if (me->GetDistance2d(me->GetVictim()) > me->GetCombatReach())
                 {
                     me->GetMotionMaster()->MovePoint(0, me->GetVictim()->GetPosition()); // a bit hacky, but needed to start moving once we've summoned an egg
                 }

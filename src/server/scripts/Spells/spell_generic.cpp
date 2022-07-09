@@ -1655,7 +1655,7 @@ class spell_gen_pet_summoned : public SpellScript
     void HandleScript(SpellEffIndex /*effIndex*/)
     {
         Player* player = GetCaster()->ToPlayer();
-        if (player->GetLastPetNumber() && player->CanResummonPet(player->GetLastPetSpell()))
+        if (player->GetLastPetNumber())
         {
             PetType newPetType = (player->getClass() == CLASS_HUNTER) ? HUNTER_PET : SUMMON_PET;
             Pet* newPet = new Pet(player, newPetType);

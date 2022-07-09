@@ -40,8 +40,8 @@ class spell_elk_attack_hit : public SpellScript
         if (spellMap[MapDummy::TriggeringSpell].has_value())
         {
             dummies = std::any_cast<uint32>(spellMap[MapDummy::TriggeringSpell].value());
-        }
-        
+        } 
+        spell->SetBonusRange(caster->GetCombatReach());
     }
     void SpellHit()
     {
@@ -113,7 +113,7 @@ class spell_elk_attack_hit : public SpellScript
         case SPELL_CRUSADER_STRIKE:
             caster->CastSpell(caster, 1, true); // cast a spell i guess
             break;
-        }
+        } 
     }
     void Register() override
     {

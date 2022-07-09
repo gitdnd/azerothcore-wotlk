@@ -101,7 +101,7 @@ enum class MapDummy : uint8
     TriggeringSpell,
     Strike,
     WasInAir,
-
+    Que,
 };
 
 struct SpellDestination
@@ -779,9 +779,7 @@ public:
 
     SpellCastResult CanOpenLock(uint32 effIndex, uint32 lockid, SkillType& skillid, int32& reqSkillValue, int32& skillValue);
 
-
-
-
+    float GetTotalMaxRange(bool positive = false, Unit* caster = nullptr, Spell* spell = nullptr); 
 
     // -------------------------------------------
 
@@ -814,6 +812,9 @@ public:
 #endif
 
     uint8 development = 1;
+    uint16 runeCooldown = 0;
+    uint8 runeCostAlt = 0;
+    float bonusRange = 0;
 public:
     Unit* GetCastTarget() { return unitTarget; }
     SpellDestination* GetDestTargets(int index)
@@ -837,7 +838,14 @@ public:
 
     bool skip = false;
 
+    void SetRuneCooldown(uint16 dev);
+    uint16 GetRuneCooldown() { return runeCooldown; }
 
+    void SetRuneCost(uint8 cost);
+    uint8 GetRuneCost() { return runeCostAlt; }
+
+    void SetBonusRange(float range);
+    float GetBonusRange() { return bonusRange; }
 };
 
 namespace Acore

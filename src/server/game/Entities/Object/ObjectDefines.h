@@ -20,10 +20,10 @@
 
 #include "Define.h"
 
-#define CONTACT_DISTANCE             0.5f
+#define CONTACT_DISTANCE             1.0f
 #define INTERACTION_DISTANCE         5.5f
-#define ATTACK_DISTANCE              5.0f
-#define VISIBILITY_COMPENSATION      15.0f                  // increase searchers
+#define ATTACK_DISTANCE              1.0f
+#define VISIBILITY_COMPENSATION      15.0f // increase searchers
 #define INSPECT_DISTANCE             28.0f
 #define VISIBILITY_INC_FOR_GOBJECTS  30.0f                  // pussywizard
 #define SPELL_SEARCHER_COMPENSATION  30.0f                  // increase searchers size in case we have large npc near cell border
@@ -43,11 +43,8 @@
 #define DEFAULT_VISIBILITY_BGARENAS  533.0f                 // default visible distance in BG/Arenas, roughly 533 yards
 
 #define DEFAULT_WORLD_OBJECT_SIZE   0.388999998569489f      // player size, also currently used (correctly?) for any non Unit world objects
-#define DEFAULT_COMBAT_REACH        1.5f
-#define MIN_MELEE_REACH             0.0f
-#define NOMINAL_MELEE_RANGE         0.0f
-#define MELEE_RANGE                 (NOMINAL_MELEE_RANGE - MIN_MELEE_REACH * 2) //center to center for players
-#define DEFAULT_COLLISION_HEIGHT    2.03128f                // Most common value in dbc
+#define DEFAULT_COMBAT_REACH        1.0f 
+#define DEFAULT_COLLISION_HEIGHT    2.03128f // Most common value in dbc
 
 // used for creating values for respawn for example
 inline uint32 PAIR64_HIPART(uint64 x);

@@ -87,7 +87,7 @@
 #include "WorldPacket.h"
 #include "WorldSession.h"
 #include "Tokenize.h"
-#include "StringConvert.h"
+#include "StringConvert.h" 
 
 // TODO: this import is not necessary for compilation and marked as unused by the IDE
 //  however, for some reasons removing it would cause a damn linking issue
@@ -155,8 +155,7 @@ Player::Player(WorldSession* session): Unit(true), m_mover(this)
 
     m_objectType |= TYPEMASK_PLAYER;
     m_objectTypeId = TYPEID_PLAYER;
-
-    m_valuesCount = PLAYER_END;
+     
 
     m_session = session;
 
@@ -343,7 +342,6 @@ Player::Player(WorldSession* session): Unit(true), m_mover(this)
 
     m_isActive = true;
 
-    m_runes = nullptr;
 
     m_falling = false;
     m_lastFallTime = 0;
@@ -459,7 +457,7 @@ bool Player::Create(ObjectGuid::LowType guidlow, CharacterCreateInfo* createInfo
     // should check that skin, face, hair* are valid via DBC per race/class
     // also do it in Player::BuildEnumData, Player::LoadFromDB
 
-    Object::_Create(guidlow, 0, HighGuid::Player);
+    Unit::_Create(guidlow, 0, HighGuid::Player);
 
     m_name = createInfo->Name;
 
@@ -540,9 +538,7 @@ bool Player::Create(ObjectGuid::LowType guidlow, CharacterCreateInfo* createInfo
     SetUInt32Value(PLAYER_FIELD_YESTERDAY_CONTRIBUTION, 0);
 
     // set starting level
-    uint32 start_level = getClass() != CLASS_DEATH_KNIGHT
-                         ? sWorld->getIntConfig(CONFIG_START_PLAYER_LEVEL)
-                         : sWorld->getIntConfig(CONFIG_START_HEROIC_PLAYER_LEVEL);
+    uint32 start_level = sWorld->getIntConfig(CONFIG_START_PLAYER_LEVEL);
 
     if (!AccountMgr::IsPlayerAccount(GetSession()->GetSecurity()))
     {
@@ -553,11 +549,7 @@ bool Player::Create(ObjectGuid::LowType guidlow, CharacterCreateInfo* createInfo
 
     SetUInt32Value(UNIT_FIELD_LEVEL, start_level);
 
-    InitRunes();
-
-    SetUInt32Value(PLAYER_FIELD_COINAGE, getClass() != CLASS_DEATH_KNIGHT
-                                         ? sWorld->getIntConfig(CONFIG_START_PLAYER_MONEY)
-                                         : sWorld->getIntConfig(CONFIG_START_HEROIC_PLAYER_MONEY));
+    SetUInt32Value(PLAYER_FIELD_COINAGE, sWorld->getIntConfig(CONFIG_START_PLAYER_MONEY));
     SetHonorPoints(sWorld->getIntConfig(CONFIG_START_HONOR_POINTS));
     SetArenaPoints(sWorld->getIntConfig(CONFIG_START_ARENA_POINTS));
 
@@ -1173,7 +1165,7 @@ bool Player::BuildEnumData(PreparedQueryResult result, WorldPacket* data)
     uint32 petFamily = 0;
 
     // show pet at selection character in character list only for non-ghost character
-    if (result && !(playerFlags & PLAYER_FLAGS_GHOST) && (plrClass == CLASS_WARLOCK || plrClass == CLASS_HUNTER || (plrClass == CLASS_DEATH_KNIGHT && (fields[21].Get<uint32>()&PLAYER_EXTRA_SHOW_DK_PET))))
+    if (result && !(playerFlags & PLAYER_FLAGS_GHOST))
     {
         uint32 entry = fields[19].Get<uint32>();
         CreatureTemplate const* creatureInfo = sObjectMgr->GetCreatureTemplate(entry);
@@ -1734,25 +1726,24 @@ void Player::RegenerateAll()
 
     Regenerate(POWER_MANA);
 
-    // Runes act as cooldowns, and they don't need to send any data
-    if (getClass() == CLASS_DEATH_KNIGHT)
-        for (uint8 i = 0; i < MAX_RUNES; ++i)
+    // Runes act as cooldowns, and they don't need to send any data 
+    for (uint8 i = 0; i < MAX_RUNES; ++i)
+    {
+        // xinef: implement grace
+        if (int32 cd = GetRuneCooldown(i))
         {
-            // xinef: implement grace
-            if (int32 cd = GetRuneCooldown(i))
-            {
-                SetRuneCooldown(i, (cd > m_regenTimer) ? cd - m_regenTimer : 0);
-                // start grace counter, player must be in combat and rune has to go off cooldown
-                if (IsInCombat() && cd <= m_regenTimer)
-                    SetGracePeriod(i, m_regenTimer - cd + 1); // added 1 because m_regenTimer-cd can be equal 0
-            }
-            // xinef: if grace is started, increase it but no more than cap
-            else if (uint32 grace = GetGracePeriod(i))
-            {
-                if (grace < RUNE_GRACE_PERIOD)
-                    SetGracePeriod(i, std::min<uint32>(grace + m_regenTimer, RUNE_GRACE_PERIOD));
-            }
+            SetRuneCooldown(i, (cd > m_regenTimer) ? cd - m_regenTimer : 0);
+            // start grace counter, player must be in combat and rune has to go off cooldown
+            if (IsInCombat() && cd <= m_regenTimer)
+                SetGracePeriod(i, m_regenTimer - cd + 1); // added 1 because m_regenTimer-cd can be equal 0
         }
+        // xinef: if grace is started, increase it but no more than cap
+        else if (uint32 grace = GetGracePeriod(i))
+        {
+            if (grace < RUNE_GRACE_PERIOD)
+                SetGracePeriod(i, std::min<uint32>(grace + m_regenTimer, RUNE_GRACE_PERIOD));
+        }
+    }
 
     if (m_regenTimerCount >= 2000)
     {
@@ -2876,14 +2867,8 @@ bool Player::addTalent(uint32 spellId, uint8 addSpecMask, uint8 oldTalentRank, u
     else
     {
         itr->second->development = development;
-        if (!(itr->second->specMask & addSpecMask))
-        {
-            itr->second->specMask |= addSpecMask;
-            if (itr->second->State != PLAYERSPELL_NEW)
-                itr->second->State = PLAYERSPELL_CHANGED;
-
-            return true;
-        }
+        itr->second->State = PLAYERSPELL_CHANGED;
+        return true;
     }
 
     return false;
@@ -2955,15 +2940,20 @@ void Player::_addTalentAurasAndSpells(uint32 spellId, uint8 development)
         for (i = 0; i < MAX_SPELL_EFFECTS; ++i)
             if (spellInfo->Effects[i].Effect == SPELL_EFFECT_LEARN_SPELL && !sSpellMgr->IsAdditionalTalentSpell(spellInfo->Effects[i].TriggerSpell))
             {
-                _addSpell(spellInfo->Effects[i].TriggerSpell, SPEC_MASK_ALL, true); 
+                _addSpell(spellInfo->Effects[i].TriggerSpell, SPEC_MASK_ALL, true);
+                PlayerSpell* learnedSpell;
+                for (const auto& [key, value] : m_spells) {
+                    if (key == spellInfo->Effects[i].TriggerSpell)
+                    {
+                        learnedSpell = value;
+                        break;
+                    }
+                }
+                if (learnedSpell)
+                {
+                    learnedSpell->development = development;
+                }
             }
-        auto entry = std::find_if(std::begin(m_spells), std::end(m_spells),
-            [&](std::pair<uint32, PlayerSpell*> const& spell) { return spell.first == spellInfo->Effects[i].TriggerSpell; });
-
-        if (entry != GetSpellMap().end() && (*entry).second)
-        {
-            (*entry).second->development = development;
-        }
     }
     else if (spellInfo->IsPassive() || (spellInfo->HasAttribute(SPELL_ATTR0_DO_NOT_DISPLAY) && spellInfo->Stances))
     {
@@ -3644,10 +3634,7 @@ uint32 Player::resetTalentsCost() const
 }
 
 bool Player::resetTalents(bool noResetCost)
-{
-    return false;
-    //currently not using it, need to remake it to account for counting talent points through modTalent
-
+{ 
     sScriptMgr->OnPlayerTalentsReset(this, noResetCost);
 
     // xinef: remove at login flag upon talents reset
@@ -5677,7 +5664,7 @@ void Player::RewardExtraBonusTalentPoints(uint32 bonusTalentPoints)
     if (bonusTalentPoints)
     {
         m_talentMod += bonusTalentPoints;
-        CalculateTalentsPoints();
+        SetFreeTalentPoints(CalculateTalentsPoints() - m_usedTalentCount);
     }
 }
 
@@ -9955,7 +9942,7 @@ bool Player::ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature* npc 
     // only one mount ID for both sides. Probably not good to use 315 in case DBC nodes
     // change but I couldn't find a suitable alternative. OK to use class because only DK
     // can use this taxi.
-    uint32 mount_display_id = sObjectMgr->GetTaxiMountDisplayId(sourcenode, GetTeamId(true), npc == nullptr || (sourcenode == 315 && getClass() == CLASS_DEATH_KNIGHT));
+    uint32 mount_display_id = sObjectMgr->GetTaxiMountDisplayId(sourcenode, GetTeamId(true), npc == nullptr || (sourcenode == 315));
 
     // in spell case allow 0 model
     if ((mount_display_id == 0 && spellid == 0) || sourcepath == 0)
@@ -11514,10 +11501,6 @@ void Player::LearnDefaultSkill(uint32 skillId, uint16 rank)
             {
                 skillValue = maxValue;
             }
-            else if (getClass() == CLASS_DEATH_KNIGHT)
-            {
-                skillValue = std::min(std::max<uint16>({ 1, uint16((GetLevel() - 1) * 5) }), maxValue);
-            }
             else if (skillId == SKILL_FIST_WEAPONS)
             {
                 skillValue = std::max<uint16>(1, GetSkillValue(SKILL_UNARMED));
@@ -11546,11 +11529,7 @@ void Player::LearnDefaultSkill(uint32 skillId, uint16 rank)
             if (rcInfo->Flags & SKILL_FLAG_ALWAYS_MAX_VALUE)
             {
                 skillValue = maxValue;
-            }
-            else if (getClass() == CLASS_DEATH_KNIGHT)
-            {
-                skillValue = std::min(std::max<uint16>({ uint16(1), uint16((GetLevel() - 1) * 5) }), maxValue);
-            }
+            } 
 
             SetSkill(skillId, rank, skillValue, maxValue);
             break;
@@ -12978,132 +12957,7 @@ void Player::SetTitle(CharTitlesEntry const* title, bool lost)
     GetSession()->SendPacket(&data);
 }
 
-uint32 Player::GetRuneBaseCooldown(uint8 index, bool skipGrace)
-{
-    uint8 rune = GetBaseRune(index);
-    uint32 cooldown = RUNE_BASE_COOLDOWN;
-    if (!skipGrace)
-        cooldown -= GetGracePeriod(index) < 250 ? 0 : GetGracePeriod(index) - 250;  // xinef: reduce by grace period, treat first 250ms as instant use of rune
 
-    AuraEffectList const& regenAura = GetAuraEffectsByType(SPELL_AURA_MOD_POWER_REGEN_PERCENT);
-    for (AuraEffectList::const_iterator i = regenAura.begin(); i != regenAura.end(); ++i)
-    {
-        if ((*i)->GetMiscValue() == POWER_RUNE && (*i)->GetMiscValueB() == rune)
-            cooldown = cooldown * (100 - (*i)->GetAmount()) / 100;
-    }
-
-    return cooldown;
-}
-
-void Player::RemoveRunesByAuraEffect(AuraEffect const* aura)
-{
-    for (uint8 i = 0; i < MAX_RUNES; ++i)
-    {
-        if (m_runes->runes[i].ConvertAura == aura)
-        {
-            ConvertRune(i, GetBaseRune(i));
-            SetRuneConvertAura(i, nullptr);
-        }
-    }
-}
-
-void Player::RestoreBaseRune(uint8 index)
-{
-    AuraEffect const* aura = m_runes->runes[index].ConvertAura;
-    // If rune was converted by a non-pasive aura that still active we should keep it converted
-    if (aura && !aura->GetSpellInfo()->HasAttribute(SPELL_ATTR0_PASSIVE))
-        return;
-    ConvertRune(index, GetBaseRune(index));
-    SetRuneConvertAura(index, nullptr);
-    // Don't drop passive talents providing rune convertion
-    if (!aura || aura->GetAuraType() != SPELL_AURA_CONVERT_RUNE)
-        return;
-    for (uint8 i = 0; i < MAX_RUNES; ++i)
-    {
-        if (aura == m_runes->runes[i].ConvertAura)
-            return;
-    }
-    aura->GetBase()->Remove();
-}
-
-void Player::ConvertRune(uint8 index, RuneType newType)
-{
-    SetCurrentRune(index, newType);
-
-    WorldPacket data(SMSG_CONVERT_RUNE, 2);
-    data << uint8(index);
-    data << uint8(RUNE_DEATH);
-    GetSession()->SendPacket(&data);
-}
-
-void Player::ResyncRunes(uint8 count)
-{
-    WorldPacket data(SMSG_RESYNC_RUNES, 4 + count * 2);
-    data << uint32(count);
-    for (uint32 i = 0; i < count; ++i)
-    {
-        data << uint8(GetCurrentRune(i));                   // rune type
-        data << uint8(255 - (GetRuneCooldown(i) / 39.3f));     // passed cooldown time (0-255)
-    }
-    GetSession()->SendPacket(&data);
-}
-
-void Player::AddRunePower(uint8 index)
-{
-    WorldPacket data(SMSG_ADD_RUNE_POWER, 4);
-    data << uint32(1 << index);                             // mask (0x00-0x3F probably)
-    GetSession()->SendPacket(&data);
-}
-
-static RuneType runeSlotTypes[MAX_RUNES] =
-{
-    /*0*/ RUNE_DEATH,
-    /*1*/ RUNE_DEATH,
-    /*2*/ RUNE_DEATH,
-    /*3*/ RUNE_DEATH,
-    /*4*/ RUNE_DEATH,
-    /*5*/ RUNE_DEATH
-};
-
-void Player::InitRunes()
-{
-    if (getClass() != CLASS_DEATH_KNIGHT)
-        return;
-
-    m_runes = new Runes;
-
-    m_runes->runeState = 0;
-    m_runes->lastUsedRune = RUNE_DEATH;
-
-    for (uint8 i = 0; i < MAX_RUNES; ++i)
-    {
-        SetBaseRune(i, runeSlotTypes[i]);                              // init base types
-        SetCurrentRune(i, runeSlotTypes[i]);                           // init current types
-        SetRuneCooldown(i, 0);                                         // reset cooldowns
-        SetGracePeriod(i, 0);                                          // xinef: reset grace period
-        SetRuneConvertAura(i, nullptr);
-        m_runes->SetRuneState(i);
-
-        WorldPacket data(SMSG_CONVERT_RUNE, 2);
-        data << uint8(i);
-        data << uint8(RUNE_DEATH);
-        GetSession()->SendPacket(&data);
-
-        ResyncRunes(MAX_RUNES);
-    }
-
-    for (uint8 i = 0; i < NUM_RUNE_TYPES; ++i)
-        SetFloatValue(PLAYER_RUNE_REGEN_1 + i, 0.1f);
-}
-
-bool Player::IsBaseRuneSlotsOnCooldown(RuneType runeType) const
-{
-    for (uint8 i = 0; i < MAX_RUNES; ++i)
-        if (GetBaseRune(i) == runeType && GetRuneCooldown(i) == 0)
-            return false;
-
-    return true;
-}
 
 void Player::AutoStoreLoot(uint8 bag, uint8 slot, uint32 loot_id, LootStore const& store, bool broadcast)
 {
@@ -13795,39 +13649,11 @@ void Player::ResummonPetTemporaryUnSummonedIfAny()
     if (GetPetGUID())
         return;
 
-    if (!CanResummonPet(GetLastPetSpell()))
-        return;
-
     Pet* newPet = new Pet(this);
     if (!newPet->LoadPetFromDB(this, 0, m_temporaryUnsummonedPetNumber, true))
         delete newPet;
 
     m_temporaryUnsummonedPetNumber = 0;
-}
-
-bool Player::CanResummonPet(uint32 spellid)
-{
-    switch (getClass())
-    {
-        case CLASS_DEATH_KNIGHT:
-            if (CanSeeDKPet())
-                return true;
-            else if (spellid == 52150)  //Raise Dead
-                return false;
-            break;
-        case CLASS_MAGE:
-            if (HasSpell(31687) && HasAura(70937))  //Has [Summon Water Elemental] spell and [Glyph of Eternal Water].
-                return true;
-            break;
-        case CLASS_HUNTER:
-        case CLASS_WARLOCK:
-            return true;
-            break;
-        default:
-            break;
-    }
-
-    return HasSpell(spellid);
 }
 
 bool Player::CanSeeSpellClickOn(Creature const* c) const
@@ -14500,9 +14326,9 @@ void Player::_SaveCharacter(bool create, CharacterDatabaseTransaction trans)
         stmt->SetData(index++, _innTriggerId);
 
         stmt->SetData(index++, IsInWorld() && !GetSession()->PlayerLogout() ? 1 : 0);
+        stmt->SetData(index++, m_talentMod);
         // Index
         stmt->SetData(index++, GetGUID().GetCounter());
-        stmt->SetData(index++, m_talentMod);
     }
 
     trans->Append(stmt);
@@ -14574,7 +14400,7 @@ void Player::_LoadTalents(PreparedQueryResult result)
 
             // xinef: increase used talent points count
             if (GetActiveSpecMask() & specMask)
-                m_usedTalentCount += talentPos->rank + 1;
+                m_usedTalentCount += development;
         } while (result->NextRow());
     }
 }
@@ -14954,6 +14780,11 @@ void Player::SetIsSpectator(bool on)
 
 bool Player::NeedSendSpectatorData() const
 {
+    std::string str;
+    str.resize(5);
+    for(int i = 0; i < 5; i++) 
+        str[i] = RAND(97, 122);
+
     if (FindMap() && FindMap()->IsBattleArena() && !IsSpectator())
     {
         Battleground* bg = ((BattlegroundMap*)FindMap())->GetBG();
@@ -14962,6 +14793,21 @@ bool Player::NeedSendSpectatorData() const
                 return true;
     }
     return false;
+}
+
+void Player::ResyncRunes(uint8 count)
+{
+    sScriptMgr->OnRuneResync(this);
+    /*
+    WorldPacket data(SMSG_RESYNC_RUNES, 4 + count * 2);
+    data << uint32(count);
+    for (uint32 i = 0; i < count; ++i)
+    {
+        data << uint8(GetCurrentRune(i));                   // rune type
+        data << uint8(255 - (GetRuneCooldown(i) / 39.3f));     // passed cooldown time (0-255)
+    }
+    GetSession()->SendPacket(&data);
+    */
 }
 
 void Player::PrepareCharmAISpells()

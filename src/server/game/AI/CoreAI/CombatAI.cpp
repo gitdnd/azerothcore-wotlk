@@ -110,8 +110,6 @@ void CasterAI::InitializeAI()
     for (SpellVct::iterator itr = spells.begin(); itr != spells.end(); ++itr)
         if (AISpellInfo[*itr].condition == AICOND_COMBAT && m_attackDist > GetAISpellInfo(*itr)->maxRange)
             m_attackDist = GetAISpellInfo(*itr)->maxRange;
-    if (m_attackDist == 30.0f)
-        m_attackDist = MELEE_RANGE;
 }
 
 void CasterAI::EnterCombat(Unit* who)
@@ -174,8 +172,6 @@ ArcherAI::ArcherAI(Creature* c) : CreatureAI(c)
     SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(me->m_spells[0]);
     m_minRange = spellInfo ? spellInfo->GetMinRange(false) : 0;
 
-    if (!m_minRange)
-        m_minRange = MELEE_RANGE;
     me->m_CombatDistance = spellInfo ? spellInfo->GetMaxRange(false) : 0;
     me->m_SightDistance = me->m_CombatDistance;
 }

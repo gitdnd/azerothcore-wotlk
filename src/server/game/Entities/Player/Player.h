@@ -45,6 +45,7 @@
 #include <string>
 #include <vector>
 
+
 struct CreatureTemplate;
 struct Mail;
 struct TrainerSpell;
@@ -396,48 +397,6 @@ struct Areas
     float x2;
     float y1;
     float y2;
-};
-
-#define MAX_RUNES       6
-
-enum RuneCooldowns
-{
-    RUNE_BASE_COOLDOWN  = 10000,
-    RUNE_GRACE_PERIOD   = 2500,     // xinef: maximum possible grace period
-    RUNE_MISS_COOLDOWN  = 1500,     // cooldown applied on runes when the spell misses
-};
-
-enum RuneType
-{
-    RUNE_BLOOD      = 0,
-    RUNE_UNHOLY     = 1,
-    RUNE_FROST      = 2,
-    RUNE_DEATH      = 3,
-    NUM_RUNE_TYPES  = 4
-};
-
-struct RuneInfo
-{
-    uint8 BaseRune;
-    uint8 CurrentRune;
-    uint32 Cooldown;
-    uint32 GracePeriod;
-    AuraEffect const* ConvertAura;
-};
-
-struct Runes
-{
-    RuneInfo runes[MAX_RUNES];
-    uint8 runeState;                                        // mask of available runes
-    RuneType lastUsedRune;
-
-    void SetRuneState(uint8 index, bool set = true)
-    {
-        if (set)
-            runeState |= (1 << index);                      // usable
-        else
-            runeState &= ~(1 << index);                     // on cooldown
-    }
 };
 
 struct EnchantDuration
@@ -1228,7 +1187,7 @@ public:
     }
     [[nodiscard]] Item* GetWeaponForAttack(WeaponAttackType attackType, bool useable = false) const;
     [[nodiscard]] Item* GetShield(bool useable = false) const;
-    static uint8 GetAttackBySlot(uint8 slot);        // MAX_ATTACK if not weapon slot
+    static WeaponAttackType GetAttackBySlot(uint8 slot);        // MAX_ATTACK if not weapon slot
     std::vector<Item*>& GetItemUpdateQueue() { return m_itemUpdateQueue; }
     static bool IsInventoryPos(uint16 pos) { return IsInventoryPos(pos >> 8, pos & 255); }
     static bool IsInventoryPos(uint8 bag, uint8 slot);
@@ -2312,8 +2271,7 @@ public:
     void SetTemporaryUnsummonedPetNumber(uint32 petnumber) { m_temporaryUnsummonedPetNumber = petnumber; }
     void UnsummonPetTemporaryIfAny();
     void ResummonPetTemporaryUnSummonedIfAny();
-    [[nodiscard]] bool IsPetNeedBeTemporaryUnsummoned() const { return GetSession()->PlayerLogout() || !IsInWorld() || !IsAlive() || IsMounted()/*+in flight*/ || GetVehicle() || IsBeingTeleported(); }
-    bool CanResummonPet(uint32 spellid);
+    [[nodiscard]] bool IsPetNeedBeTemporaryUnsummoned() const { return GetSession()->PlayerLogout() || !IsInWorld() || !IsAlive() || IsMounted()/*+in flight*/ || GetVehicle() || IsBeingTeleported(); } 
 
     void SendCinematicStart(uint32 CinematicSequenceId) const;
     void SendMovieStart(uint32 MovieId);
@@ -2399,29 +2357,7 @@ public:
 
     bool isAllowedToLoot(Creature const* creature);
 
-    void UpdateRuneRegen(RuneType rune);
     [[nodiscard]] DeclinedName const* GetDeclinedNames() const { return m_declinedname; }
-    [[nodiscard]] uint8 GetRunesState() const { return m_runes->runeState; }
-    [[nodiscard]] RuneType GetBaseRune(uint8 index) const { return RuneType(m_runes->runes[index].BaseRune); }
-    [[nodiscard]] RuneType GetCurrentRune(uint8 index) const { return RuneType(m_runes->runes[index].CurrentRune); }
-    [[nodiscard]] uint32 GetRuneCooldown(uint8 index) const { return m_runes->runes[index].Cooldown; }
-    [[nodiscard]] uint32 GetGracePeriod(uint8 index) const { return m_runes->runes[index].GracePeriod; }
-    uint32 GetRuneBaseCooldown(uint8 index, bool skipGrace);
-    [[nodiscard]] bool IsBaseRuneSlotsOnCooldown(RuneType runeType) const;
-    RuneType GetLastUsedRune() { return m_runes->lastUsedRune; }
-    void SetLastUsedRune(RuneType type) { m_runes->lastUsedRune = type; }
-    void SetBaseRune(uint8 index, RuneType baseRune) { m_runes->runes[index].BaseRune = baseRune; }
-    void SetCurrentRune(uint8 index, RuneType currentRune) { m_runes->runes[index].CurrentRune = currentRune; }
-    void SetRuneCooldown(uint8 index, uint32 cooldown) { m_runes->runes[index].Cooldown = cooldown; m_runes->SetRuneState(index, (cooldown == 0)); }
-    void SetGracePeriod(uint8 index, uint32 period) { m_runes->runes[index].GracePeriod = period; }
-    void SetRuneConvertAura(uint8 index, AuraEffect const* aura) { m_runes->runes[index].ConvertAura = aura; }
-    void AddRuneByAuraEffect(uint8 index, RuneType newType, AuraEffect const* aura) { SetRuneConvertAura(index, aura); ConvertRune(index, newType); }
-    void RemoveRunesByAuraEffect(AuraEffect const* aura);
-    void RestoreBaseRune(uint8 index);
-    void ConvertRune(uint8 index, RuneType newType);
-    void ResyncRunes(uint8 count);
-    void AddRunePower(uint8 index);
-    void InitRunes();
 
     void SendRespondInspectAchievements(Player* player) const;
     [[nodiscard]] bool HasAchieved(uint32 achievementId) const;
@@ -2484,6 +2420,7 @@ public:
     uint32 m_pendingSpectatorInviteInstanceId;
     GuidSet m_receivedSpectatorResetFor;
 
+    void  ResyncRunes(uint8 count) override;
     // Dancing Rune weapon
     void setRuneWeaponGUID(ObjectGuid guid) { m_drwGUID = guid; };
     ObjectGuid getRuneWeaponGUID() { return m_drwGUID; };
@@ -2781,7 +2718,6 @@ public:
     bool   m_summon_asSpectator;
 
     DeclinedName* m_declinedname;
-    Runes* m_runes;
     EquipmentSets m_EquipmentSets;
 
     bool CanAlwaysSee(WorldObject const* obj) const override;
@@ -2876,6 +2812,9 @@ private:
     bool _wasOutdoor;
 
     PlayerSettingMap m_charSettingsMap;
+
+public:
+    uint32 quedSpell = 0;
 };
 
 void AddItemsSetItem(Player* player, Item* item);

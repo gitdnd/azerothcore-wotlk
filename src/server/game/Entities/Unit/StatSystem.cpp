@@ -773,7 +773,7 @@ void Unit::UpdateManaRegen()
     SetStatFloatValue(UNIT_FIELD_POWER_REGEN_FLAT_MODIFIER, power_regen_mp5 + power_regen);
 }
 
-void Player::UpdateRuneRegen(RuneType rune)
+void Unit::UpdateRuneRegen(RuneType rune)
 {
     if (rune >= NUM_RUNE_TYPES)
         return;

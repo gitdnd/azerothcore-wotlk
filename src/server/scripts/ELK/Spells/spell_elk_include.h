@@ -90,7 +90,7 @@ class spell_elk_attack : public SpellScript
     PrepareSpellScript(spell_elk_attack);
     Unit* caster;
     Spell* spell;
-
+    bool que = false;
 
 
 
@@ -105,6 +105,11 @@ class spell_elk_attack : public SpellScript
             if (curAtk->m_spellInfo->Id == ATTACK)
             {
                 spell->skip = true;
+                if (caster->IsPlayer() && curAtk->GetSpellTimer() < 50)
+                {
+                    Player* player = caster->ToPlayer();
+                    player->quedSpell = ATTACK;
+                }
                 return;
             }
         }
@@ -113,9 +118,14 @@ class spell_elk_attack : public SpellScript
             curAtk = caster->GetCurrentSpell(CURRENT_GENERIC_SPELL);
             if (curAtk)
             {
-                if (curAtk->m_spellInfo->Id == ATTACK_HIT)
+                if (curAtk->m_spellInfo->Id == ATTACK_HIT && curAtk->GetSpellTimer() > 0)
                 {
                     spell->skip = true;
+                    if (caster->IsPlayer())
+                    {
+                        Player* player = caster->ToPlayer();
+                        player->quedSpell = ATTACK;
+                    }
                     return;
                 }
             }
@@ -282,6 +292,13 @@ class spell_elk_attack : public SpellScript
 
             }
         }
+        uint16 cd = 0;
+        if(caster->CanUseAttackType(BASE_ATTACK))
+            cd += caster->GetAttackTime(BASE_ATTACK);
+        if (caster->CanUseAttackType(OFF_ATTACK))
+            cd += caster->GetAttackTime(OFF_ATTACK);
+        spell->SetRuneCooldown(cd);
+        spell->SetRuneCost(1);
     }
     void SpellBegin()
     {

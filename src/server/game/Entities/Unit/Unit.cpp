@@ -352,8 +352,19 @@ Unit::Unit(bool isWorldObject) : WorldObject(isWorldObject),
     m_baseManaRegen = 0;
     m_baseHealthRegen = 0;
     m_spellPenetrationItemMod = 0;
-}
 
+
+    m_runes = nullptr;
+    m_runeCount = 0;
+
+    m_valuesCount = PLAYER_END; // REMEMBER TO OPTIMIZE THIS LATER CUZ I SURE WONT RIGHT NOW LMAO
+    
+}
+void Unit::_Create(const ObjectGuid::LowType& guidlow, const uint32& entry, const HighGuid& guidhigh)
+{
+    Object::_Create(guidlow, entry, guidhigh);
+    InitRunes();
+}
 ////////////////////////////////////////////////////////////
 // Methods of class GlobalCooldownMgr
 bool GlobalCooldownMgr::HasGlobalCooldown(SpellInfo const* spellInfo) const
@@ -745,7 +756,7 @@ bool Unit::IsWithinCombatRange(Unit const* obj, float dist2compare) const
     float dz = GetPositionZ() - obj->GetPositionZ();
     float distsq = dx * dx + dy * dy + dz * dz;
 
-    float sizefactor = GetCombatReach() + obj->GetCombatReach();
+    float sizefactor = GetCombatReach() + obj->GetCollisionRadius();
     float maxdist = dist2compare + sizefactor;
 
     return distsq < maxdist * maxdist;
@@ -768,10 +779,9 @@ bool Unit::IsWithinMeleeRange(Unit const* obj, float dist) const
 
 float Unit::GetMeleeRange(Unit const* target) const
 {
-    float range = GetCombatReach() + target->GetCombatReach() + 4.0f / 3.0f;
-    return std::max(range, NOMINAL_MELEE_RANGE);
+    float range = GetCollisionRadius() + GetCombatReach() + target->GetCollisionRadius();
+    return range;
 }
-
 bool Unit::IsWithinRange(Unit const* obj, float dist) const
 {
     if (!obj || !IsInMap(obj) || !InSamePhase(obj))
@@ -8931,50 +8941,44 @@ bool Unit::HandleAuraProc(Unit* victim, uint32 damage, Aura* triggeredByAura, Sp
                 // xinef: Icon 22 is used for item bonus, skip
                 if (dummySpell->SpellIconID == 3041 || (dummySpell->SpellIconID == 22 && dummySpell->Id != 62459) || dummySpell->SpellIconID == 2622)
                 {
-                    *handled = true;
-                    // Convert recently used Blood Rune to Death Rune
-                    if (Player* player = ToPlayer())
+                    *handled = true; 
+
+                    // xinef: not true
+                    //RuneType rune = ToPlayer()->GetLastUsedRune();
+                    // can't proc from death rune use
+                    //if (rune == RUNE_DEATH)
+                    //    return false;
+                    AuraEffect* aurEff = triggeredByAura->GetEffect(EFFECT_0);
+                    if (!aurEff)
+                        return false;
+
+                    // Reset amplitude - set death rune remove timer to 30s
+                    aurEff->ResetPeriodic(true);
+                    uint32 runesLeft;
+
+                    if (dummySpell->SpellIconID == 2622)
+                        runesLeft = 2;
+                    else
+                        runesLeft = 1;
+
+                    for (uint8 i = 0; i < MAX_RUNES && runesLeft; ++i)
                     {
-                        if (player->getClass() != CLASS_DEATH_KNIGHT)
-                            return false;
-
-                        // xinef: not true
-                        //RuneType rune = ToPlayer()->GetLastUsedRune();
-                        // can't proc from death rune use
-                        //if (rune == RUNE_DEATH)
-                        //    return false;
-                        AuraEffect* aurEff = triggeredByAura->GetEffect(EFFECT_0);
-                        if (!aurEff)
-                            return false;
-
-                        // Reset amplitude - set death rune remove timer to 30s
-                        aurEff->ResetPeriodic(true);
-                        uint32 runesLeft;
-
                         if (dummySpell->SpellIconID == 2622)
-                            runesLeft = 2;
-                        else
-                            runesLeft = 1;
-
-                        for (uint8 i = 0; i < MAX_RUNES && runesLeft; ++i)
                         {
-                            if (dummySpell->SpellIconID == 2622)
-                            {
-                                if (player->GetCurrentRune(i) == RUNE_DEATH)
-                                    continue;
-                            }
-                            else
-                            {
-                                if (player->GetCurrentRune(i) == RUNE_DEATH)
-                                    continue;
-                            }
-                            if (player->GetRuneCooldown(i) != player->GetRuneBaseCooldown(i, false))
+                            if (GetCurrentRune(i) == RUNE_DEATH)
                                 continue;
-
-                            --runesLeft;
-                            // Mark aura as used
-                            player->AddRuneByAuraEffect(i, RUNE_DEATH, aurEff);
                         }
+                        else
+                        {
+                            if (GetCurrentRune(i) == RUNE_DEATH)
+                                continue;
+                        }
+                        if (GetRuneCooldown(i) != GetRuneBaseCooldown(i, false))
+                            continue;
+
+                        --runesLeft;
+                        // Mark aura as used
+                        AddRuneByAuraEffect(i, RUNE_DEATH, aurEff); 
                         return true;
                     }
                     return false;
@@ -9661,29 +9665,19 @@ bool Unit::HandleProcTriggerSpell(Unit* victim, uint32 damage, AuraEffect* trigg
         // Item - Death Knight T10 Melee 4P Bonus
         if (auraSpellInfo->Id == 70656)
         {
-            if (GetTypeId() != TYPEID_PLAYER || getClass() != CLASS_DEATH_KNIGHT)
-                return false;
-
             for (uint8 i = 0; i < MAX_RUNES; ++i)
-                if (ToPlayer()->GetRuneCooldown(i) == 0)
+                if (GetRuneCooldown(i) == 0)
                     return false;
         }
         // Blade Barrier
         else if (auraSpellInfo->SpellIconID == 85)
         {
-            Player* plr = ToPlayer();
-            if (!plr || plr->getClass() != CLASS_DEATH_KNIGHT || !procSpell)
-                return false;
-
-            if (!plr->IsBaseRuneSlotsOnCooldown(RUNE_DEATH))
+            if (!IsBaseRuneSlotsOnCooldown(RUNE_DEATH))
                 return false;
         }
         // Rime
         else if (auraSpellInfo->SpellIconID == 56)
-        {
-            if (GetTypeId() != TYPEID_PLAYER)
-                return false;
-
+        { 
             // Howling Blast
             ToPlayer()->RemoveCategoryCooldown(1248);
         }
@@ -13698,15 +13692,8 @@ void Unit::ClearInCombat()
     else if (Player* player = ToPlayer())
     {
         player->UpdatePotionCooldown();
-        if (player->getClass() == CLASS_DEATH_KNIGHT)
-            for (uint8 i = 0; i < MAX_RUNES; ++i)
-                player->SetGracePeriod(i, 0);
-    }
-
-    if (Player* player = this->ToPlayer())
-    {
         sScriptMgr->OnPlayerLeaveCombat(player);
-    }
+    } 
 }
 
 void Unit::ClearInPetCombat()
@@ -15315,6 +15302,129 @@ Powers Unit::GetPowerTypeByAuraGroup(UnitMods unitMod) const
         default:
         case UNIT_MOD_MANA:
             return POWER_MANA;
+    }
+}
+
+void Unit::RestoreBaseRune(uint8 index)
+{
+    AuraEffect const* aura = m_runes->runes[index].ConvertAura;
+    // If rune was converted by a non-pasive aura that still active we should keep it converted
+    if (aura && !aura->GetSpellInfo()->HasAttribute(SPELL_ATTR0_PASSIVE))
+        return;
+    ConvertRune(index, GetBaseRune(index));
+    SetRuneConvertAura(index, nullptr);
+    // Don't drop passive talents providing rune convertion
+    if (!aura || aura->GetAuraType() != SPELL_AURA_CONVERT_RUNE)
+        return;
+    for (uint8 i = 0; i < MAX_RUNES; ++i)
+    {
+        if (aura == m_runes->runes[i].ConvertAura)
+            return;
+    }
+    aura->GetBase()->Remove();
+}
+
+void Unit::ConvertRune(uint8 index, RuneType newType)
+{
+    SetCurrentRune(index, newType);
+
+    if (Player* player = ToPlayer())
+    {
+        WorldPacket data(SMSG_CONVERT_RUNE, 2);
+        data << uint8(index);
+        data << uint8(RUNE_DEATH);
+        player->GetSession()->SendPacket(&data);
+    }
+}
+ 
+
+void Unit::AddRunePower(uint8 index)
+{
+    if (Player* player = ToPlayer())
+    {
+        WorldPacket data(SMSG_ADD_RUNE_POWER, 4);
+        data << uint32(1 << index);                             // mask (0x00-0x3F probably)
+        player->GetSession()->SendPacket(&data);
+    }
+}
+
+static RuneType runeSlotTypes[MAX_RUNES] =
+{
+    /*0*/ RUNE_DEATH,
+    /*1*/ RUNE_DEATH,
+    /*2*/ RUNE_DEATH,
+    /*3*/ RUNE_DEATH,
+    /*4*/ RUNE_DEATH,
+    /*5*/ RUNE_DEATH
+};
+
+void Unit::InitRunes()
+{
+    m_runes = new Runes;
+
+    m_runes->runeState = 0;
+    m_runes->lastUsedRune = RUNE_DEATH;
+
+    for (uint8 i = 0; i < MAX_RUNES; ++i)
+    {
+        SetBaseRune(i, runeSlotTypes[i]);                              // init base types
+        SetCurrentRune(i, runeSlotTypes[i]);                           // init current types
+        SetRuneCooldown(i, 0);                                         // reset cooldowns
+        SetGracePeriod(i, 0);                                          // xinef: reset grace period
+        SetRuneConvertAura(i, nullptr);
+        m_runes->SetRuneState(i);
+
+        if (Player* player = ToPlayer())
+        {
+            WorldPacket data(SMSG_CONVERT_RUNE, 2);
+            data << uint8(i);
+            data << uint8(RUNE_DEATH);
+            player->GetSession()->SendPacket(&data);
+
+            ResyncRunes(MAX_RUNES);
+        }
+
+    }
+
+    for (uint8 i = 0; i < NUM_RUNE_TYPES; ++i)
+        SetFloatValue(PLAYER_RUNE_REGEN_1 + i, 0.1f);
+}
+
+bool Unit::IsBaseRuneSlotsOnCooldown(RuneType runeType) const
+{
+    for (uint8 i = 0; i < MAX_RUNES; ++i)
+        if (GetBaseRune(i) == runeType && GetRuneCooldown(i) == 0)
+            return false;
+
+    return true;
+}
+
+uint32 Unit::GetRuneBaseCooldown(uint8 index, bool skipGrace)
+{
+    uint8 rune = GetBaseRune(index);
+    uint32 cooldown = RUNE_BASE_COOLDOWN;
+    if (!skipGrace)
+        cooldown -= GetGracePeriod(index) < 250 ? 0 : GetGracePeriod(index) - 250;  // xinef: reduce by grace period, treat first 250ms as instant use of rune
+
+    AuraEffectList const& regenAura = GetAuraEffectsByType(SPELL_AURA_MOD_POWER_REGEN_PERCENT);
+    for (AuraEffectList::const_iterator i = regenAura.begin(); i != regenAura.end(); ++i)
+    {
+        if ((*i)->GetMiscValue() == POWER_RUNE && (*i)->GetMiscValueB() == rune)
+            cooldown = cooldown * (100 - (*i)->GetAmount()) / 100;
+    }
+
+    return cooldown;
+}
+
+void Unit::RemoveRunesByAuraEffect(AuraEffect const* aura)
+{
+    for (uint8 i = 0; i < MAX_RUNES; ++i)
+    {
+        if (m_runes->runes[i].ConvertAura == aura)
+        {
+            ConvertRune(i, GetBaseRune(i));
+            SetRuneConvertAura(i, nullptr);
+        }
     }
 }
 

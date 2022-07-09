@@ -1099,22 +1099,22 @@ void Spell::SelectImplicitNearbyTargets(SpellEffIndex effIndex, SpellImplicitTar
     switch (targetType.GetCheckType())
     {
         case TARGET_CHECK_ENEMY:
-            range = m_spellInfo->GetMaxRange(false, m_caster, this);
+            range = GetTotalMaxRange(false, m_caster, this);
             break;
         case TARGET_CHECK_ALLY:
         case TARGET_CHECK_PARTY:
         case TARGET_CHECK_RAID:
         case TARGET_CHECK_RAID_CLASS:
-            range = m_spellInfo->GetMaxRange(true, m_caster, this);
+            range = GetTotalMaxRange(true, m_caster, this);
             break;
         case TARGET_CHECK_ENTRY:
         case TARGET_CHECK_DEFAULT:
-            range = m_spellInfo->GetMaxRange(m_spellInfo->IsPositive(), m_caster, this);
+            range = GetTotalMaxRange(m_spellInfo->IsPositive(), m_caster, this);
             break;
         default:
             ASSERT(false && "Spell::SelectImplicitNearbyTargets: received not implemented selection check type");
             break;
-    }
+    } 
 
     ConditionList* condList = m_spellInfo->Effects[effIndex].ImplicitTargetConditions;
 
@@ -1213,7 +1213,7 @@ void Spell::SelectImplicitConeTargets(SpellEffIndex effIndex, SpellImplicitTarge
     SpellTargetCheckTypes selectionType = targetType.GetCheckType();
     ConditionList* condList = m_spellInfo->Effects[effIndex].ImplicitTargetConditions;
     float coneAngle = M_PI / 2;
-    float radius = m_spellInfo->Effects[effIndex].CalcRadius(m_caster) * m_spellValue->RadiusMod;
+    float radius = m_spellInfo->Effects[effIndex].CalcRadius(m_caster) * m_spellValue->RadiusMod + bonusRange;
 
     if (uint32 containerTypeMask = GetSearcherTypeMask(objectType, condList))
     {
@@ -1305,7 +1305,7 @@ void Spell::SelectImplicitAreaTargets(SpellEffIndex effIndex, SpellImplicitTarge
 
     // Xinef: the distance should be increased by caster size, it is neglected in latter calculations
     std::list<WorldObject*> targets;
-    float radius = m_spellInfo->Effects[effIndex].CalcRadius(m_caster) * m_spellValue->RadiusMod;
+    float radius = m_spellInfo->Effects[effIndex].CalcRadius(m_caster) * m_spellValue->RadiusMod + bonusRange;
     SearchAreaTargets(targets, radius, center, referer, targetType.GetObjectType(), targetType.GetCheckType(), m_spellInfo->Effects[effIndex].ImplicitTargetConditions);
 
     CallScriptObjectAreaTargetSelectHandlers(targets, effIndex, targetType);
@@ -1365,7 +1365,7 @@ void Spell::SelectImplicitCasterDestTargets(SpellEffIndex effIndex, SpellImplici
         case TARGET_DEST_CASTER_FISHING:
             {
                 float min_dis = m_spellInfo->GetMinRange(true);
-                float max_dis = m_spellInfo->GetMaxRange(true);
+                float max_dis = GetTotalMaxRange(true);
                 float dis = (float)rand_norm() * (max_dis - min_dis) + min_dis;
                 float x, y, z, angle;
                 angle = (float)rand_norm() * static_cast<float>(M_PI * 35.0f / 180.0f) - static_cast<float>(M_PI * 17.5f / 180.0f);
@@ -1878,7 +1878,7 @@ void Spell::SelectImplicitTrajTargets(SpellEffIndex effIndex, SpellImplicitTarge
     LOG_DEBUG("spells", "Spell::SelectTrajTargets: a {} b {}", a, b);
 
     // Xinef: hack for distance, many trajectory spells have RangeEntry 1 (self)
-    float bestDist = m_spellInfo->GetMaxRange(false) * 2;
+    float bestDist = GetTotalMaxRange(false) * 2;
     if (bestDist < 1.0f)
         bestDist = 300.0f;
 
@@ -2137,6 +2137,8 @@ void Spell::SearchTargets(SEARCHER& searcher, uint32 containerMask, Unit* refere
 
     if (searchInGrid || searchInWorld)
     {
+        radius;
+
         float x, y;
         x = pos->GetPositionX();
         y = pos->GetPositionY();
@@ -3365,10 +3367,10 @@ bool Spell::UpdateChanneledTargetList()
 
     channelAuraMask &= channelTargetEffectMask;
 
-    float range = 0;
+    float range = bonusRange;
     if (channelAuraMask)
     {
-        range = m_spellInfo->GetMaxRange(m_spellInfo->IsPositive());
+        range += GetTotalMaxRange(m_spellInfo->IsPositive());
         if (range == 0)
             for(int i = EFFECT_0; i <= EFFECT_2; ++i)
                 if (channelAuraMask & (1 << i) && m_spellInfo->Effects[i].RadiusEntry)
@@ -3811,8 +3813,8 @@ void Spell::_cast(bool skipCheck)
         if (Unit* charm = m_caster->GetCharm())
             charm->RemoveAurasByType(SPELL_AURA_MOD_CHARM, m_caster->GetGUID());
     }
-
-    if (Player* playerCaster = m_caster->ToPlayer())
+    Player* playerCaster = m_caster->ToPlayer();
+    if (playerCaster)
     {
         // now that we've done the basic check, now run the scripts
         // should be done before the spell is actually executed
@@ -3828,6 +3830,7 @@ void Spell::_cast(bool skipCheck)
                     if (Unit* pet = *itr)
                         if (pet->IsAlive() && pet->GetTypeId() == TYPEID_UNIT)
                             pet->ToCreature()->AI()->OwnerAttacked(m_targets.GetUnitTarget());
+         
     }
 
     SetExecutedCurrently(true);
@@ -4089,6 +4092,14 @@ void Spell::_cast(bool skipCheck)
             m_caster->ToPlayer()->RemoveSpellCooldown(m_spellInfo->Id, true);
 
     SetExecutedCurrently(false);
+    if (playerCaster)
+    {
+        if (playerCaster->quedSpell != 0)
+        {
+            playerCaster->CastSpell(playerCaster, playerCaster->quedSpell, false);
+            playerCaster->quedSpell = 0;
+        }
+    }
 }
 
 void Spell::handle_immediate()
@@ -4438,7 +4449,6 @@ void Spell::update(uint32 difftime)
                 {
                     SendChannelUpdate(0);
 
-                    CallScriptAfterFullChannelHandlers();
                     finish();
                 }
                 // Xinef: Dont update channeled target list on last tick, allow auras to update duration properly
@@ -4517,9 +4527,6 @@ void Spell::finish(bool ok)
         }
     }
 
-    // potions disabled by client, send event "not in combat" if need
-    if (m_caster->GetTypeId() == TYPEID_PLAYER && !m_triggeredByAuraSpell)
-        m_caster->ToPlayer()->UpdatePotionCooldown(this);
 
     // Take mods after trigger spell (needed for 14177 to affect 48664)
     // mods are taken only on succesfull cast and independantly from targets of the spell
@@ -4533,6 +4540,14 @@ void Spell::finish(bool ok)
     // Stop Attack for some spells
     if (m_spellInfo->HasAttribute(SPELL_ATTR0_CANCELS_AUTO_ATTACK_COMBAT))
         m_caster->AttackStop();
+
+    if (m_caster->GetTypeId() == TYPEID_PLAYER)
+    {
+        // potions disabled by client, send event "not in combat" if need
+        if (!m_triggeredByAuraSpell)
+            m_caster->ToPlayer()->UpdatePotionCooldown(this); 
+    }
+    CallScriptAfterFullChannelHandlers();
 }
 
 void Spell::WriteCastResultInfo(WorldPacket& data, Player* caster, SpellInfo const* spellInfo, uint8 castCount, SpellCastResult result, SpellCustomErrors customError)
@@ -4804,9 +4819,7 @@ void Spell::SendSpellGo()
         }
     }
 
-    if ((m_caster->GetTypeId() == TYPEID_PLAYER)
-            && (m_caster->getClass() == CLASS_DEATH_KNIGHT)
-            && m_spellInfo->RuneCostID
+    if (   m_spellInfo->RuneCostID
             && m_spellInfo->PowerType == POWER_RUNE)
     {
         castFlags |= CAST_FLAG_NO_GCD;                       // not needed, but Blizzard sends it
@@ -4854,27 +4867,9 @@ void Spell::SendSpellGo()
     if (castFlags & CAST_FLAG_POWER_LEFT_SELF)
         data << uint32(m_caster->GetPower((Powers)m_spellInfo->PowerType));
 
-    if (castFlags & CAST_FLAG_RUNE_LIST)                   // rune cooldowns list
+    if (castFlags & CAST_FLAG_RUNE_LIST || runeCostAlt)                   // rune cooldowns list
     {
-        //TODO: There is a crash caused by a spell with CAST_FLAG_RUNE_LIST casted by a creature
-        //The creature is the mover of a player, so HandleCastSpellOpcode uses it as the caster
-        if (Player* player = m_caster->ToPlayer())
-        {
-            uint8 runeMaskInitial = m_runesState;
-            uint8 runeMaskAfterCast = player->GetRunesState();
-            data << uint8(runeMaskInitial);                     // runes state before
-            data << uint8(runeMaskAfterCast);                   // runes state after
-            for (uint8 i = 0; i < MAX_RUNES; ++i)
-            {
-                uint8 mask = (1 << i);
-                if (mask & runeMaskInitial && !(mask & runeMaskAfterCast))  // usable before andon cooldown now...
-                {
-                    // float casts ensure the division is performed on floats as we need float result
-                    float baseCd = float(player->GetRuneBaseCooldown(i, true));
-                    data << uint8((baseCd - float(player->GetRuneCooldown(i))) / baseCd * 255); // rune cooldown passed
-                }
-            }
-        }
+        m_caster->ResyncRunes(6); 
     }
     if (castFlags & CAST_FLAG_ADJUST_MISSILE)
     {
@@ -5316,7 +5311,7 @@ void Spell::TakePower()
                     }
     }
 
-    if (PowerType == POWER_RUNE)
+    if (PowerType == POWER_RUNE || runeCostAlt)
     {
         TakeRunePower(hit);
         return;
@@ -5381,10 +5376,7 @@ void Spell::TakeAmmo()
 
 SpellCastResult Spell::CheckRuneCost(uint32 RuneCostID)
 {
-    if (m_spellInfo->PowerType != POWER_RUNE || !RuneCostID)
-        return SPELL_CAST_OK;
-
-    if (m_caster->GetTypeId() != TYPEID_PLAYER)
+    if (m_spellInfo->PowerType != POWER_RUNE || (!runeCostAlt && !RuneCostID))
         return SPELL_CAST_OK;
 
     Player* player = m_caster->ToPlayer();
@@ -5394,28 +5386,33 @@ SpellCastResult Spell::CheckRuneCost(uint32 RuneCostID)
         return SPELL_CAST_OK;
     }
 
-    if (player->getClass() != CLASS_DEATH_KNIGHT)
-        return SPELL_CAST_OK;
-
-    SpellRuneCostEntry const* src = sSpellRuneCostStore.LookupEntry(RuneCostID);
-
-    if (!src)
-        return SPELL_CAST_OK;
-
-    if (src->NoRuneCost())
-        return SPELL_CAST_OK;
-
-    int32 runeCost = 0;                         // blood, frost, unholy, death
-
-    for (uint32 i = 0; i < RUNE_DEATH; ++i)
+    int32 runeCost = 0;
+    if (!runeCostAlt)
     {
-        runeCost += src->RuneCost[i]; 
+        SpellRuneCostEntry const* src = sSpellRuneCostStore.LookupEntry(RuneCostID);
+
+        if (!src)
+            return SPELL_CAST_OK;
+
+        if (src->NoRuneCost())
+            return SPELL_CAST_OK;
+
+
+        for (uint32 i = 0; i < RUNE_DEATH; ++i)
+        {
+            runeCost += src->RuneCost[i];
+        }
     }
+    else
+    {
+        runeCost = runeCostAlt;
+    }
+     
 
     for (uint32 i = 0; i < MAX_RUNES; ++i)
     {
-        RuneType rune = player->GetCurrentRune(i);
-        if ((player->GetRuneCooldown(i) == 0) && (runeCost > 0))
+        RuneType rune = m_caster->GetCurrentRune(i);
+        if ((m_caster->GetRuneCooldown(i) == 0) && (runeCost > 0))
             runeCost--;
     }
     if(runeCost > 0)
@@ -5425,46 +5422,64 @@ SpellCastResult Spell::CheckRuneCost(uint32 RuneCostID)
 }
 
 void Spell::TakeRunePower(bool didHit)
-{
-    if (m_caster->GetTypeId() != TYPEID_PLAYER || m_caster->getClass() != CLASS_DEATH_KNIGHT)
-        return;
-
-    SpellRuneCostEntry const* runeCostData = sSpellRuneCostStore.LookupEntry(m_spellInfo->RuneCostID);
-    if (!runeCostData || (runeCostData->NoRuneCost() && runeCostData->NoRunicPowerGain()))
-        return;
-
-    Player* player = m_caster->ToPlayer();
-    m_runesState = player->GetRunesState();                 // store previous state
-
-    int32 runeCost = 0;                         // blood, frost, unholy, death
-
-    for (uint32 i = 0; i < RUNE_DEATH; ++i)
+{ 
+    if (!runeCostAlt)
     {
-        runeCost += runeCostData->RuneCost[i]; 
-    }
-                                   // calculated later
+        SpellRuneCostEntry const* runeCostData = sSpellRuneCostStore.LookupEntry(m_spellInfo->RuneCostID);
+        if (!runeCostData || (runeCostData->NoRuneCost() && runeCostData->NoRunicPowerGain()))
+            return;
+         
+        m_runesState = m_caster->GetRunesState();                 // store previous state
 
-    for (uint32 i = 0; i < MAX_RUNES; ++i)
-    {
-        RuneType rune = player->GetCurrentRune(i);
-        if (!player->GetRuneCooldown(i) && runeCost > 0)
+        int32 runeCost = 0;                         // blood, frost, unholy, death
+
+        for (uint32 i = 0; i < RUNE_DEATH; ++i)
         {
-            player->SetRuneCooldown(i, didHit ? player->GetRuneBaseCooldown(i, false) : uint32(RUNE_MISS_COOLDOWN));
-            player->SetLastUsedRune(rune);
-            runeCost--;
+            runeCost += runeCostData->RuneCost[i];
         }
+        // calculated later
+
+        for (uint32 i = 0; i < MAX_RUNES; ++i)
+        {
+            RuneType rune = m_caster->GetCurrentRune(i);
+            if (!m_caster->GetRuneCooldown(i) && runeCost > 0)
+            {
+                m_caster->SetRuneCooldown(i, runeCooldown ? runeCooldown : m_caster->GetRuneBaseCooldown(i, false));
+                m_caster->SetLastUsedRune(rune);
+                runeCost--;
+            }
+        }
+
+        // Xinef: firstly consume death runes of base type
+        // Xinef: in second loop consume all available
+
+
+        // you can gain some runic power when use runes
+        if (didHit)
+            if (int32 rp = int32(runeCostData->runePowerGain * sWorld->getRate(RATE_POWER_RUNICPOWER_INCOME)))
+                m_caster->ModifyPower(POWER_RUNIC_POWER, int32(rp), true, PowerChangeReason::REASON_SPELL_GENERATED, this);
+
+        m_caster->ResyncRunes(MAX_RUNES);
     }
+    else
+    {
+        m_runesState = m_caster->GetRunesState();                 // store previous state
 
-    // Xinef: firstly consume death runes of base type
-    // Xinef: in second loop consume all available
-      
+        uint8 runeCost = runeCostAlt;
 
-    // you can gain some runic power when use runes
-    if (didHit)
-        if (int32 rp = int32(runeCostData->runePowerGain * sWorld->getRate(RATE_POWER_RUNICPOWER_INCOME)))
-            player->ModifyPower(POWER_RUNIC_POWER, int32(rp), true, PowerChangeReason::REASON_SPELL_GENERATED, this);
+        for (uint32 i = 0; i < MAX_RUNES; ++i)
+        {
+            RuneType rune = m_caster->GetCurrentRune(i);
+            if (!m_caster->GetRuneCooldown(i) && runeCost > 0)
+            {
+                m_caster->SetRuneCooldown(i, runeCooldown ? runeCooldown : m_caster->GetRuneBaseCooldown(i, false));
+                m_caster->SetLastUsedRune(rune);
+                runeCost--;
+            }
+        }
 
-    player->ResyncRunes(MAX_RUNES);
+        m_caster->ResyncRunes(MAX_RUNES);
+    }
 }
 
 void Spell::TakeReagents()
@@ -6194,7 +6209,7 @@ SpellCastResult Spell::CheckCast(bool strict)
                             return SPELL_FAILED_LINE_OF_SIGHT;
 
                         float objSize = target->GetCombatReach();
-                        float range = m_spellInfo->GetMaxRange(true, m_caster, this) * 1.5f + objSize; // can't be overly strict
+                        float range = GetTotalMaxRange(true, m_caster, this) * 1.5f + objSize; // can't be overly strict
 
                         m_preGeneratedPath = std::make_unique<PathGenerator>(m_caster);
                         m_preGeneratedPath->SetPathLengthLimit(range);
@@ -7009,7 +7024,7 @@ SpellCastResult Spell::CheckRange(bool strict)
     }
 
     Unit* target = m_targets.GetUnitTarget();
-    float max_range = m_caster->GetSpellMaxRangeForTarget(target, m_spellInfo);
+    float max_range = m_caster->GetSpellMaxRangeForTarget(target, m_spellInfo) + bonusRange;
     float min_range = m_caster->GetSpellMinRangeForTarget(target, m_spellInfo);
 
     // xinef: hack for npc shooters
@@ -7032,9 +7047,9 @@ SpellCastResult Spell::CheckRange(bool strict)
             {
                 float real_max_range = max_range;
                 if (m_caster->GetTypeId() != TYPEID_UNIT && m_caster->isMoving() && target->isMoving() && !m_caster->IsWalking() && !target->IsWalking())
-                    real_max_range -= MIN_MELEE_REACH; // Because of lag, we can not check too strictly here (is only used if both caster and target are moving)
+                {}
                 else
-                    real_max_range -= 2 * MIN_MELEE_REACH;
+                    real_max_range -= 2;
 
                 if (!m_caster->IsWithinMeleeRange(target, std::max(real_max_range, 0.0f)))
                     return SPELL_FAILED_OUT_OF_RANGE;
@@ -7106,7 +7121,7 @@ SpellCastResult Spell::CheckPower()
     }
 
     //check rune cost only if a spell has PowerType == POWER_RUNE
-    if (m_spellInfo->PowerType == POWER_RUNE)
+    if (m_spellInfo->PowerType == POWER_RUNE || runeCostAlt)
     {
         SpellCastResult failReason = CheckRuneCost(m_spellInfo->RuneCostID);
         if (failReason != SPELL_CAST_OK)
@@ -8366,11 +8381,32 @@ SpellCastResult Spell::CanOpenLock(uint32 effIndex, uint32 lockId, SkillType& sk
     return SPELL_CAST_OK;
 }
 
+float Spell::GetTotalMaxRange(bool positive, Unit* caster, Spell* spell)
+{
+    return m_spellInfo->GetMaxRange(positive, caster, spell) + bonusRange;
+}
+ 
+
 void Spell::SetDevelopment(uint8 dev)
 {
     development = dev;
     if (m_spellAura)
         m_spellAura->SetDevelopment(development);
+}
+
+void Spell::SetRuneCooldown(uint16 cd)
+{
+    runeCooldown = cd; 
+}
+
+void Spell::SetRuneCost(uint8 cost)
+{
+    runeCostAlt = cost;
+}
+
+void Spell::SetBonusRange(float range)
+{
+    bonusRange = range;
 }
 
 void Spell::SetSpellValue(SpellValueMod mod, int32 value)
@@ -9103,7 +9139,7 @@ namespace Acore
         }
         else if (_spellInfo->HasAttribute(SPELL_ATTR0_CU_CONE_LINE))
         {
-            if (!_caster->HasInLine(target, _caster->GetObjectSize() + target->GetObjectSize()))
+            if (!_caster->HasInLine(target, _caster->GetCollisionRadius() + target->GetCollisionRadius()))
                 return false;
         }
         else
