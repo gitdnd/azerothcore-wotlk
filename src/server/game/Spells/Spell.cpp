@@ -5376,17 +5376,17 @@ void Spell::TakeAmmo()
 
 SpellCastResult Spell::CheckRuneCost(uint32 RuneCostID)
 {
-    if (m_spellInfo->PowerType != POWER_RUNE || (!runeCostAlt && !RuneCostID))
+    if ((m_spellInfo->PowerType != POWER_RUNE  && !RuneCostID) && !runeCostAlt)
         return SPELL_CAST_OK;
 
     Player* player = m_caster->ToPlayer();
     //If we are in .cheat power mode we dont need to check the cost as we are expected to be able to use it anyways (infinite power)
-    if (player->GetCommandStatus(CHEAT_POWER))
+    if (player && player->GetCommandStatus(CHEAT_POWER))
     {
         return SPELL_CAST_OK;
     }
 
-    int32 runeCost = 0;
+    uint8 runeCost = 0;
     if (!runeCostAlt)
     {
         SpellRuneCostEntry const* src = sSpellRuneCostStore.LookupEntry(RuneCostID);
@@ -5398,7 +5398,7 @@ SpellCastResult Spell::CheckRuneCost(uint32 RuneCostID)
             return SPELL_CAST_OK;
 
 
-        for (uint32 i = 0; i < RUNE_DEATH; ++i)
+        for (uint8 i = 0; i < RUNE_DEATH; ++i) // yes, death
         {
             runeCost += src->RuneCost[i];
         }
@@ -5409,20 +5409,20 @@ SpellCastResult Spell::CheckRuneCost(uint32 RuneCostID)
     }
      
 
-    for (uint32 i = 0; i < MAX_RUNES; ++i)
-    {
-        RuneType rune = m_caster->GetCurrentRune(i);
+    for (uint8 i = 0; i < MAX_RUNES; ++i)
+    { 
         if ((m_caster->GetRuneCooldown(i) == 0) && (runeCost > 0))
             runeCost--;
     }
     if(runeCost > 0)
-        return SPELL_FAILED_NO_POWER;
+        return SPELL_FAILED_NOT_READY;
 
     return SPELL_CAST_OK;
 }
 
 void Spell::TakeRunePower(bool didHit)
-{ 
+{
+    uint8 runeCost = 0;
     if (!runeCostAlt)
     {
         SpellRuneCostEntry const* runeCostData = sSpellRuneCostStore.LookupEntry(m_spellInfo->RuneCostID);
@@ -5431,25 +5431,12 @@ void Spell::TakeRunePower(bool didHit)
          
         m_runesState = m_caster->GetRunesState();                 // store previous state
 
-        int32 runeCost = 0;                         // blood, frost, unholy, death
+        runeCost = 0;                         // blood, frost, unholy, death
 
-        for (uint32 i = 0; i < RUNE_DEATH; ++i)
+        for (uint8 i = 0; i < RUNE_DEATH; ++i)
         {
             runeCost += runeCostData->RuneCost[i];
-        }
-        // calculated later
-
-        for (uint32 i = 0; i < MAX_RUNES; ++i)
-        {
-            RuneType rune = m_caster->GetCurrentRune(i);
-            if (!m_caster->GetRuneCooldown(i) && runeCost > 0)
-            {
-                m_caster->SetRuneCooldown(i, runeCooldown ? runeCooldown : m_caster->GetRuneBaseCooldown(i, false));
-                m_caster->SetLastUsedRune(rune);
-                runeCost--;
-            }
-        }
-
+        } 
         // Xinef: firstly consume death runes of base type
         // Xinef: in second loop consume all available
 
@@ -5458,28 +5445,27 @@ void Spell::TakeRunePower(bool didHit)
         if (didHit)
             if (int32 rp = int32(runeCostData->runePowerGain * sWorld->getRate(RATE_POWER_RUNICPOWER_INCOME)))
                 m_caster->ModifyPower(POWER_RUNIC_POWER, int32(rp), true, PowerChangeReason::REASON_SPELL_GENERATED, this);
-
-        m_caster->ResyncRunes(MAX_RUNES);
+         
     }
     else
     {
         m_runesState = m_caster->GetRunesState();                 // store previous state
 
-        uint8 runeCost = runeCostAlt;
+        runeCost = runeCostAlt;
 
-        for (uint32 i = 0; i < MAX_RUNES; ++i)
-        {
-            RuneType rune = m_caster->GetCurrentRune(i);
-            if (!m_caster->GetRuneCooldown(i) && runeCost > 0)
-            {
-                m_caster->SetRuneCooldown(i, runeCooldown ? runeCooldown : m_caster->GetRuneBaseCooldown(i, false));
-                m_caster->SetLastUsedRune(rune);
-                runeCost--;
-            }
-        }
-
-        m_caster->ResyncRunes(MAX_RUNES);
     }
+    for (uint8 i = 0; i < MAX_RUNES; ++i)
+    {
+        if (!m_caster->GetRuneCooldown(i) && runeCost > 0)
+        {
+            uint16 cd = runeCooldown ? runeCooldown : m_caster->GetRuneDefaultCooldown(i, false);
+            m_caster->SetRuneCooldown(i, cd);
+            m_caster->SetRuneStartCooldown(i, cd);
+            runeCost--;
+        }
+    }
+
+    m_caster->ResyncRunes(MAX_RUNES);
 }
 
 void Spell::TakeReagents()

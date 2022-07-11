@@ -756,7 +756,7 @@ bool Unit::IsWithinCombatRange(Unit const* obj, float dist2compare) const
     float dz = GetPositionZ() - obj->GetPositionZ();
     float distsq = dx * dx + dy * dy + dz * dz;
 
-    float sizefactor = GetCombatReach() + obj->GetCollisionRadius();
+    float sizefactor = GetCollisionRadius() + obj->GetCombatReach();
     float maxdist = dist2compare + sizefactor;
 
     return distsq < maxdist * maxdist;
@@ -779,7 +779,7 @@ bool Unit::IsWithinMeleeRange(Unit const* obj, float dist) const
 
 float Unit::GetMeleeRange(Unit const* target) const
 {
-    float range = GetCollisionRadius() + GetCombatReach() + target->GetCollisionRadius();
+    float range = GetCombatReach() + target->GetCombatReach();
     return range;
 }
 bool Unit::IsWithinRange(Unit const* obj, float dist) const
@@ -3742,21 +3742,12 @@ float Unit::GetUnitParryChance() const
 
 float Unit::GetUnitMissChance(WeaponAttackType attType) const
 {
-    float miss_chance = 5.00f;
-
-    if (Player const* player = ToPlayer())
-        miss_chance += player->GetMissPercentageFromDefence();
-
-    if (attType == RANGED_ATTACK)
-        miss_chance -= GetTotalAuraModifier(SPELL_AURA_MOD_ATTACKER_RANGED_HIT_CHANCE);
-    else
-        miss_chance -= GetTotalAuraModifier(SPELL_AURA_MOD_ATTACKER_MELEE_HIT_CHANCE);
-
-    return miss_chance;
+    return 0;
 }
 
 float Unit::GetUnitBlockChance() const
 {
+    return 0;
     if (Player const* player = ToPlayer())
     {
         if (player->CanBlock())
@@ -8934,55 +8925,8 @@ bool Unit::HandleAuraProc(Unit* victim, uint32 damage, Aura* triggeredByAura, Sp
                 break;
             }
         case SPELLFAMILY_DEATHKNIGHT:
-            {
-                // Blood of the North
-                // Reaping
-                // Death Rune Mastery
-                // xinef: Icon 22 is used for item bonus, skip
-                if (dummySpell->SpellIconID == 3041 || (dummySpell->SpellIconID == 22 && dummySpell->Id != 62459) || dummySpell->SpellIconID == 2622)
-                {
-                    *handled = true; 
-
-                    // xinef: not true
-                    //RuneType rune = ToPlayer()->GetLastUsedRune();
-                    // can't proc from death rune use
-                    //if (rune == RUNE_DEATH)
-                    //    return false;
-                    AuraEffect* aurEff = triggeredByAura->GetEffect(EFFECT_0);
-                    if (!aurEff)
-                        return false;
-
-                    // Reset amplitude - set death rune remove timer to 30s
-                    aurEff->ResetPeriodic(true);
-                    uint32 runesLeft;
-
-                    if (dummySpell->SpellIconID == 2622)
-                        runesLeft = 2;
-                    else
-                        runesLeft = 1;
-
-                    for (uint8 i = 0; i < MAX_RUNES && runesLeft; ++i)
-                    {
-                        if (dummySpell->SpellIconID == 2622)
-                        {
-                            if (GetCurrentRune(i) == RUNE_DEATH)
-                                continue;
-                        }
-                        else
-                        {
-                            if (GetCurrentRune(i) == RUNE_DEATH)
-                                continue;
-                        }
-                        if (GetRuneCooldown(i) != GetRuneBaseCooldown(i, false))
-                            continue;
-
-                        --runesLeft;
-                        // Mark aura as used
-                        AddRuneByAuraEffect(i, RUNE_DEATH, aurEff); 
-                        return true;
-                    }
-                    return false;
-                }
+            { 
+                return false; 
                 break;
             }
         case SPELLFAMILY_WARRIOR:
@@ -9672,7 +9616,7 @@ bool Unit::HandleProcTriggerSpell(Unit* victim, uint32 damage, AuraEffect* trigg
         // Blade Barrier
         else if (auraSpellInfo->SpellIconID == 85)
         {
-            if (!IsBaseRuneSlotsOnCooldown(RUNE_DEATH))
+            if (!IsBaseRuneSlotsOnCooldown())
                 return false;
         }
         // Rime
@@ -15303,41 +15247,8 @@ Powers Unit::GetPowerTypeByAuraGroup(UnitMods unitMod) const
         case UNIT_MOD_MANA:
             return POWER_MANA;
     }
-}
-
-void Unit::RestoreBaseRune(uint8 index)
-{
-    AuraEffect const* aura = m_runes->runes[index].ConvertAura;
-    // If rune was converted by a non-pasive aura that still active we should keep it converted
-    if (aura && !aura->GetSpellInfo()->HasAttribute(SPELL_ATTR0_PASSIVE))
-        return;
-    ConvertRune(index, GetBaseRune(index));
-    SetRuneConvertAura(index, nullptr);
-    // Don't drop passive talents providing rune convertion
-    if (!aura || aura->GetAuraType() != SPELL_AURA_CONVERT_RUNE)
-        return;
-    for (uint8 i = 0; i < MAX_RUNES; ++i)
-    {
-        if (aura == m_runes->runes[i].ConvertAura)
-            return;
-    }
-    aura->GetBase()->Remove();
-}
-
-void Unit::ConvertRune(uint8 index, RuneType newType)
-{
-    SetCurrentRune(index, newType);
-
-    if (Player* player = ToPlayer())
-    {
-        WorldPacket data(SMSG_CONVERT_RUNE, 2);
-        data << uint8(index);
-        data << uint8(RUNE_DEATH);
-        player->GetSession()->SendPacket(&data);
-    }
-}
+} 
  
-
 void Unit::AddRunePower(uint8 index)
 {
     if (Player* player = ToPlayer())
@@ -15367,11 +15278,9 @@ void Unit::InitRunes()
 
     for (uint8 i = 0; i < MAX_RUNES; ++i)
     {
-        SetBaseRune(i, runeSlotTypes[i]);                              // init base types
-        SetCurrentRune(i, runeSlotTypes[i]);                           // init current types
+        SetRuneStartCooldown(i, 0);                                         // reset cooldowns
         SetRuneCooldown(i, 0);                                         // reset cooldowns
-        SetGracePeriod(i, 0);                                          // xinef: reset grace period
-        SetRuneConvertAura(i, nullptr);
+        SetGracePeriod(i, 0);                                          // xinef: reset grace period 
         m_runes->SetRuneState(i);
 
         if (Player* player = ToPlayer())
@@ -15385,48 +15294,33 @@ void Unit::InitRunes()
         }
 
     }
-
-    for (uint8 i = 0; i < NUM_RUNE_TYPES; ++i)
-        SetFloatValue(PLAYER_RUNE_REGEN_1 + i, 0.1f);
 }
 
-bool Unit::IsBaseRuneSlotsOnCooldown(RuneType runeType) const
+bool Unit::IsBaseRuneSlotsOnCooldown() const
 {
     for (uint8 i = 0; i < MAX_RUNES; ++i)
-        if (GetBaseRune(i) == runeType && GetRuneCooldown(i) == 0)
+        if (GetRuneCooldown(i) == 0)
             return false;
 
     return true;
 }
 
-uint32 Unit::GetRuneBaseCooldown(uint8 index, bool skipGrace)
-{
-    uint8 rune = GetBaseRune(index);
-    uint32 cooldown = RUNE_BASE_COOLDOWN;
+uint32 Unit::GetRuneDefaultCooldown(uint8 index, bool skipGrace)
+{ 
+    uint32 cooldown = RUNE_DEFAULT_COOLDOWN;
     if (!skipGrace)
         cooldown -= GetGracePeriod(index) < 250 ? 0 : GetGracePeriod(index) - 250;  // xinef: reduce by grace period, treat first 250ms as instant use of rune
 
     AuraEffectList const& regenAura = GetAuraEffectsByType(SPELL_AURA_MOD_POWER_REGEN_PERCENT);
     for (AuraEffectList::const_iterator i = regenAura.begin(); i != regenAura.end(); ++i)
     {
-        if ((*i)->GetMiscValue() == POWER_RUNE && (*i)->GetMiscValueB() == rune)
+        if ((*i)->GetMiscValue() == POWER_RUNE)
             cooldown = cooldown * (100 - (*i)->GetAmount()) / 100;
     }
 
     return cooldown;
 }
-
-void Unit::RemoveRunesByAuraEffect(AuraEffect const* aura)
-{
-    for (uint8 i = 0; i < MAX_RUNES; ++i)
-    {
-        if (m_runes->runes[i].ConvertAura == aura)
-        {
-            ConvertRune(i, GetBaseRune(i));
-            SetRuneConvertAura(i, nullptr);
-        }
-    }
-}
+ 
 
 float Unit::GetTotalAttackPowerValue(WeaponAttackType attType, Unit* victim) const
 {

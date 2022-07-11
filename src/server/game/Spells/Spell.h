@@ -838,7 +838,7 @@ public:
 
     bool skip = false;
 
-    void SetRuneCooldown(uint16 dev);
+    void SetRuneCooldown(uint16 cd);
     uint16 GetRuneCooldown() { return runeCooldown; }
 
     void SetRuneCost(uint8 cost);

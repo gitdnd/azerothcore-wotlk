@@ -1048,26 +1048,21 @@ enum CommandStates
 
 enum RuneCooldowns
 {
-    RUNE_BASE_COOLDOWN = 10000,
+    RUNE_DEFAULT_COOLDOWN = 10000,
     RUNE_GRACE_PERIOD = 2500,     // xinef: maximum possible grace period 
 };
 
 enum RuneType
-{
-    RUNE_BLOOD = 0,
-    RUNE_UNHOLY = 1,
-    RUNE_FROST = 2,
+{ 
     RUNE_DEATH = 3,
-    NUM_RUNE_TYPES = 4
+    RUNE_MAX = 4
 };
 
 struct RuneInfo
 {
-    uint8 BaseRune;
-    uint8 CurrentRune;
+    uint32 StartCooldown;
     uint32 Cooldown;
-    uint32 GracePeriod;
-    AuraEffect const* ConvertAura;
+    uint32 GracePeriod; 
 };
 
 struct Runes
@@ -2235,8 +2230,7 @@ public:
     void UpdateDefenseBonusesMod();
     inline void RecalculateRating(CombatRating cr) { ApplyRatingMod(cr, 0, true); }
     float GetMeleeCritFromAgility();
-    void GetDodgeFromAgility(float& diminishing, float& nondiminishing);
-    [[nodiscard]] float GetMissPercentageFromDefence() const;
+    void GetDodgeFromAgility(float& diminishing, float& nondiminishing); 
     float GetSpellCritFromIntellect();
     float OCTRegenHPPerSpirit();
     float OCTRegenMPPerSpirit();
@@ -2266,26 +2260,16 @@ public:
 
     void _ApplyAllStatBonuses();
     void _RemoveAllStatBonuses();
-
-    void UpdateRuneRegen(RuneType rune);
-    [[nodiscard]] uint8 GetRunesState() const { return m_runes->runeState; }
-    [[nodiscard]] RuneType GetBaseRune(uint8 index) const { return RuneType(m_runes->runes[index].BaseRune); }
-    [[nodiscard]] RuneType GetCurrentRune(uint8 index) const { return RuneType(m_runes->runes[index].CurrentRune); }
-    [[nodiscard]] uint32 GetRuneCooldown(uint8 index) const { return m_runes->runes[index].Cooldown; }
+     
+    [[nodiscard]] uint8 GetRunesState() const { return m_runes->runeState; }  
     [[nodiscard]] uint32 GetGracePeriod(uint8 index) const { return m_runes->runes[index].GracePeriod; }
-    uint32 GetRuneBaseCooldown(uint8 index, bool skipGrace);
-    [[nodiscard]] bool IsBaseRuneSlotsOnCooldown(RuneType runeType) const;
-    RuneType GetLastUsedRune() { return m_runes->lastUsedRune; }
-    void SetLastUsedRune(RuneType type) { m_runes->lastUsedRune = type; }
-    void SetBaseRune(uint8 index, RuneType baseRune) { m_runes->runes[index].BaseRune = baseRune; }
-    void SetCurrentRune(uint8 index, RuneType currentRune) { m_runes->runes[index].CurrentRune = currentRune; }
+    uint32 GetRuneDefaultCooldown(uint8 index, bool skipGrace);
+    [[nodiscard]] bool IsBaseRuneSlotsOnCooldown() const;
+    [[nodiscard]] uint32 GetRuneCooldown(uint8 index) const { return m_runes->runes[index].Cooldown; }
     void SetRuneCooldown(uint8 index, uint32 cooldown) { m_runes->runes[index].Cooldown = cooldown; m_runes->SetRuneState(index, (cooldown == 0)); }
-    void SetGracePeriod(uint8 index, uint32 period) { m_runes->runes[index].GracePeriod = period; }
-    void SetRuneConvertAura(uint8 index, AuraEffect const* aura) { m_runes->runes[index].ConvertAura = aura; }
-    void AddRuneByAuraEffect(uint8 index, RuneType newType, AuraEffect const* aura) { SetRuneConvertAura(index, aura); ConvertRune(index, newType); }
-    void RemoveRunesByAuraEffect(AuraEffect const* aura);
-    void RestoreBaseRune(uint8 index);
-    void ConvertRune(uint8 index, RuneType newType);
+    [[nodiscard]] uint32 GetRuneStartCooldown(uint8 index) const { return m_runes->runes[index].StartCooldown; }
+    void SetRuneStartCooldown(uint8 index, uint32 startCooldown) { m_runes->runes[index].StartCooldown = startCooldown + 1; }
+    void SetGracePeriod(uint8 index, uint32 period) { m_runes->runes[index].GracePeriod = period; }  
     virtual void ResyncRunes(uint8 count) {};
     void AddRunePower(uint8 index);
     void InitRunes();

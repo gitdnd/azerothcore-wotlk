@@ -5870,7 +5870,7 @@ void Spell::EffectActivateRune(SpellEffIndex effIndex)
 
         for (uint32 i = 0; i < MAX_RUNES; ++i)
         {
-            if (m_caster->GetRuneCooldown(i) && (m_caster->GetCurrentRune(i) == RUNE_DEATH))
+            if (m_caster->GetRuneCooldown(i))
             {
                 m_caster->SetRuneCooldown(i, 0);
                 m_caster->SetGracePeriod(i, m_caster->IsInCombat()); // xinef: reset grace period

@@ -802,6 +802,52 @@ void Creature::Update(uint32 diff)
                         // this allows to disable the health regen of raid bosses if pathfinding has issues for whatever reason
                         if (sWorld->getBoolConfig(CONFIG_REGEN_HP_CANNOT_REACH_TARGET_IN_RAID) || !GetMap()->IsRaid())
                         {
+                            SetNoCallAssistance(false);
+                            CallAssistance();
+                        }
+                        m_assistanceTimer = sWorld->getIntConfig(CONFIG_CREATURE_FAMILY_ASSISTANCE_PERIOD);
+                    }
+                    else
+                    {
+                        m_assistanceTimer -= diff;
+                    }
+                }
+
+                if (!IsInEvadeMode() && IsAIEnabled)
+                {
+                    // do not allow the AI to be changed during update
+                    m_AI_locked = true;
+                    i_AI->UpdateAI(diff);
+                    m_AI_locked = false;
+                }
+
+                // creature can be dead after UpdateAI call
+                // CORPSE/DEAD state will processed at next tick (in other case death timer will be updated unexpectedly)
+                if (!IsAlive())
+                    break;
+
+                m_regenTimer -= diff;
+                if (m_regenTimer <= 0)
+                {
+                    if (!IsInEvadeMode())
+                    { 
+                        for (uint8 i = 0; i < MAX_RUNES; ++i)
+                        { 
+                            if (int32 cd = GetRuneCooldown(i))
+                            {
+                                SetRuneCooldown(i, (cd < -1 * m_regenTimer) ? cd + m_regenTimer : 0); 
+                                if (IsInCombat() && cd >= m_regenTimer)
+                                    SetGracePeriod(i, -1 * m_regenTimer - cd + 1);  
+                            } 
+                            else if (uint32 grace = GetGracePeriod(i))
+                            {
+                                if (grace < RUNE_GRACE_PERIOD)
+                                    SetGracePeriod(i, std::min<uint32>(grace - m_regenTimer, RUNE_GRACE_PERIOD));
+                            }
+                        }
+
+                        // regenerate health if not in combat or if polymorphed)
+                        if (!IsInCombat() || IsPolymorphed())
                             RegenerateHealth();
                             LOG_DEBUG("entities.unit", "RegenerateHealth() enabled because Creature cannot reach the target. Detail: {}", GetDebugInfo());
                         }
@@ -1910,7 +1956,7 @@ bool Creature::CanStartAttack(Unit const* who) const
         if (IsNeutralToAll() || !IsWithinDistInMap(who, GetAggroRange(who) + m_CombatDistance, true, false)) // pussywizard: +m_combatDistance for turrets and similar
             return false;
 
-    if (!CanCreatureAttack(who))
+        if (!CanCreatureAttack(who))
         return false;
 
     if (HasUnitState(UNIT_STATE_STUNNED))

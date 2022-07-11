@@ -275,14 +275,9 @@ void Unit::UpdateArmor()
     UpdateAttackPowerAndDamage();                           // armor dependent auras update for SPELL_AURA_MOD_ATTACK_POWER_OF_ARMOR
 }
 
-float Unit::GetHealthBonusFromStamina() // not used, stamina doesn't give HP here.
+float Unit::GetHealthBonusFromStamina()
 {
-    float stamina = GetStat(STAT_STAMINA);
-
-    float baseStam = stamina < 20 ? stamina : 20;
-    float moreStam = stamina - baseStam;
-
-    return baseStam + (moreStam * 10.0f);
+    return GetStat(STAT_STAMINA) * 20;
 }
 
 float Unit::GetManaBonusFromIntellect()
@@ -296,7 +291,7 @@ void Unit::UpdateMaxHealth()
 
     float value = GetModifierValue(unitMod, BASE_VALUE) + GetCreateHealth();
     value *= GetModifierValue(unitMod, BASE_PCT);
-    value += GetModifierValue(unitMod, TOTAL_VALUE) + GetArmor();
+    value += GetModifierValue(unitMod, TOTAL_VALUE) + GetArmor() + GetHealthBonusFromStamina();
     value *= GetModifierValue(unitMod, TOTAL_PCT);
 
     sScriptMgr->OnAfterUpdateMaxHealth(this, value);
@@ -580,12 +575,7 @@ const float m_diminishing_k[MAX_CLASSES] =
     1.0f,   // ??
     1.0f   // Druid
 };
-
-float Unit::GetMissPercentageFromDefence() const
-{
-    return 0;
-}
-
+ 
 void Unit::UpdateParryPercentage()
 {
 
@@ -772,27 +762,7 @@ void Unit::UpdateManaRegen()
 
     SetStatFloatValue(UNIT_FIELD_POWER_REGEN_FLAT_MODIFIER, power_regen_mp5 + power_regen);
 }
-
-void Unit::UpdateRuneRegen(RuneType rune)
-{
-    if (rune >= NUM_RUNE_TYPES)
-        return;
-
-    uint32 cooldown = 0;
-
-    for (uint32 i = 0; i < MAX_RUNES; ++i)
-        if (GetBaseRune(i) == rune)
-        {
-            cooldown = GetRuneBaseCooldown(i, true);
-            break;
-        }
-
-    if (cooldown <= 0)
-        return;
-
-    float regen = float(1 * IN_MILLISECONDS) / float(cooldown);
-    SetFloatValue(PLAYER_RUNE_REGEN_1 + uint8(rune), regen);
-}
+ 
 
 void Unit::_ApplyAllStatBonuses()
 {

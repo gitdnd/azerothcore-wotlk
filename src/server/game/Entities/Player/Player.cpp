@@ -14797,17 +14797,7 @@ bool Player::NeedSendSpectatorData() const
 
 void Player::ResyncRunes(uint8 count)
 {
-    sScriptMgr->OnRuneResync(this);
-    /*
-    WorldPacket data(SMSG_RESYNC_RUNES, 4 + count * 2);
-    data << uint32(count);
-    for (uint32 i = 0; i < count; ++i)
-    {
-        data << uint8(GetCurrentRune(i));                   // rune type
-        data << uint8(255 - (GetRuneCooldown(i) / 39.3f));     // passed cooldown time (0-255)
-    }
-    GetSession()->SendPacket(&data);
-    */
+    sScriptMgr->OnRuneResync(this); 
 }
 
 void Player::PrepareCharmAISpells()
