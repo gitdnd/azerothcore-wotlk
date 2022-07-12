@@ -79,7 +79,7 @@ bool UnitAI::DoSpellAttackIfReady(uint32 spell)
 
     if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spell))
     {
-        if (me->IsWithinCombatRange(me->GetVictim(), spellInfo->GetMaxRange(false)))
+        if (me->IsWithinMeleeRange(me->GetVictim(), spellInfo->GetMaxRange(false)))
         {
             me->CastSpell(me->GetVictim(), spell, false);
             me->resetAttackTimer();
@@ -384,7 +384,7 @@ bool SpellTargetSelector::operator()(Unit const* target) const
             if (!_caster->IsWithinMeleeRange(target, max_range))
                 return false;
         }
-        else if (!_caster->IsWithinCombatRange(target, max_range))
+        else if (!_caster->IsWithinMeleeRange(target, max_range))
             return false;
 
         if (range_type == SPELL_RANGE_RANGED)
@@ -392,7 +392,7 @@ bool SpellTargetSelector::operator()(Unit const* target) const
             if (_caster->IsWithinMeleeRange(target))
                 return false;
         }
-        else if (min_range && _caster->IsWithinCombatRange(target, min_range)) // skip this check if min_range = 0
+        else if (min_range && _caster->IsWithinMeleeRange(target, min_range)) // skip this check if min_range = 0
             return false;
     }
 

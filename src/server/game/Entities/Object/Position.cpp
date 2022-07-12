@@ -24,10 +24,10 @@
 
 bool Position::operator==(Position const& a) const
 {
-    return (G3D::fuzzyEq(a.m_positionX, m_positionX) &&
-            G3D::fuzzyEq(a.m_positionY, m_positionY) &&
-            G3D::fuzzyEq(a.m_positionZ, m_positionZ) &&
-            G3D::fuzzyEq(a.m_orientation, m_orientation));
+    return (a.m_positionX == m_positionX &&
+            a.m_positionY == m_positionY &&
+            a.m_positionZ == m_positionZ &&
+            a.m_orientation == m_orientation);
 }
 
 void Position::RelocatePolarOffset(float angle, float dist, float z /*= 0.0f*/)

@@ -7040,7 +7040,7 @@ SpellCastResult Spell::CheckRange(bool strict)
                 if (!m_caster->IsWithinMeleeRange(target, std::max(real_max_range, 0.0f)))
                     return SPELL_FAILED_OUT_OF_RANGE;
             }
-            else if (!m_caster->IsWithinCombatRange(target, max_range))
+            else if (!m_caster->IsWithinMeleeRange(target, max_range))
                 return SPELL_FAILED_OUT_OF_RANGE; //0x5A;
 
             if (m_spellInfo->DmgClass == SPELL_DAMAGE_CLASS_RANGED && range_type == SPELL_RANGE_RANGED)
@@ -7054,7 +7054,7 @@ SpellCastResult Spell::CheckRange(bool strict)
         }
 
         // Xinef: check min range for self casts
-        if (min_range && range_type != SPELL_RANGE_RANGED && m_caster->IsWithinCombatRange(target, min_range)) // skip this check if min_range = 0
+        if (min_range && range_type != SPELL_RANGE_RANGED && m_caster->IsWithinMeleeRange(target, min_range)) // skip this check if min_range = 0
             return SPELL_FAILED_TOO_CLOSE;
     }
 

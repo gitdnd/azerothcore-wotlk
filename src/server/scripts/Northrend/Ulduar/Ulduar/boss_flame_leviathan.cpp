@@ -468,7 +468,7 @@ public:
 
             if(me->isAttackReady() && !me->HasUnitState(UNIT_STATE_STUNNED))
             {
-                if(me->IsWithinCombatRange(me->GetVictim(), 15.0f))
+                if(me->IsWithinMeleeRange(me->GetVictim(), 15.0f))
                 {
                     me->CastSpell(me->GetVictim(), SPELL_BATTERING_RAM, false);
                     me->resetAttackTimer();

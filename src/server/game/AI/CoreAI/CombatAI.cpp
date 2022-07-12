@@ -181,7 +181,7 @@ void ArcherAI::AttackStart(Unit* who)
     if (!who)
         return;
 
-    if (me->IsWithinCombatRange(who, m_minRange))
+    if (me->IsWithinMeleeRange(who, m_minRange))
     {
         if (me->Attack(who, true) && !who->IsFlying())
             me->GetMotionMaster()->MoveChase(who);
@@ -201,7 +201,7 @@ void ArcherAI::UpdateAI(uint32 /*diff*/)
     if (!UpdateVictim())
         return;
 
-    if (!me->IsWithinCombatRange(me->GetVictim(), m_minRange))
+    if (!me->IsWithinMeleeRange(me->GetVictim(), m_minRange))
         DoSpellAttackIfReady(me->m_spells[0]);
     else
         DoMeleeAttackIfReady();
@@ -225,8 +225,8 @@ TurretAI::TurretAI(Creature* c) : CreatureAI(c)
 bool TurretAI::CanAIAttack(Unit const* /*who*/) const
 {
     // TODO: use one function to replace it
-    if (!me->IsWithinCombatRange(me->GetVictim(), me->m_CombatDistance)
-            || (m_minRange && me->IsWithinCombatRange(me->GetVictim(), m_minRange)))
+    if (!me->IsWithinMeleeRange(me->GetVictim(), me->m_CombatDistance)
+            || (m_minRange && me->IsWithinMeleeRange(me->GetVictim(), m_minRange)))
         return false;
     return true;
 }

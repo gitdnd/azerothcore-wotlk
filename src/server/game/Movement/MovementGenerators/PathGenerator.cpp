@@ -1047,7 +1047,8 @@ void PathGenerator::ShortenPathUntilDist(G3D::Vector3 const& target, float dist)
     while (1)
     {
         // we know that pathPoints[i] is too close already (from the previous iteration)
-        if ((_pathPoints[i - 1] - target).squaredLength() >= distSq)
+        float distComp = (_pathPoints[i - 1] - target).squaredLength();
+        if (distComp >= distSq)
             break; // bingo!
 
         bool canCheckSlope = _slopeCheck && (GetPathType() & ~(PATHFIND_NOT_USING_PATH));
@@ -1076,7 +1077,8 @@ void PathGenerator::ShortenPathUntilDist(G3D::Vector3 const& target, float dist)
     // ok, _pathPoints[i] is too close, _pathPoints[i-1] is not, so our target point is somewhere between the two...
     //   ... settle for a guesstimate since i'm not confident in doing trig on every chase motion tick...
     // (@todo review this)
-    _pathPoints[i] += (_pathPoints[i - 1] - _pathPoints[i]).direction() * (dist - (_pathPoints[i] - target).length());
+    G3D::Vector3 pnt = _pathPoints[i - 1] - _pathPoints[i];
+    _pathPoints[i] += (pnt).direction() * (dist - std::max(pnt.length(), (_pathPoints[i] - target).length()));
     _pathPoints.resize(i + 1);
 }
 

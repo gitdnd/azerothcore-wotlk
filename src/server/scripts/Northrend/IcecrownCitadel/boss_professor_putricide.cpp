@@ -211,7 +211,7 @@ public:
         if (!me || !target || target->GetTypeId() != TYPEID_PLAYER)
             return false;
 
-        if (me->IsWithinCombatRange(target, 7.0f))
+        if (me->IsWithinMeleeRange(target, 7.0f))
             return false;
 
         return me->IsValidAttackTarget(target);

@@ -56,7 +56,7 @@ class spell_elk_attack_hit : public SpellScript
         caster->CalculateMeleeDamage(victim, 0, &damageInfo);
         damageInfo.HitInfo |= HITINFO_NO_ANIMATION;
         Unit::DealDamageMods(victim, damageInfo.damage, &damageInfo.absorb);
-        caster->SendAttackStateUpdate(&damageInfo);
+        // caster->SendAttackStateUpdate(&damageInfo);
 
         caster->DealMeleeDamage(&damageInfo, true);
 
@@ -135,7 +135,8 @@ class spell_elk_deflect_aura : public AuraScript
         Unit* attacker = dmgInfo.GetAttacker();
         Position pos1 = caster->GetPosition();
         Position pos2 = attacker->GetPosition();
-        if (abs(pos1.GetRelativeAngle(pos2.GetPositionX(), pos2.GetPositionY())) < 0.7)
+        float angle = caster->NormalizeOrientation(pos1.GetRelativeAngle(pos2.GetPositionX(), pos2.GetPositionY()));
+        if (angle < 0.7 || angle > 5.585)
         {
             if (!success)
             {
@@ -338,13 +339,14 @@ class spell_elk_sprint_aura : public AuraScript
     {
         if (caster->IsFalling())
             return;
-        float facing = abs(caster->NormalizeOrientation(caster->GetOldOrientation()) - caster->NormalizeOrientation(caster->GetOrientation()));
+        float facing = caster->NormalizeOrientation(abs(caster->GetOldOrientation()) - caster->GetOrientation());
         float x, y, z = 0;
         caster->GetOldPosition(x, y, z);
-        if (facing < 0.7)
+        float weightBonus = std::max(0.0f, (1.4f - caster->GetWeight()));
+        if (facing < 0.7 + weightBonus || facing > 5.585 - weightBonus)
         {
-            float angle = abs(Position(x, y, z, caster->GetOldOrientation()).GetRelativeAngle(caster->GetPositionX(), caster->GetPositionY()));
-            if (angle < 0.7)
+            float angle = caster->NormalizeOrientation(Position(x, y, z, caster->NormalizeOrientation(caster->GetOldOrientation())).GetRelativeAngle(caster->GetPositionX(), caster->GetPositionY()));
+            if (angle < 0.7 || angle > 5.585)
             {
                 return;
             }
@@ -373,14 +375,14 @@ class spell_elk_dash_aura : public AuraScript
     }
     void Cast(AuraEffect const*  /*aurEff*/, AuraEffectHandleModes  /*mode*/)
     {
-        caster = GetCaster();
+        caster = GetCaster(); 
     }
     void MovePacket()
     {
         float x, y, z = 0;
         caster->GetOldPosition(x, y, z);
-        float degree = abs(Position(x, y, z, 0).GetRelativeAngle(caster->GetPositionX(), caster->GetPositionY()));
-        if ((degree > 2.35 && degree < 3.926991) || (degree > 0.78 && degree < 5.49))
+        float degree = caster->NormalizeOrientation(Position(x, y, z, caster->NormalizeOrientation(caster->GetOldOrientation())).GetRelativeAngle(caster->GetPositionX(), caster->GetPositionY()));
+        if ((degree > 0.78 && degree < 2.35) || (degree > 3.92 && degree < 5.495))
         {
             return;
         }  

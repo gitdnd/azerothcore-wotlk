@@ -594,6 +594,7 @@ public:
     void SetTransport(Transport* t) { m_transport = t; }
 
     MovementInfo m_movementInfo;
+    void RemoveMovementFlag(uint32 flag) { m_movementInfo.flags &= ~flag; }
 
     [[nodiscard]] virtual float GetStationaryX() const { return GetPositionX(); }
     [[nodiscard]] virtual float GetStationaryY() const { return GetPositionY(); }

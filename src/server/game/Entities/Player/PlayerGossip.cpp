@@ -214,12 +214,14 @@ void Player::SendPreparedGossip(WorldObject* source)
 
     if (source->GetTypeId() == TYPEID_UNIT)
     {
-        // in case no gossip flag and quest menu not empty, open quest menu (client expect gossip menu with this flag)
-        if (!source->ToCreature()->HasNpcFlag(UNIT_NPC_FLAG_GOSSIP) && !PlayerTalkClass->GetQuestMenu().Empty())
-        {
-            SendPreparedQuest(source->GetGUID());
-            return;
-        }
+
+        uint32 textId = GetGossipTextId(source);
+
+        if (uint32 menuId = PlayerTalkClass->GetGossipMenu().GetMenuId())
+            textId = GetGossipTextId(menuId, source);
+
+        PlayerTalkClass->SendGossipMenu(textId, source->GetGUID());
+        return;
     }
     else if (source->GetTypeId() == TYPEID_GAMEOBJECT)
     {
@@ -229,17 +231,7 @@ void Player::SendPreparedGossip(WorldObject* source)
             SendPreparedQuest(source->GetGUID());
             return;
         }
-    }
-
-    // in case non empty gossip menu (that not included quests list size) show it
-    // (quest entries from quest menu will be included in list)
-
-    uint32 textId = GetGossipTextId(source);
-
-    if (uint32 menuId = PlayerTalkClass->GetGossipMenu().GetMenuId())
-        textId = GetGossipTextId(menuId, source);
-
-    PlayerTalkClass->SendGossipMenu(textId, source->GetGUID());
+    } 
 }
 
 void Player::OnGossipSelect(WorldObject* source, uint32 gossipListId, uint32 menuId)

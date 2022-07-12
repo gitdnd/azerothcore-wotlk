@@ -78,12 +78,12 @@ bool ChaseMovementGenerator<T>::DoUpdate(T* owner, uint32 time_diff)
     Unit* target = i_target.getTarget();
 
     bool const mutualChase = IsMutualChase(owner, target);
-    float const hitboxSum = owner->GetCombatReach() + target->GetCombatReach();
+    float const hitboxSum = owner->GetMeleeRange(target);
     float const minTarget = (_range ? _range->MinTolerance : 0.0f) + hitboxSum;
-    float const maxRange = _range ? _range->MaxRange + hitboxSum : owner->GetMeleeRange(target); // melee range already includes hitboxes
+    float const maxRange = _range ? _range->MaxRange + hitboxSum : hitboxSum; // melee range already includes hitboxes
     float const maxTarget = _range ? _range->MaxTolerance + hitboxSum : hitboxSum;
     Optional<ChaseAngle> angle = mutualChase ? Optional<ChaseAngle>() : _angle;
-
+     
     i_recheckDistance.Update(time_diff);
     if (i_recheckDistance.Passed())
     {

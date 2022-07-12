@@ -353,6 +353,7 @@ Unit::Unit(bool isWorldObject) : WorldObject(isWorldObject),
     m_baseHealthRegen = 0;
     m_spellPenetrationItemMod = 0;
 
+    m_weight = 0;
 
     m_runes = nullptr;
     m_runeCount = 0;
@@ -746,22 +747,6 @@ void Unit::resetAttackTimer(WeaponAttackType type)
     m_attackTimer[type] = std::min(m_attackTimer[type] + time, time);
 }
 
-bool Unit::IsWithinCombatRange(Unit const* obj, float dist2compare) const
-{
-    if (!obj || !IsInMap(obj) || !InSamePhase(obj))
-        return false;
-
-    float dx = GetPositionX() - obj->GetPositionX();
-    float dy = GetPositionY() - obj->GetPositionY();
-    float dz = GetPositionZ() - obj->GetPositionZ();
-    float distsq = dx * dx + dy * dy + dz * dz;
-
-    float sizefactor = GetCollisionRadius() + obj->GetCombatReach();
-    float maxdist = dist2compare + sizefactor;
-
-    return distsq < maxdist * maxdist;
-}
-
 bool Unit::IsWithinMeleeRange(Unit const* obj, float dist) const
 {
     if (!obj || !IsInMap(obj) || !InSamePhase(obj))
@@ -774,12 +759,12 @@ bool Unit::IsWithinMeleeRange(Unit const* obj, float dist) const
 
     float maxdist = dist + GetMeleeRange(obj);
 
-    return distsq < maxdist * maxdist;
+    return distsq <= maxdist * maxdist;
 }
 
 float Unit::GetMeleeRange(Unit const* target) const
 {
-    float range = GetCombatReach() + target->GetCombatReach();
+    float range = GetCombatReach() + target->GetCollisionRadius();
     return range;
 }
 bool Unit::IsWithinRange(Unit const* obj, float dist) const

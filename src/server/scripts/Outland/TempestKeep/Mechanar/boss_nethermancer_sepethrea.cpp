@@ -173,7 +173,7 @@ public:
             switch (events.ExecuteEvent())
             {
                 case EVENT_SPELL_INFERNO:
-                    if (me->IsWithinCombatRange(me->GetVictim(), 5.0f))
+                    if (me->IsWithinMeleeRange(me->GetVictim(), 5.0f))
                     {
                         me->CastSpell(me, SPELL_INFERNO, true);
                         events.ScheduleEvent(EVENT_SPELL_INFERNO, 20000);

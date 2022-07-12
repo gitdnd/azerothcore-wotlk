@@ -2665,6 +2665,7 @@ void Player::InitStatsForLevel(bool reapplyMods)
     // update level to hunter/summon pet
     if (Pet* pet = GetPet())
         pet->SynchronizeLevelWithOwner();
+     
 }
 
 void Player::SendInitialSpells()

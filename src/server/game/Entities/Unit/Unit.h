@@ -290,6 +290,7 @@ enum UnitMods
     UNIT_MOD_DAMAGE_MAINHAND,
     UNIT_MOD_DAMAGE_OFFHAND,
     UNIT_MOD_DAMAGE_RANGED,
+    UNIT_MOD_WEIGHT,
     UNIT_MOD_END,
     // synonyms
     UNIT_MOD_STAT_START = UNIT_MOD_STAT_STRENGTH,
@@ -1434,8 +1435,7 @@ public:
     [[nodiscard]] bool CanDualWield() const { return m_canDualWield; }
     virtual void SetCanDualWield(bool value) { m_canDualWield = value; }
     [[nodiscard]] float GetCombatReach() const override { return m_floatValues[UNIT_FIELD_COMBATREACH]; } 
-    [[nodiscard]] bool IsWithinRange(Unit const* obj, float dist) const;
-    bool IsWithinCombatRange(Unit const* obj, float dist2compare) const;
+    [[nodiscard]] bool IsWithinRange(Unit const* obj, float dist) const; 
     bool IsWithinMeleeRange(Unit const* obj, float dist = 0.f) const;
     float GetMeleeRange(Unit const* target) const;
     virtual SpellSchoolMask GetMeleeDamageSchoolMask(WeaponAttackType attackType = BASE_ATTACK, uint8 damageIndex = 0) const = 0;
@@ -1520,6 +1520,7 @@ public:
     void SetStat(Stats stat, int32 val) { SetStatInt32Value(static_cast<uint16>(UNIT_FIELD_STAT0) + stat, val); }
     [[nodiscard]] uint32 GetArmor() const { return GetResistance(SPELL_SCHOOL_NORMAL); }
     void SetArmor(int32 val) { SetResistance(SPELL_SCHOOL_NORMAL, val); }
+    [[nodiscard]] float GetWeight() const { return m_weight; }
 
     [[nodiscard]] uint32 GetResistance(SpellSchools school) const { return GetUInt32Value(static_cast<uint16>(UNIT_FIELD_RESISTANCES) + school); }
     [[nodiscard]] uint32 GetResistance(SpellSchoolMask mask) const;
@@ -2258,6 +2259,8 @@ public:
     void ApplyHealthRegenBonus(int32 amount, bool apply);
     void UpdateManaRegen();
 
+    void UpdateWeight();
+
     void _ApplyAllStatBonuses();
     void _RemoveAllStatBonuses();
      
@@ -2650,6 +2653,8 @@ protected:
     uint32 m_baseManaRegen;
     uint32 m_baseHealthRegen;
     int32 m_spellPenetrationItemMod;
+
+    float m_weight;
 
     float m_realDodge;
     float m_realParry;

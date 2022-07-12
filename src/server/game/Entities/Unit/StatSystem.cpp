@@ -110,7 +110,7 @@ bool Unit::UpdateStats(Stats stat)
             UpdateShieldBlockValue();
             break;
         case STAT_AGILITY:
-            UpdateArmor();
+            UpdateWeight();
             UpdateAllCritPercentages();
             UpdateDodgePercentage();
             break;
@@ -256,8 +256,7 @@ void Unit::UpdateArmor()
     UnitMods unitMod = UNIT_MOD_ARMOR;
 
     float value = GetModifierValue(unitMod, BASE_VALUE);   // base armor (from items)
-    value *= GetModifierValue(unitMod, BASE_PCT);           // armor percent from items
-    value += GetStat(STAT_AGILITY) * 2.0f;                  // armor bonus from stats
+    value *= GetModifierValue(unitMod, BASE_PCT);           // armor percent from items 
     value += GetModifierValue(unitMod, TOTAL_VALUE);
 
     //add dynamic flat mods
@@ -273,6 +272,7 @@ void Unit::UpdateArmor()
     SetArmor(int32(value));
 
     UpdateAttackPowerAndDamage();                           // armor dependent auras update for SPELL_AURA_MOD_ATTACK_POWER_OF_ARMOR
+    UpdateWeight();
 }
 
 float Unit::GetHealthBonusFromStamina()
@@ -762,7 +762,14 @@ void Unit::UpdateManaRegen()
 
     SetStatFloatValue(UNIT_FIELD_POWER_REGEN_FLAT_MODIFIER, power_regen_mp5 + power_regen);
 }
- 
+
+void Unit::UpdateWeight()
+{
+    UnitMods unitMod = UNIT_MOD_WEIGHT;
+
+    m_weight = (GetArmor() / std::max(1.0f, (3 * GetStat(STAT_AGILITY))))/10;
+}
+
 
 void Unit::_ApplyAllStatBonuses()
 {

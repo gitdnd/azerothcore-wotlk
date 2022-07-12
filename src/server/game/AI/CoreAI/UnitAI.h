@@ -68,10 +68,10 @@ struct DefaultTargetSelector : public Acore::unary_function<Unit*, bool>
         if (m_playerOnly && (target->GetTypeId() != TYPEID_PLAYER))
             return false;
 
-        if (m_dist > 0.0f && !me->IsWithinCombatRange(target, m_dist))
+        if (m_dist > 0.0f && !me->IsWithinMeleeRange(target, m_dist))
             return false;
 
-        if (m_dist < 0.0f && me->IsWithinCombatRange(target, -m_dist))
+        if (m_dist < 0.0f && me->IsWithinMeleeRange(target, -m_dist))
             return false;
 
         if (m_aura)
@@ -140,10 +140,10 @@ struct PowerUsersSelector : public Acore::unary_function<Unit*, bool>
         if (_playerOnly && target->GetTypeId() != TYPEID_PLAYER)
             return false;
 
-        if (_dist > 0.0f && !_me->IsWithinCombatRange(target, _dist))
+        if (_dist > 0.0f && !_me->IsWithinMeleeRange(target, _dist))
             return false;
 
-        if (_dist < 0.0f && _me->IsWithinCombatRange(target, -_dist))
+        if (_dist < 0.0f && _me->IsWithinMeleeRange(target, -_dist))
             return false;
 
         return true;
@@ -162,7 +162,7 @@ struct FarthestTargetSelector : public Acore::unary_function<Unit*, bool>
         if (_playerOnly && target->GetTypeId() != TYPEID_PLAYER)
             return false;
 
-        if (_dist > 0.0f && !_me->IsWithinCombatRange(target, _dist))
+        if (_dist > 0.0f && !_me->IsWithinMeleeRange(target, _dist))
             return false;
 
         if (_inLos && !_me->IsWithinLOSInMap(target))
