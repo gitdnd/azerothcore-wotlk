@@ -209,3 +209,4 @@ UPDATE creature_template SET gossip_menu_id=200191 WHERE entry=16494;
 
 UPDATE creature_template SET ScriptName='wretched', name = "Wretched" WHERE entry=15644;
 UPDATE creature_template SET ScriptName='mana_wyrm' WHERE entry=15274;
+UPDATE creature_template SET ScriptName='lazy_peon' WHERE entry=10556;

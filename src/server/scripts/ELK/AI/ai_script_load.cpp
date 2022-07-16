@@ -13,10 +13,12 @@
 
 // This is where scripts' loading functions should be declared:
 
-void AddSC_elk_eversong_woods_mobs();
+void AddSC_elk_eversong_woods_mobs(); 
+void AddSC_elk_durotar_mobs();
 
 
 void AddELKAIScripts()
 {
     AddSC_elk_eversong_woods_mobs();
+    AddSC_elk_durotar_mobs();
 }

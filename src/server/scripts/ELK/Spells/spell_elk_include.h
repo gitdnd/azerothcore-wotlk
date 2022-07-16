@@ -1,3 +1,5 @@
+#pragma once
+
 #include "Group.h"
 #include "PetDefines.h"
 #include "Player.h"
