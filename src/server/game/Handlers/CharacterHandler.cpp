@@ -219,7 +219,11 @@ bool LoginQueryHolder::Initialize()
     stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_TALENT_POINTS);
     stmt->SetData(0, lowGuid);
     res &= SetPreparedQuery(PLAYER_LOGIN_QUERY_LOAD_TALENT_POINTS, stmt);
-     
+
+    stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_QUEST_STAGE_FLAGS);
+    stmt->SetData(0, lowGuid);
+    res &= SetPreparedQuery(PLAYER_LOGIN_QUERY_LOAD_QUEST_STAGE_FLAGS, stmt);
+
     return res;
 }
 

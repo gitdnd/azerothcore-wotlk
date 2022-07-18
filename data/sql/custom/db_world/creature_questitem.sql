@@ -1,0 +1,1 @@
+DELETE FROM `creature_questitem` WHERE `CreatureEntry` = 15274;

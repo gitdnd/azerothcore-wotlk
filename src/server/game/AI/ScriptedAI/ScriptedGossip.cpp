@@ -52,6 +52,7 @@ void SendGossipMenuFor(Player* player, uint32 npcTextID, Creature const* creatur
     if (creature)
         SendGossipMenuFor(player, npcTextID, creature->GetGUID());
 }
+ 
 
 void CloseGossipMenuFor(Player* player)
 {

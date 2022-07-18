@@ -146,29 +146,13 @@ public:
                         case 14:
                         {
                             std::list<GameObject*> woodList;
-                            me->GetGameObjectListWithEntryInGrid(woodList, 175784, 20);
+                            me->GetGameObjectListWithEntryInGrid(woodList, 500001, 20);
                             if (woodList.size() > 0)
                             {
-                                CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction(); 
-                                    ItemTemplate const* item_proto = ObjectMgr::instance()->GetItemTemplate(4470);
-
-                                    if (Item* item = Item::CreateItem(4470, 1))
-                                    { 
-                                        item->SaveToDB(trans);  
-                                        LootStoreItem storeItem(LootStoreItem(4470, 0, 100, false, LOOT_MODE_DEFAULT, 0, 1, 1));
-                                        woodList.front()->loot.AddItem(storeItem);
-                                    } 
-                                CharacterDatabase.CommitTransaction(trans);  
-                                // woodList.front()->loot.AddItem(LootStoreItem(4470, 0, 100, false, LOOT_MODE_DEFAULT, 0, 1, 1), true);
-                                if (woodList.front()->getLootState() == 0)
-                                {
-
-                                    woodList.front()->SetLootState(GO_READY);
-                                    woodList.front()->SetGoState(GO_STATE_READY);
-                                    woodList.front()->setActive(true);
-                                    woodList.front()->RemoveGameObjectFlag(GO_FLAG_NOT_SELECTABLE);
-                                    woodList.front()->RemoveGameObjectFlag(GO_FLAG_INTERACT_COND);
-                                }
+                                auto woodPile = woodList.front();
+                                LootStoreItem storeItem(LootStoreItem(4470, 0, 100, false, LOOT_MODE_DEFAULT, 0, 1, 1));
+                                woodPile->loot.AddItem(storeItem);
+                                woodPile->Respawn(); 
                             }
                             me->RemoveAura(68442);
                             break;

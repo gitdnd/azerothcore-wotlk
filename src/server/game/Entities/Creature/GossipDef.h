@@ -270,7 +270,7 @@ public:
     [[nodiscard]] uint32 GetGossipOptionAction(uint32 selection) const { return _gossipMenu.GetMenuItemAction(selection); }
     [[nodiscard]] bool IsGossipOptionCoded(uint32 selection) const { return _gossipMenu.IsMenuItemCoded(selection); }
 
-    void SendGossipMenu(uint32 titleTextId, ObjectGuid objectGUID);
+    void SendGossipMenu(uint32 titleTextId, ObjectGuid objectGUID); 
     void SendCloseGossip();
     void SendPointOfInterest(uint32 poiId) const;
 
@@ -286,10 +286,9 @@ public:
 
     void SendQuestGiverOfferReward(Quest const* quest, ObjectGuid npcGUID, bool enableNext) const;
     void SendQuestGiverRequestItems(Quest const* quest, ObjectGuid npcGUID, bool canComplete, bool closeOnCancel) const;
-
 private:
     GossipMenu _gossipMenu;
     QuestMenu  _questMenu;
-    WorldSession* _session;
+    WorldSession* _session; 
 };
 #endif

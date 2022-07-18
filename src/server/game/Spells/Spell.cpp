@@ -4094,10 +4094,10 @@ void Spell::_cast(bool skipCheck)
     SetExecutedCurrently(false);
     if (playerCaster)
     {
-        if (playerCaster->quedSpell != 0)
+        if (playerCaster->GetQuedSpell() != 0)
         {
-            playerCaster->CastSpell(playerCaster, playerCaster->quedSpell, false);
-            playerCaster->quedSpell = 0;
+            playerCaster->CastSpell(playerCaster, playerCaster->GetQuedSpell(), false);
+            playerCaster->SetQuedSpell(0);
         }
     }
 }

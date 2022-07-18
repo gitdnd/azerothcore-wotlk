@@ -110,7 +110,7 @@ class spell_elk_attack : public SpellScript
                 if (caster->IsPlayer() && curAtk->GetSpellTimer() < 50)
                 {
                     Player* player = caster->ToPlayer();
-                    player->quedSpell = ATTACK;
+                    player->SetQuedSpell(ATTACK);
                 }
                 return;
             }
@@ -126,7 +126,7 @@ class spell_elk_attack : public SpellScript
                     if (caster->IsPlayer())
                     {
                         Player* player = caster->ToPlayer();
-                        player->quedSpell = ATTACK;
+                        player->SetQuedSpell(ATTACK);
                     }
                     return;
                 }

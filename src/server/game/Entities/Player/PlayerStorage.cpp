@@ -5325,6 +5325,8 @@ bool Player::LoadFromDB(ObjectGuid playerGuid, CharacterDatabaseQueryHolder cons
     _LoadSpells(holder.GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_SPELLS));
     _LoadTalents(holder.GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_TALENTS));
 
+    _LoadQuestStageFlags(holder.GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_QUEST_STAGE_FLAGS));
+
     _LoadGlyphs(holder.GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_GLYPHS));
     _LoadGlyphAuras();
     _LoadAuras(holder.GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_AURAS), time_diff);
@@ -6987,6 +6989,7 @@ void Player::SaveToDB(CharacterDatabaseTransaction trans, bool create, bool logo
     _SaveSeasonalQuestStatus(trans);
     _SaveMonthlyQuestStatus(trans);
     _SaveTalents(trans);
+    _SaveQuestStageFlags(trans);
     _SaveSpells(trans);
     _SaveSpellCooldowns(trans, logout);
     _SaveActions(trans);

@@ -4,9 +4,12 @@
 #include "ScriptMgr.h"
 #include "ScriptedCreature.h"
 #include "Unit/Unit.h"
+#include "ScriptedGossip.h"
 
+#include "../Quest/QuestStageFlags.h"
 #include "../Spells/spell_elk_include.h" 
 
+#define DoComboIfAvailable(x) if(EasyCast(x)) return
 enum Events : uint16
 {
     NONE,
@@ -25,27 +28,39 @@ enum Events : uint16
     RETURN_CHECK,
 };
 
+class ELKCreatureScript : public CreatureScript
+{
+protected:
+    ELKCreatureScript(const char* name) : CreatureScript(name) {}  
+};
 struct ELKAI : public ScriptedAI
 {
     ELKAI(Creature* creature) : ScriptedAI(creature)
     {
-        entries.push_back(me->GetEntry());
+        reinforcementEntries.push_back(me->GetEntry());
     }
     EventMap events;
 
-    int comboing = 0;
+    uint8 comboing = 0;
     std::vector<WorldLocation> positions{me->GetWorldLocation()};
 
-    int reinforcementCall = RAND(1, 2);
+    uint8 reinforcementCall = RAND(1, 2);
 
-    int chanceAtk = RAND(2, 3);
-    int chanceDef = RAND(0, 1);
-    int chanceSpell = 0;
-    int chanceBuff = 0;
+    uint8 chanceAtk = RAND(2, 3);
+    uint8 chanceDef = RAND(0, 1);
+    uint8 chanceSpell = 0;
+    uint8 chanceBuff = 0;
 
-    int mode = 0;
+    uint8 optionAtk = 0;
+    uint8 optionDef = 0;
+    uint8 optionSpell = 0;
+    uint8 optionBuff = 0;
+    uint8 mode = 0;
 
-    std::vector<uint32> entries;
+    std::map<uint32, uint16> baseCooldowns;
+    std::map<uint32, uint16> baseCost;
+
+    std::vector<uint32> reinforcementEntries;
 
     void Reset() override
     {
@@ -56,21 +71,34 @@ struct ELKAI : public ScriptedAI
     {
         me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
     }
-    void EasyCast(int Spell)
+    bool EasyCast(int spell)
     {
-        me->CastSpell((Unit*) nullptr, Spell, false);
+        
+        SpellCastResult ret = me->CastSpell(me, spell, false);
+        if (ret == SPELL_CAST_OK)
+        {
+            me->AddSpellCooldown(spell, 0, baseCooldowns[spell]);
+            return true;
+        }
+        return false;
     }
-    void EasyCastTarget(int Spell)
+    bool EasyCastTarget(int spell)
     {
         auto target = me->GetVictim();
-        if (!target)
-            return;
-        me->CastSpell(target, Spell, false);
+        if (!target || me->GetSpellCooldown(spell))
+            return false;
+        SpellCastResult ret = me->CastSpell(target, spell, false);
+        if (ret == SPELL_CAST_OK)
+        {
+            me->AddSpellCooldown(spell, 0, baseCooldowns[spell]);
+            return true;
+        }
+        return false;
     }
-    void EasyQueCombo(int Attack)
-    {
-        int atkTime = me->GetAttackTime(BASE_ATTACK);
-        events.ScheduleEvent(Attack, me->getAttackTimer(BASE_ATTACK));
+    void EasyQueCombo(int attack)
+    { 
+        uint32 atkTime = me->GetAttackTime(BASE_ATTACK);
+        events.ScheduleEvent(attack, me->getAttackTimer(BASE_ATTACK));
         me->setAttackTimer(BASE_ATTACK, atkTime);
         comboing = 1;
     }
@@ -79,12 +107,12 @@ struct ELKAI : public ScriptedAI
         auto target = me->GetVictim();
         if (!target)
             return;
-        int fighting = target->InCombatWithHowMany();
+        uint16 fighting = target->InCombatWithHowMany();
         if (fighting < reinforcementCall)
         {
             std::list<Creature*> cList;
             
-            for (auto i : entries)
+            for (auto i : reinforcementEntries)
             {
                 me->GetCreaturesWithEntryInRange(cList, 40.0f, i);
             }
@@ -111,9 +139,9 @@ struct ELKAI : public ScriptedAI
         EnterCombatCustom(who);
         ReinforcementCall();
     }
-    int RandomOrder()
+    uint8 RandomOrder()
     {
-        int result = RAND(0, chanceAtk + chanceDef + chanceSpell + chanceBuff);
+        uint8 result = rand() % (chanceAtk + chanceDef + chanceSpell + chanceBuff);
         if (result < chanceAtk)
             return 1;
         result -= chanceAtk;
@@ -132,4 +160,75 @@ struct ELKAI : public ScriptedAI
         if (type != POINT_MOTION_TYPE)
             return;
     }
+
+    void RandomAction()
+    {
+        uint8 action = RandomOrder();
+
+        switch (action)
+        {
+        case 1:
+        {
+            uint8 rnd = RAND(1, (int)optionAtk);
+            for (uint8 i = 0; i < optionAtk; i++)
+            {
+                bool exit = false;
+                RandomAtk((i + rnd) % (optionAtk), exit);
+                if (exit)
+                {
+                    break;
+                }
+            }
+            break;
+        }
+        case 2:
+        {
+            uint8 rnd = RAND(1, (int)optionDef);
+            for (uint8 i = 0; i < optionDef; i++)
+            {
+                bool exit = false;
+                RandomDef((i + rnd) % (optionDef), exit);
+                if (exit)
+                {
+                    break;
+                }
+            }
+            break;
+        }
+        case 3:
+        { 
+            uint8 rnd = RAND(1, (int)optionSpell);
+            for (uint8 i = 0; i < optionSpell; i++)
+            {
+                bool exit = false;
+                RandomSpell((i + rnd) % (optionSpell), exit);
+                if (exit)
+                {
+                    break;
+                }
+            }
+            break;
+        }
+        case 4:
+        {
+            uint8 rnd = RAND(1, (int)optionBuff);
+            for (uint8 i = 0; i < optionBuff; i++)
+            {
+                bool exit = false;
+                RandomBuff((i + rnd) % (optionBuff), exit);
+                if (exit)
+                {
+                    break;
+                }
+            }
+            break;
+        }
+        default:
+            break;
+        }
+    }
+    virtual void RandomAtk(uint8, bool&) {};
+    virtual void RandomDef(uint8, bool&) {};
+    virtual void RandomSpell(uint8, bool&) {};
+    virtual void RandomBuff(uint8, bool&) {};
 };

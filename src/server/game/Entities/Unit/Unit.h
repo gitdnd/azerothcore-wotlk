@@ -2263,7 +2263,8 @@ public:
 
     void _ApplyAllStatBonuses();
     void _RemoveAllStatBonuses();
-     
+
+    [[nodiscard]] uint8 GetAvailableRunes() const { uint8 available = 0; for (int i = 0; i < MAX_RUNES; i++) if (!m_runes->runes[i].Cooldown) available++; return available; }
     [[nodiscard]] uint8 GetRunesState() const { return m_runes->runeState; }  
     [[nodiscard]] uint32 GetGracePeriod(uint8 index) const { return m_runes->runes[index].GracePeriod; }
     uint32 GetRuneDefaultCooldown(uint8 index, bool skipGrace);

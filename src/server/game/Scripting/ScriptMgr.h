@@ -577,7 +577,7 @@ public:
      * @param creature Contains information about the Creature
     */
      virtual void OnCreatureSaveToDB(Creature* /*creature*/) { }
-
+     
     /**
      * @brief This hook called when a player opens a gossip dialog with the creature.
      *
@@ -587,6 +587,17 @@ public:
      * @return False if you want to continue, true if you want to disable
      */
     [[nodiscard]] virtual bool CanCreatureGossipHello(Player* /*player*/, Creature* /*creature*/) { return false; }
+
+
+    /**
+     * @brief This hook called when a player opens a gossip dialog with the creature.
+     *
+     * @param player Contains information about the Player
+     * @param creature Contains information about the Creature
+     *
+     * @return False if you want to continue, true if you want to disable
+     */
+    [[nodiscard]] virtual bool CanCreatureGossipGoodbye(Player* /*player*/, Creature* /*creature*/) { return false; }
 
     /**
      * @brief This hook called when a player selects a gossip item in the creature's gossip menu.
@@ -724,6 +735,9 @@ public:
 
     // Called when a player opens a gossip dialog with the creature.
     [[nodiscard]] virtual bool OnGossipHello(Player* /*player*/, Creature* /*creature*/) { return false; }
+
+    // Called when a player opens a gossip dialog with the creature.
+    [[nodiscard]] virtual bool OnGossipGoodbye(Player* /*player*/, Creature* /*creature*/) { return false; }
 
     // Called when a player selects a gossip item in the creature's gossip menu.
     [[nodiscard]] virtual bool OnGossipSelect(Player* /*player*/, Creature* /*creature*/, uint32 /*sender*/, uint32 /*action*/) { return false; }
@@ -2135,7 +2149,8 @@ public: /* ItemScript */
     void OnGossipSelectCode(Player* player, Item* item, uint32 sender, uint32 action, const char* code);
 
 public: /* CreatureScript */
-    bool OnGossipHello(Player* player, Creature* creature);
+	bool OnGossipHello(Player* player, Creature* creature);
+    bool OnGossipGoodbye(Player* player, Creature* creature);
     bool OnGossipSelect(Player* player, Creature* creature, uint32 sender, uint32 action);
     bool OnGossipSelectCode(Player* player, Creature* creature, uint32 sender, uint32 action, const char* code);
     bool OnQuestAccept(Player* player, Creature* creature, Quest const* quest);

@@ -189,4 +189,24 @@ REPLACE INTO `npc_text` (`ID`, `text0_0`, `Probability0`) VALUES
 	(200188, "Desolace is not such a bad place, if you don't mind the constant harassments from the centaurs.", 1),
 	(200189, "The Argent Dawn will turn away none who are willing to sacrifice for our cause.", 1),
 	(200190, "Greetings, $n. If you bring me necrotic stones from the undead invaders, I can give you access to the stores of the Argent Dawn.", 1),
-	(200191, "Good day to you, citizen. Have you come to aid us against the Scourge?", 1);
+	(200191, "Good day to you, citizen. Have you come to aid us against the Scourge?", 1),
+	
+	
+	(200192, "What do you want, novice? Are you here to help me past wits end?", 1),
+	(200193, "Rudeness doesn't befit you. I am here to relieve my torement. My needs, like any other of our people's needs, they have become great, and I must feed. Though I'm troubled by a slight malaise you see...", 1),
+	(200194, "While I do feel like I'm almost done, I have this odd urge to wait, to extend my Evocation and discharge further, and while I did and keep doing so, I find myself too bemused to worry, yet my thoughts feel empty.", 1),
+	(200195, "So long? I don't remember much time passing since I started, though I can guess why. I'd say it's been a couple of minutes but not much longer than that. Simply put, I can't remember much of anything!", 1),
+	(200196, "Wild elementals? Those are just impurities from my... release. Fel is a gross and disgusting type of energy compared to the usual Arcane I was used to, and it takes a time to get it into a satisfying state. Though every time I've almost reached it, every few seconds, I feel like my standards change so to speak.", 1),
+	(200197, "That's quite rash, blaming me this, supposed, situation. But I'll believe you, I've not much else to believe anyway. I have noticed something odd happening but not exactly what, my head is consistently swelling and I feel that if I were to walk away from here something terrible would happen, that my skull would split in two.", 1),
+	(200198, "Who wants me dead? Lanthan? That insipid 'friend' <Felendren twitched> of mine wants my head? Hahaahahaa aahhh, I wouldn't have figured. Thanks for refreshing my memory about something, though it still feels as if it's stemming from outside of me rather than inside.", 1),
+	(200199, "You believe I'm such a dangerous fiend? If you truly, honestly, must put me down to protect the community, then I surrender. Have it your way.", 1),
+	(200200, "What are you talking about? Feel what?", 1),
+	(200201, "I see, there is something I've been avoiding. It seems to be Demonic in nature but not alive. Parasitic in nature. It's not quite a Mana Burn, more of a Mind Devouring weave. It's as if I'm purifying something that radiates degenerate energy, something whose essence is not pure at all, rather pure corruption itself!", 1),
+	(200202, "Absorb it? Why would I do something wholeheartedly dangerous? Although, considreing my current state...", 1),
+	(200203, "If I do that, I fear whatever it has taken from me, from my mind, will be lost.", 1),
+	(200204, "Clear up some of those Tainted Energies I've released in the meantime. Maybe something will come to me, or you. You seem smart, you'll figure it out.", 1),
+	(200205, "If the energies I've released work as I expect them to, perhaps try using some of their Essence, extract the pure part and use it to cast a Dispel or two on me.", 1),
+	(200206, "Just do it already.", 1),
+	(200207, "Do I know you? I can't quite remember.", 1),
+	(200208, "If I do that, I fear whatever it has taken from me, from my mind, will be lost.", 1),
+	(200209, "If I do that, I fear whatever it has taken from me, from my mind, will be lost.", 1);

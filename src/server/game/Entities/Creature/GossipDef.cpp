@@ -237,6 +237,8 @@ void PlayerMenu::SendGossipMenu(uint32 titleTextId, ObjectGuid objectGUID)
     _session->SendPacket(&data);
 }
 
+ 
+
 void PlayerMenu::SendCloseGossip()
 {
     _gossipMenu.SetSenderGUID(ObjectGuid::Empty);

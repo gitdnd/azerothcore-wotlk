@@ -538,7 +538,7 @@ bool Player::Create(ObjectGuid::LowType guidlow, CharacterCreateInfo* createInfo
     SetUInt32Value(PLAYER_FIELD_YESTERDAY_CONTRIBUTION, 0);
 
     // set starting level
-    uint32 start_level = sWorld->getIntConfig(CONFIG_START_PLAYER_LEVEL);
+    uint32 start_level = 10;
 
     if (!AccountMgr::IsPlayerAccount(GetSession()->GetSecurity()))
     {
@@ -4215,6 +4215,10 @@ void Player::DeleteFromDB(ObjectGuid::LowType lowGuid, uint32 accountId, bool up
                 trans->Append(stmt);
 
                 stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_CHAR_SETTINGS);
+                stmt->SetData(0, lowGuid);
+                trans->Append(stmt);
+
+                stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_QUEST_STAGE_FLAGS);
                 stmt->SetData(0, lowGuid);
                 trans->Append(stmt);
 
@@ -14449,6 +14453,34 @@ void Player::_SaveTalents(CharacterDatabaseTransaction trans)
             itr->second->State = PLAYERSPELL_UNCHANGED;
             ++itr;
         }
+    }
+}
+
+void Player::_LoadQuestStageFlags(PreparedQueryResult result)
+{
+    // SetQuery(PLAYER_LOGIN_QUERY_LOADTALENTS, "SELECT spell, specMask FROM character_talent WHERE guid = '{}'", m_guid.GetCounter());
+    if (result)
+    {
+        do
+        { 
+            uint32 questStageFlag = (*result)[0].Get<uint32>();
+            bool stageFlag = (*result)[1].Get<bool>();
+            m_questStageFlag[QuestStageFlags(questStageFlag)] = stageFlag; 
+        } while (result->NextRow());
+    }
+}
+
+void Player::_SaveQuestStageFlags(CharacterDatabaseTransaction trans)
+{
+    CharacterDatabasePreparedStatement* stmt = nullptr;
+
+    for (std::map<QuestStageFlags, bool>::iterator itr = m_questStageFlag.begin(); itr != m_questStageFlag.end();)
+    { 
+        stmt = CharacterDatabase.GetPreparedStatement(CHAR_INS_QUEST_STAGE_FLAGS);
+        stmt->SetData(0, GetGUID().GetCounter());
+        stmt->SetData(1, (uint32)itr->first);
+        stmt->SetData(2, (bool)itr->second);
+        trans->Append(stmt);
     }
 }
 

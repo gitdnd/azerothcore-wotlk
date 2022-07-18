@@ -141,16 +141,10 @@ class spell_elk_deflect_aura : public AuraScript
             if (!success)
             {
                 Aura* aura = GetAura();
-                success = true;
-                Aura* auraFat = caster->GetAura(DEFLECT_FATIGUE);
-                if (auraFat)
-                {
-                    auraFat->SetDuration(auraFat->GetDuration() - 500);
-                }
-                Player* player = dynamic_cast<Player*>(caster);
+                success = true; 
+                Player* player = caster->ToPlayer();
                 if (player)
                 {
-                    player->RemoveSpellCooldown(SPELL_DEFLECT, true);
                     auto auraMap = aura->GetTriggerDummy();
                     auraMap.emplace(MapDummy::Misc_1, std::optional<bool>(true));
                 }
@@ -160,7 +154,7 @@ class spell_elk_deflect_aura : public AuraScript
                 //caster->CastSpell(caster, SPELL_ACTION_AIR_DEFLECT_HIT, true);
             }
             caster->PlayDirectSound(20000);
-            dmgInfo.ModifyDamage(-1 * dmgInfo.GetDamage());
+            dmgInfo.AbsorbDamage(-1 * dmgInfo.GetDamage());
             if (attacker)
             {
                 //caster->CastSpell(attacker, SPELL_ACTION_POSTURE_DAMAGE, true);
@@ -180,32 +174,10 @@ class spell_elk_deflect_aura : public AuraScript
     }
     void OnEnd(AuraEffect const* aurEff, AuraEffectHandleModes mode)
     {
-        if (!success)
+        if (success)
         {
-            caster = GetTarget();
-            Aura* auraFat = caster->GetAura(DEFLECT_FATIGUE);
-            if (!auraFat)
-            {
-                caster->CastSpell(caster, DEFLECT_FATIGUE, true);
-                auraFat = caster->GetAura(DEFLECT_FATIGUE);
-                if (auraFat)
-                    auraFat->SetDuration(auraFat->GetDuration() + 2000);
-                else
-                    return;
-            }
-            else
-                auraFat->SetDuration(auraFat->GetDuration() + 3000);
-            Player* player = dynamic_cast<Player*>(caster);
-            if (player)
-            {
-                int dur = auraFat->GetDuration();
-                int def = player->GetRatingBonusValue(CR_PARRY);
-                int dif = dur - def;
-                if (dif > 0)
-                {
-                    player->AddSpellCooldown(SPELL_DEFLECT, 0, dif);
-                }
-            }
+            for (int i = 0; i < MAX_RUNES; i++)
+                caster->SetRuneCooldown(i, caster->GetRuneCooldown(i) - 15000);
         }
     }
     void Register() override
@@ -229,6 +201,8 @@ class spell_elk_deflect : public SpellScript
             //caster->CastSpell(caster, SPELL_ACTION_AIR_DEFLECT, true);
         }
         Spell* spell = GetSpell();
+        spell->SetRuneCooldown(15000);
+        spell->SetRuneCost(1);
         Aura* aura = caster->GetAura(SPELL_DEFLECT);
         if (aura)
         {
@@ -243,6 +217,7 @@ class spell_elk_deflect : public SpellScript
                 spell->cancel();
                 aura->Remove();
                 caster->CastSpell(caster, SPELL_DEFLECT_SHORT, false);
+                /*
                 Aura* auraFat = caster->GetAura(DEFLECT_FATIGUE);
                 if (auraFat)
                 {
@@ -259,6 +234,7 @@ class spell_elk_deflect : public SpellScript
                         }
                     }
                 }
+                */
                 return;
             }
         }
@@ -342,11 +318,11 @@ class spell_elk_sprint_aura : public AuraScript
         float facing = caster->NormalizeOrientation(abs(caster->GetOldOrientation()) - caster->GetOrientation());
         float x, y, z = 0;
         caster->GetOldPosition(x, y, z);
-        float weightBonus = std::max(0.0f, (1.4f - caster->GetWeight()));
-        if (facing < 0.7 + weightBonus || facing > 5.585 - weightBonus)
+        float weightBonus = std::max(0.0f, (1.2f - caster->GetWeight()));
+        if (facing < 0.5f + weightBonus || facing > 5.98f - weightBonus)
         {
             float angle = caster->NormalizeOrientation(Position(x, y, z, caster->NormalizeOrientation(caster->GetOldOrientation())).GetRelativeAngle(caster->GetPositionX(), caster->GetPositionY()));
-            if (angle < 0.7 || angle > 5.585)
+            if (angle < 0.7f || angle > 5.585f)
             {
                 return;
             }

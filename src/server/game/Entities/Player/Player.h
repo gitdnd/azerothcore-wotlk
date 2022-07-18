@@ -849,6 +849,7 @@ enum PlayerLoginQueryIndex
     PLAYER_LOGIN_QUERY_LOAD_CHARACTER_SETTINGS      = 36,
     PLAYER_LOGIN_QUERY_LOAD_PET_SLOTS               = 37,
     PLAYER_LOGIN_QUERY_LOAD_TALENT_POINTS           = 38,
+    PLAYER_LOGIN_QUERY_LOAD_QUEST_STAGE_FLAGS       = 39,
     MAX_PLAYER_LOGIN_QUERY
 };
 
@@ -966,6 +967,8 @@ enum EmoteBroadcastTextID
 {
     EMOTE_BROADCAST_TEXT_ID_STRANGE_GESTURES = 91243
 };
+
+enum class QuestStageFlags : uint32;
 
 std::ostringstream& operator<< (std::ostringstream& ss, PlayerTaxi const& taxi);
 
@@ -1336,9 +1339,9 @@ public:
     /***                    GOSSIP SYSTEM                  ***/
     /*********************************************************/
 
-    void PrepareGossipMenu(WorldObject* source, uint32 menuId = 0, bool showQuests = false);
+    void PrepareGossipMenu(WorldObject* source, uint32 menuId = 0, bool showQuests = false); 
     void SendPreparedGossip(WorldObject* source);
-    void OnGossipSelect(WorldObject* source, uint32 gossipListId, uint32 menuId);
+    void OnGossipSelect(WorldObject* source, uint32 gossipListId, uint32 menuId); 
 
     uint32 GetGossipTextId(uint32 menuId, WorldObject* source);
     uint32 GetGossipTextId(WorldObject* source);
@@ -2543,6 +2546,7 @@ public:
     void _LoadEntryPointData(PreparedQueryResult result);
     void _LoadGlyphs(PreparedQueryResult result);
     void _LoadTalents(PreparedQueryResult result);
+    void _LoadQuestStageFlags(PreparedQueryResult result);
     void _LoadInstanceTimeRestrictions(PreparedQueryResult result);
     void _LoadBrewOfTheMonth(PreparedQueryResult result);
     void _LoadCharacterSettings(PreparedQueryResult result);
@@ -2567,6 +2571,7 @@ public:
     void _SaveEntryPoint(CharacterDatabaseTransaction trans);
     void _SaveGlyphs(CharacterDatabaseTransaction trans);
     void _SaveTalents(CharacterDatabaseTransaction trans);
+    void _SaveQuestStageFlags(CharacterDatabaseTransaction trans);
     void _SaveStats(CharacterDatabaseTransaction trans);
     void _SaveCharacter(bool create, CharacterDatabaseTransaction trans);
     void _SaveInstanceTimeRestrictions(CharacterDatabaseTransaction trans);
@@ -2813,8 +2818,15 @@ private:
 
     PlayerSettingMap m_charSettingsMap;
 
-public:
+    std::map<QuestStageFlags, bool> m_questStageFlag;
+
     uint32 quedSpell = 0;
+public:
+    void SetQuedSpell(uint32 spell) { quedSpell = spell; }
+    uint32 GetQuedSpell() { return quedSpell; }
+    bool GetStageQuestFlag(QuestStageFlags index) { return m_questStageFlag[index]; }
+    void AddStageQuestFlag(QuestStageFlags index) { m_questStageFlag[index] = true; }
+    void RemoveStageQuestFlag(QuestStageFlags index) { m_questStageFlag[index] = false; }
 };
 
 void AddItemsSetItem(Player* player, Item* item);

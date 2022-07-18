@@ -484,7 +484,7 @@ void LootItem::AddAllowedLooter(Player const* player)
 //
 
 // Inserts the item into the loot (called by LootTemplate processors)
-void Loot::AddItem(LootStoreItem const& item)
+void Loot::AddItem(LootStoreItem const& item, bool ffa)
 {
     ItemTemplate const* proto = sObjectMgr->GetItemTemplate(item.itemid);
     if (!proto)
@@ -528,7 +528,7 @@ void Loot::AddItem(LootStoreItem const& item)
             }
         }
 
-        if (!canSeeItemInLootWindow)
+        if (!canSeeItemInLootWindow && !ffa)
         {
             LOG_DEBUG("loot", "Skipping ++unlootedCount for unlootable item: {}", item.itemid);
             continue;

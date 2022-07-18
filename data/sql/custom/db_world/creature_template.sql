@@ -2,18 +2,18 @@ delimiter ;;
 create procedure creature_template_elk ()
 begin
     declare continue handler for 1060 begin end;	
-	ALTER TABLE `creature_template`
+	ALTER TABLE creature_template
 	ADD COLUMN elk int NOT NULL DEFAULT 0;
 end;;
 call creature_template_elk();;
 DROP PROCEDURE  creature_template_elk;;
 
-UPDATE `creature_template`
-SET `AIName` = 'CombatAI'
-WHERE `AIName` = 'SmartAI';
+UPDATE creature_template
+SET AIName = 'CombatAI'
+WHERE AIName = 'SmartAI';
 
-UPDATE `creature_template`
-SET `minlevel` = ( ( (`minlevel` - 1) * 5) / 8) + 11, `maxlevel` = `minlevel` + 2, elk = 1
+UPDATE creature_template
+SET minlevel = ( ( (minlevel - 1) * 5) / 8) + 11, maxlevel = minlevel + 2, elk = 1
 WHERE elk != 1;
 UPDATE creature_template SET gossip_menu_id=200001 WHERE entry=234;
 UPDATE creature_template SET gossip_menu_id=200002 WHERE entry=235;
@@ -207,6 +207,9 @@ UPDATE creature_template SET gossip_menu_id=200189 WHERE entry=16281;
 UPDATE creature_template SET gossip_menu_id=200190 WHERE entry=16787;
 UPDATE creature_template SET gossip_menu_id=200191 WHERE entry=16494;
 
-UPDATE creature_template SET ScriptName='wretched', name = "Wretched" WHERE entry=15644;
-UPDATE creature_template SET ScriptName='mana_wyrm' WHERE entry=15274;
 UPDATE creature_template SET ScriptName='lazy_peon' WHERE entry=10556;
+UPDATE creature_template SET ScriptName='wretched', name = "Wretched" WHERE entry=15644;
+UPDATE creature_template SET minlevel = 6, maxlevel = 8 WHERE (entry = 15271);
+UPDATE creature_template SET ScriptName='mana_wyrm' WHERE entry=15274;
+UPDATE creature_template SET minlevel = 16, faction = 1604, speed_run = 0.5, BaseAttackTime = 5000, RangeAttackTime = 5000, mingold = 1366, maxgold = 1366, HealthModifier = 1.3, ManaModifier = 2, ExperienceModifier = 2, ScriptName = 'felendren',  npcflag = 1 WHERE (entry = 15367);
+UPDATE creature_template SET ScriptName='tainted_arcane_wraith', minlevel = 17, maxlevel = 17 WHERE (entry = 15298);

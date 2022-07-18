@@ -21,3 +21,7 @@ WHERE (id1 = "15645" OR id1 = "16162" )AND elk < 1;
 UPDATE creature
 SET elk = 1
 WHERE elk < 1;
+
+UPDATE `creature` 
+SET `id1` = "15635"
+WHERE (`guid` = "55051");

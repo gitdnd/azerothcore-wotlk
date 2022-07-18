@@ -95,7 +95,7 @@ void AddGossipItemFor(Player* player, uint32 gossipMenuID, uint32 gossipMenuItem
 
 // Send menu text
 void SendGossipMenuFor(Player* player, uint32 npcTextID, ObjectGuid const guid);
-void SendGossipMenuFor(Player* player, uint32 npcTextID, Creature const* creature);
+void SendGossipMenuFor(Player* player, uint32 npcTextID, Creature const* creature); 
 
 // Close menu
 void CloseGossipMenuFor(Player* player);
