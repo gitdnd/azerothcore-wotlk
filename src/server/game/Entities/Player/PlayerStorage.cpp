@@ -5326,6 +5326,7 @@ bool Player::LoadFromDB(ObjectGuid playerGuid, CharacterDatabaseQueryHolder cons
     _LoadTalents(holder.GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_TALENTS));
 
     _LoadQuestStageFlags(holder.GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_QUEST_STAGE_FLAGS));
+    _LoadChestFlags(holder.GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_CHEST_FLAGS));
 
     _LoadGlyphs(holder.GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_GLYPHS));
     _LoadGlyphAuras();
@@ -6990,6 +6991,7 @@ void Player::SaveToDB(CharacterDatabaseTransaction trans, bool create, bool logo
     _SaveMonthlyQuestStatus(trans);
     _SaveTalents(trans);
     _SaveQuestStageFlags(trans);
+    _SaveChestFlags(trans);
     _SaveSpells(trans);
     _SaveSpellCooldowns(trans, logout);
     _SaveActions(trans);

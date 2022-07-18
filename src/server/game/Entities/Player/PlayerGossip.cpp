@@ -412,6 +412,11 @@ uint32 Player::GetGossipTextId(uint32 menuId, WorldObject* source)
     return textId;
 }
 
+void Player::GossipEnd(Object* obj, uint32 action)
+{
+    PlayerTalkClass->SendCloseGossip();
+}
+
 uint32 Player::GetDefaultGossipMenuForSource(WorldObject* source)
 {
     switch (source->GetTypeId())

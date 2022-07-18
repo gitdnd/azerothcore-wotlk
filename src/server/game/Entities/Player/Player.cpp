@@ -4222,6 +4222,10 @@ void Player::DeleteFromDB(ObjectGuid::LowType lowGuid, uint32 accountId, bool up
                 stmt->SetData(0, lowGuid);
                 trans->Append(stmt);
 
+                stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_CHEST_FLAGS);
+                stmt->SetData(0, lowGuid);
+                trans->Append(stmt);
+
                 Corpse::DeleteFromDB(playerGuid, trans);
 
                 sScriptMgr->OnDeleteFromDB(trans, lowGuid);
@@ -14481,6 +14485,35 @@ void Player::_SaveQuestStageFlags(CharacterDatabaseTransaction trans)
         stmt->SetData(1, (uint32)itr->first);
         stmt->SetData(2, (bool)itr->second);
         trans->Append(stmt);
+        itr++;
+    }
+}
+
+
+void Player::_LoadChestFlags(PreparedQueryResult result)
+{
+    // SetQuery(PLAYER_LOGIN_QUERY_LOADTALENTS, "SELECT spell, specMask FROM character_talent WHERE guid = '{}'", m_guid.GetCounter());
+    if (result)
+    {
+        do
+        {
+            uint32 chestFlag = (*result)[0].Get<uint32>(); 
+            m_chestFlag[ChestFlags(chestFlag)] = true;
+        } while (result->NextRow());
+    }
+}
+
+void Player::_SaveChestFlags(CharacterDatabaseTransaction trans)
+{
+    CharacterDatabasePreparedStatement* stmt = nullptr;
+
+    for (std::map<ChestFlags, bool>::iterator itr = m_chestFlag.begin(); itr != m_chestFlag.end();)
+    {
+        stmt = CharacterDatabase.GetPreparedStatement(CHAR_INS_CHEST_FLAGS);
+        stmt->SetData(0, GetGUID().GetCounter());
+        stmt->SetData(1, (uint32)itr->first); 
+        trans->Append(stmt);
+        itr++;
     }
 }
 

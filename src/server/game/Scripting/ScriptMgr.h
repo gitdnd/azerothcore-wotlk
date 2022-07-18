@@ -588,17 +588,7 @@ public:
      */
     [[nodiscard]] virtual bool CanCreatureGossipHello(Player* /*player*/, Creature* /*creature*/) { return false; }
 
-
-    /**
-     * @brief This hook called when a player opens a gossip dialog with the creature.
-     *
-     * @param player Contains information about the Player
-     * @param creature Contains information about the Creature
-     *
-     * @return False if you want to continue, true if you want to disable
-     */
-    [[nodiscard]] virtual bool CanCreatureGossipGoodbye(Player* /*player*/, Creature* /*creature*/) { return false; }
-
+ 
     /**
      * @brief This hook called when a player selects a gossip item in the creature's gossip menu.
      *
@@ -734,10 +724,7 @@ public:
     [[nodiscard]] bool IsDatabaseBound() const override { return true; }
 
     // Called when a player opens a gossip dialog with the creature.
-    [[nodiscard]] virtual bool OnGossipHello(Player* /*player*/, Creature* /*creature*/) { return false; }
-
-    // Called when a player opens a gossip dialog with the creature.
-    [[nodiscard]] virtual bool OnGossipGoodbye(Player* /*player*/, Creature* /*creature*/) { return false; }
+    [[nodiscard]] virtual bool OnGossipHello(Player* /*player*/, Creature* /*creature*/) { return false; } 
 
     // Called when a player selects a gossip item in the creature's gossip menu.
     [[nodiscard]] virtual bool OnGossipSelect(Player* /*player*/, Creature* /*creature*/, uint32 /*sender*/, uint32 /*action*/) { return false; }

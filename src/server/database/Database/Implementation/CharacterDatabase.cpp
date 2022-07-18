@@ -536,6 +536,9 @@ void CharacterDatabaseConnection::DoPrepareStatements()
     PrepareStatement(CHAR_SEL_QUEST_STAGE_FLAGS, "SELECT quest_stage_flag, stage_flag FROM quest_stage_flag WHERE guid = ?", CONNECTION_ASYNC);
     PrepareStatement(CHAR_INS_QUEST_STAGE_FLAGS, "INSERT INTO quest_stage_flag (guid, quest_stage_flag, stage_flag) VALUES (?, ?, ?)", CONNECTION_ASYNC);
     PrepareStatement(CHAR_DEL_QUEST_STAGE_FLAGS, "DELETE FROM quest_stage_flag WHERE guid = ?", CONNECTION_ASYNC);
+    PrepareStatement(CHAR_SEL_CHEST_FLAGS, "SELECT chest_flag FROM chest_flag WHERE guid = ?", CONNECTION_ASYNC);
+    PrepareStatement(CHAR_INS_CHEST_FLAGS, "INSERT INTO chest_flag (guid, chest_flag) VALUES (?, ?, ?)", CONNECTION_ASYNC);
+    PrepareStatement(CHAR_DEL_CHEST_FLAGS, "DELETE FROM chest_flag WHERE guid = ?", CONNECTION_ASYNC);
 
     // Items that hold loot or money
     PrepareStatement(CHAR_SEL_ITEMCONTAINER_ITEMS, "SELECT containerGUID, itemid, count, item_index, randomPropertyId, randomSuffix, follow_loot_rules, freeforall, is_blocked, is_counted, is_underthreshold, needs_quest, conditionLootId FROM item_loot_storage", CONNECTION_SYNCH);

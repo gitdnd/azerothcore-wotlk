@@ -208,5 +208,8 @@ REPLACE INTO `npc_text` (`ID`, `text0_0`, `Probability0`) VALUES
 	(200205, "If the energies I've released work as I expect them to, perhaps try using some of their Essence, extract the pure part and use it to cast a Dispel or two on me.", 1),
 	(200206, "Just do it already.", 1),
 	(200207, "Do I know you? I can't quite remember.", 1),
-	(200208, "If I do that, I fear whatever it has taken from me, from my mind, will be lost.", 1),
-	(200209, "If I do that, I fear whatever it has taken from me, from my mind, will be lost.", 1);
+	(200208, "<The Orb radiates an intellectual power. If you destroyed it, you could devour some of it's power.>", 1),
+	(200209, "...", 1),
+	(200210, "<The scroll smells corrosive, rotten and damp.	>", 1),
+	(200211, "'...may the bodies of those deceased carry on their use for our Master and King, and may the Damned be free of the shackles of life forever more...'", 1),
+	(200212, "'...as the Damned rise from the dead to fulfill their duties to the KING of all that is Death, ruler beyond Life, they shall partake in the grace of His Will and breathe the air of his cold plague...", 1);

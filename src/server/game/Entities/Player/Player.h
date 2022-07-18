@@ -850,6 +850,7 @@ enum PlayerLoginQueryIndex
     PLAYER_LOGIN_QUERY_LOAD_PET_SLOTS               = 37,
     PLAYER_LOGIN_QUERY_LOAD_TALENT_POINTS           = 38,
     PLAYER_LOGIN_QUERY_LOAD_QUEST_STAGE_FLAGS       = 39,
+    PLAYER_LOGIN_QUERY_LOAD_CHEST_FLAGS             = 40,
     MAX_PLAYER_LOGIN_QUERY
 };
 
@@ -969,6 +970,7 @@ enum EmoteBroadcastTextID
 };
 
 enum class QuestStageFlags : uint32;
+enum class ChestFlags : uint32;
 
 std::ostringstream& operator<< (std::ostringstream& ss, PlayerTaxi const& taxi);
 
@@ -1345,6 +1347,7 @@ public:
 
     uint32 GetGossipTextId(uint32 menuId, WorldObject* source);
     uint32 GetGossipTextId(WorldObject* source);
+    void GossipEnd(Object* obj, uint32 action);
     static uint32 GetDefaultGossipMenuForSource(WorldObject* source);
 
     void ToggleInstantFlight();
@@ -2547,6 +2550,7 @@ public:
     void _LoadGlyphs(PreparedQueryResult result);
     void _LoadTalents(PreparedQueryResult result);
     void _LoadQuestStageFlags(PreparedQueryResult result);
+    void _LoadChestFlags(PreparedQueryResult result);
     void _LoadInstanceTimeRestrictions(PreparedQueryResult result);
     void _LoadBrewOfTheMonth(PreparedQueryResult result);
     void _LoadCharacterSettings(PreparedQueryResult result);
@@ -2572,6 +2576,7 @@ public:
     void _SaveGlyphs(CharacterDatabaseTransaction trans);
     void _SaveTalents(CharacterDatabaseTransaction trans);
     void _SaveQuestStageFlags(CharacterDatabaseTransaction trans);
+    void _SaveChestFlags(CharacterDatabaseTransaction trans);
     void _SaveStats(CharacterDatabaseTransaction trans);
     void _SaveCharacter(bool create, CharacterDatabaseTransaction trans);
     void _SaveInstanceTimeRestrictions(CharacterDatabaseTransaction trans);
@@ -2819,6 +2824,7 @@ private:
     PlayerSettingMap m_charSettingsMap;
 
     std::map<QuestStageFlags, bool> m_questStageFlag;
+    std::map<ChestFlags, bool> m_chestFlag;
 
     uint32 quedSpell = 0;
 public:
@@ -2827,6 +2833,9 @@ public:
     bool GetStageQuestFlag(QuestStageFlags index) { return m_questStageFlag[index]; }
     void AddStageQuestFlag(QuestStageFlags index) { m_questStageFlag[index] = true; }
     void RemoveStageQuestFlag(QuestStageFlags index) { m_questStageFlag[index] = false; }
+
+    bool GetChestFlag(ChestFlags index) { return m_chestFlag[index]; }
+    void AddChestFlag(ChestFlags index) { m_chestFlag[index] = true; }
 };
 
 void AddItemsSetItem(Player* player, Item* item);

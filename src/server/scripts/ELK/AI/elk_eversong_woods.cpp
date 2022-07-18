@@ -18,6 +18,10 @@ enum EversongDialogue : uint32
     FELENDREN_TALK_8 = 200205,
     FELENDREN_PUT_DOWN_RESET = 200206,
     FELENDREN_INTRO_MET = 200207,
+
+    SOLANIANS_ORB = 200208,
+    SCOURGE_SCROLL_INTRO = 200210,
+    DOTDOTDOT = 200209,
 };
 enum EversongDialogueOptions : uint16
 {
@@ -38,6 +42,19 @@ enum EversongDialogueOptions : uint16
     FELENDREN_DIALOGUE_EMBRACE_3,
     FELENDREN_DIALOGUE_7,
     FELENDREN_DIALOGUE_8,
+
+    SOLANIANS_ORB_TAKE,
+    SOLANIANS_ORB_SHATTER,
+    SOLANIANS_ORB_STARE,
+    SCOURGE_SCROLL_TAKE,
+    SCOURGE_SCROLL_BURN,
+    SCOURGE_SCROLL_READ_1,
+    SCOURGE_SCROLL_READ_2,
+    SCOURGE_SCROLL_READ_3,
+    SCOURGE_SCROLL_READ_4,
+    SOLANIANS_JOURNAL_TAKE,
+    SOLANIANS_JOURNAL_SHATTER,
+    SOLANIANS_JOURNAL_STARE,
 };
  
 class mana_wyrm : public ELKCreatureScript
@@ -610,6 +627,7 @@ public:
             aggrod = true;
             surrendered = true;
             me->SetFaction(7);
+            player->GossipEnd(me, 0);
 
             me->CombatStart(player);
             player->CombatStart(me);
@@ -772,10 +790,128 @@ public:
 
 };
 
+class solanians_orb : public GameObjectScript
+{
+public:
+    solanians_orb() : GameObjectScript("solanians_orb") { }
+
+    GameObjectAI* GetAI(GameObject* go) const override
+    {
+        return new solanians_orbAI(go);
+    }
+
+    struct solanians_orbAI : public GameObjectAI
+    {
+        solanians_orbAI(GameObject* gameObject) : GameObjectAI(gameObject)
+        { 
+        }
+        bool GossipHello(Player* player, bool  /*reportUse*/) override
+        {
+            AddGossipItemFor(player, 0, "<Take Orb> I'm returning this.", GOSSIP_SENDER_MAIN, SOLANIANS_ORB_TAKE);
+            AddGossipItemFor(player, 0, "<Shatter Orb> I do need more power.", GOSSIP_SENDER_MAIN, SOLANIANS_ORB_SHATTER);
+            AddGossipItemFor(player, 0, "<Stare at your reflection in the orb>", GOSSIP_SENDER_MAIN, SOLANIANS_ORB_STARE);
+            SendGossipMenuFor(player, SOLANIANS_ORB, me->GetGUID());
+            return false;
+        }
+        bool GossipSelect(Player* player, uint32 sender, uint32 action) override
+        {
+            ClearGossipMenuFor(player);
+            switch (action)
+            {
+            case SOLANIANS_ORB_TAKE:
+                player->AddStageQuestFlag(QuestStageFlags::SOLANIANS_SCRYING_ORB_FOUND);
+                player->GossipEnd(me, 0);
+                break;
+            case SOLANIANS_ORB_SHATTER:
+                player->AddStageQuestFlag(QuestStageFlags::SOLANIANS_SCRYING_ORB_CONSUMED);
+                player->GiveXP(5000, player);
+                player->GossipEnd(me, 0);
+                break;
+            case SOLANIANS_ORB_STARE:
+                if (RAND(1, 5) < 5)
+                {
+                    AddGossipItemFor(player, 0, "<Take Orb> I'm returning this.", GOSSIP_SENDER_MAIN, SOLANIANS_ORB_TAKE);
+                    AddGossipItemFor(player, 0, "<Shatter Orb> I do need more power.", GOSSIP_SENDER_MAIN, SOLANIANS_ORB_SHATTER);
+                    AddGossipItemFor(player, 0, "<Stare at your reflection in the orb>", GOSSIP_SENDER_MAIN, SOLANIANS_ORB_STARE);
+                    SendGossipMenuFor(player, DOTDOTDOT, me->GetGUID());
+                }
+                else
+                    GossipSelect(player, sender, SOLANIANS_ORB_SHATTER);
+                break;
+            }
+            return false;
+        }
+    };
+
+};
+
+class scourge_scroll : public GameObjectScript
+{
+public:
+    scourge_scroll() : GameObjectScript("scourge_scroll") { }
+
+    GameObjectAI* GetAI(GameObject* go) const override
+    {
+        return new scourge_scrollAI(go);
+    }
+
+    struct scourge_scrollAI : public GameObjectAI
+    {
+        scourge_scrollAI(GameObject* gameObject) : GameObjectAI(gameObject)
+        {
+        }
+        void BuildGossipHello(Player*& player)
+        {
+            AddGossipItemFor(player, 0, "<Take Scroll of Scourge Magic> Know thy enemy.", GOSSIP_SENDER_MAIN, SCOURGE_SCROLL_TAKE);
+            AddGossipItemFor(player, 0, "<Burn Scroll> Curse the Scourge.", GOSSIP_SENDER_MAIN, SCOURGE_SCROLL_BURN);
+        }
+        bool GossipHello(Player* player, bool  /*reportUse*/) override
+        {
+            BuildGossipHello(player);
+            AddGossipItemFor(player, 0, "<Read the Scroll>", GOSSIP_SENDER_MAIN, SCOURGE_SCROLL_READ_1);
+            SendGossipMenuFor(player, SCOURGE_SCROLL_INTRO, me->GetGUID());
+            return false;
+        }
+        bool GossipSelect(Player* player, uint32 sender, uint32 action) override
+        {
+            ClearGossipMenuFor(player);
+            switch (action)
+            {
+            case SOLANIANS_ORB_TAKE:
+                player->AddStageQuestFlag(QuestStageFlags::SCOLL_OF_SCOURGE_MAGIC_FOUND,
+                    );
+                player->GossipEnd(me, 0);
+                break;
+            case SOLANIANS_ORB_SHATTER:
+                player->AddStageQuestFlag(QuestStageFlags::SCOLL_OF_SCOURGE_MAGIC_CONSUMED);
+                player->GiveXP(5000, player);
+                player->GossipEnd(me, 0);
+                break;
+            case SOLANIANS_ORB_STARE:
+                if (RAND(1, 5) < 5)
+                {
+                    AddGossipItemFor(player, 0, "<Take Orb> I'm returning this.", GOSSIP_SENDER_MAIN, SOLANIANS_ORB_TAKE);
+                    AddGossipItemFor(player, 0, "<Shatter Orb> I do need more power.", GOSSIP_SENDER_MAIN, SOLANIANS_ORB_SHATTER);
+                    AddGossipItemFor(player, 0, "<Stare at your reflection in the orb>", GOSSIP_SENDER_MAIN, SOLANIANS_ORB_STARE);
+                    SendGossipMenuFor(player, DOTDOTDOT, me->GetGUID());
+                }
+                else
+                    GossipSelect(player, sender, SOLANIANS_ORB_SHATTER);
+                break;
+            }
+            return false;
+        }
+    };
+
+};
+
 void AddSC_elk_eversong_woods_mobs()
 {
     new mana_wyrm();
     new wretched();
     new tainted_arcane_wraith();
     new felendren();
+
+    new solanians_orb();
+    new scourge_scroll();
 }

@@ -5,6 +5,7 @@
 #include "ScriptedCreature.h"
 #include "Unit/Unit.h"
 #include "ScriptedGossip.h"
+#include "GameObjectAI.h"
 
 #include "../Quest/QuestStageFlags.h"
 #include "../Spells/spell_elk_include.h" 

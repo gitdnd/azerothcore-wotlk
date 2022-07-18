@@ -47,6 +47,12 @@ void SendGossipMenuFor(Player* player, uint32 npcTextID, ObjectGuid const guid)
     player->PlayerTalkClass->SendGossipMenu(npcTextID, guid);
 }
 
+void SendGossipMenuFor(Player* player, uint32 npcTextID, GameObject* const gobject)
+{
+    if (gobject)
+        SendGossipMenuFor(player, npcTextID, gobject->GetGUID());
+}
+
 void SendGossipMenuFor(Player* player, uint32 npcTextID, Creature const* creature)
 {
     if (creature)
