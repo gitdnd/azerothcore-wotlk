@@ -4100,6 +4100,7 @@ void Spell::_cast(bool skipCheck)
             playerCaster->SetQuedSpell(0);
         }
     }
+    m_caster->SetLastSpellUsed(m_spellInfo);
 }
 
 void Spell::handle_immediate()

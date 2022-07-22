@@ -1739,6 +1739,11 @@ bool WorldObject::CanSeeOrDetect(WorldObject const* obj, bool ignoreStealth, boo
     {
         if (Player const* player = ToPlayer())
         {
+            if (player->IsGameMaster())
+            {
+                return true;
+            }
+
             if (cObj->IsAIEnabled && !cObj->AI()->CanBeSeen(player))
             {
                 return false;

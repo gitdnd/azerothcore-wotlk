@@ -18,6 +18,7 @@
 // This is where scripts' loading functions should be declared:
 void AddELKAIScripts();
 void AddSC_elk_spell_scripts();
+void AddSC_elk_paladin_scripts();
 
 // The name of this function should match:
 // void Add${NameOfDirectory}Scripts()
@@ -25,4 +26,5 @@ void AddELKScripts()
 { 
     AddELKAIScripts();
     AddSC_elk_spell_scripts();
+    AddSC_elk_paladin_scripts();
 }

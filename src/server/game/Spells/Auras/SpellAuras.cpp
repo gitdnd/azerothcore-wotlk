@@ -2763,6 +2763,36 @@ bool Aura::CallScriptOnMovementPacket()
         return false;
     return true;
 }
+bool Aura::CallScriptOnAttackHit(Unit*& const target, DamageInfo& const dmgInfo)
+{
+    for (std::list<AuraScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
+    {
+        (*scritr)->_PrepareScriptCall(AURA_SCRIPT_ON_ATTACK_HIT);
+        std::list<AuraScript::OnAttackHitHandler>::iterator hookItrEnd = (*scritr)->OnAttackHit.end(), hookItr = (*scritr)->OnAttackHit.begin();
+        for (; hookItr != hookItrEnd; ++hookItr)
+            hookItr->Call(*scritr, target, dmgInfo);
+
+        (*scritr)->_FinishScriptCall();
+    }
+    if (IsRemoved())
+        return false;
+    return true;
+}
+bool Aura::CallScriptAfterAttack()
+{
+    for (std::list<AuraScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
+    {
+        (*scritr)->_PrepareScriptCall(AURA_SCRIPT_AFTER_ATTACK);
+        std::list<AuraScript::AfterAttackHandler>::iterator hookItrEnd = (*scritr)->AfterAttack.end(), hookItr = (*scritr)->AfterAttack.begin();
+        for (; hookItr != hookItrEnd; ++hookItr)
+            hookItr->Call(*scritr);
+
+        (*scritr)->_FinishScriptCall();
+    }
+    if (IsRemoved())
+        return false;
+    return true;
+}
 bool Aura::CallScriptAuraAddRemove(Aura* aura, bool added)
 {
     for (std::list<AuraScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
@@ -2778,7 +2808,6 @@ bool Aura::CallScriptAuraAddRemove(Aura* aura, bool added)
         return false;
     return true;
 } 
-
 void Aura::SetTriggeredByAuraSpellInfo(SpellInfo const* triggeredByAuraSpellInfo)
 {
     m_triggeredByAuraSpellInfo = triggeredByAuraSpellInfo;

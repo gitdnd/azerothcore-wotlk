@@ -181,6 +181,12 @@ enum TalentTree // talent tabs
 #define SPEC_MASK_ALL 255
 
 // Spell modifier (used for modify other spells)
+enum SpellModifierModes : uint8
+{
+    SPELL_MODIFIER_NORMAL,
+    SPELL_MODIFIER_SPELL_SCHOOL,
+    SPELL_MODIFIER_SPELL_TARGET,
+};
 struct SpellModifier
 {
     SpellModifier(Aura* _ownerAura = nullptr) : op(SPELLMOD_DAMAGE), type(SPELLMOD_FLAT), charges(0),  mask(), ownerAura(_ownerAura) {}
@@ -190,7 +196,12 @@ struct SpellModifier
     int32 value{0};
     flag96 mask;
     uint32 spellId{0};
+	uint32 spellTargetId;
+    SpellSchoolMask spellSchools;
+    uint8 mode = SPELL_MODIFIER_NORMAL;
     Aura* const ownerAura;
+    void SetSpellSchool(SpellSchoolMask school) { spellSchools = school; mode = SPELL_MODIFIER_SPELL_SCHOOL; }
+    void SetSpellTarget(uint32 spell) { spellTargetId = spell; mode = SPELL_MODIFIER_SPELL_TARGET; }
 };
 
 typedef std::unordered_map<uint32, PlayerTalent*> PlayerTalentMap;
@@ -1638,6 +1649,7 @@ public:
     void learnQuestRewardedSpells(Quest const* quest);
     void learnSpellHighRank(uint32 spellid);
     void SetReputation(uint32 factionentry, float value);
+    void AddReputation(uint32 factionentry, float value);
     [[nodiscard]] uint32 GetReputation(uint32 factionentry) const;
     std::string const& GetGuildName();
     [[nodiscard]] uint32 GetFreeTalentPoints() const { return GetUInt32Value(PLAYER_CHARACTER_POINTS1); }
@@ -2830,8 +2842,8 @@ private:
 public:
     void SetQuedSpell(uint32 spell) { quedSpell = spell; }
     uint32 GetQuedSpell() { return quedSpell; }
-    bool GetStageQuestFlag(QuestStageFlags index) { return m_questStageFlag[index]; }
-    void AddStageQuestFlag(QuestStageFlags index) { m_questStageFlag[index] = true; }
+    bool GetQuestStageFlag(QuestStageFlags index) const { auto it = m_questStageFlag.find(index);  if (it != m_questStageFlag.end()) return it->second; return false; }
+    void AddQuestStageFlag(QuestStageFlags index) { m_questStageFlag[index] = true; }
     void RemoveStageQuestFlag(QuestStageFlags index) { m_questStageFlag[index] = false; }
 
     bool GetChestFlag(ChestFlags index) { return m_chestFlag[index]; }
@@ -2841,4 +2853,131 @@ public:
 void AddItemsSetItem(Player* player, Item* item);
 void RemoveItemsSetItem(Player* player, ItemTemplate const* proto);
 
+// "the bodies of template functions must be made available in a header file"
+template <class T> T Player::ApplySpellMod(uint32 spellId, SpellModOp op, T& basevalue, Spell* spell, bool temporaryPet)
+{
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+    if (!spellInfo)
+    {
+        return 0;
+    } 
+
+    float totalmul = 1.0f;
+    int32 totalflat = 0;
+
+    auto calculateSpellMod = [&](SpellModifier* mod)
+    {
+        // xinef: temporary pets cannot use charged mods of owner, needed for mirror image QQ they should use their own auras
+        if (temporaryPet && mod->charges != 0)
+        {
+            return;
+        }
+
+        if (mod->type == SPELLMOD_FLAT)
+        {
+            // xinef: do not allow to consume more than one 100% crit increasing spell
+            if (mod->op == SPELLMOD_CRITICAL_CHANCE && totalflat >= 100)
+            {
+                return;
+            }
+
+            int32 flatValue = mod->value;
+
+            // SPELL_MOD_THREAT - divide by 100 (in packets we send threat * 100)
+            if (mod->op == SPELLMOD_THREAT)
+            {
+                flatValue /= 100;
+            }
+
+            totalflat += flatValue;
+        }
+        else if (mod->type == SPELLMOD_PCT)
+        {
+            // skip percent mods for null basevalue (most important for spell mods with charges)
+            if (basevalue == T(0) || totalmul == 0.0f)
+            {
+                return;
+            }
+
+            // special case (skip > 10sec spell casts for instant cast setting)
+            if (mod->op == SPELLMOD_CASTING_TIME && basevalue >= T(10000) && mod->value <= -100)
+            {
+                return;
+            }
+            // xinef: special exception for surge of light, dont affect crit chance if previous mods were not applied
+            else if (mod->op == SPELLMOD_CRITICAL_CHANCE && spell && !HasSpellMod(mod, spell))
+            {
+                return;
+            }
+            // xinef: special case for backdraft gcd reduce with backlast time reduction, dont affect gcd if cast time was not applied
+            else if (mod->op == SPELLMOD_GLOBAL_COOLDOWN && spell && !HasSpellMod(mod, spell))
+            {
+                return;
+            }
+
+            // xinef: those two mods should be multiplicative (Glyph of Renew)
+            if (mod->op == SPELLMOD_DAMAGE || mod->op == SPELLMOD_DOT)
+            {
+                totalmul *= CalculatePct(1.0f, 100.0f + mod->value);
+            }
+            else
+            {
+                totalmul += CalculatePct(1.0f, mod->value);
+            }
+        }
+
+        DropModCharge(mod, spell);
+    };
+
+    // Drop charges for triggering spells instead of triggered ones
+    if (m_spellModTakingSpell)
+    {
+        spell = m_spellModTakingSpell;
+    }
+
+    SpellModifier* chargedMod = nullptr;
+    for (auto mod : m_spellMods[op])
+    {
+        // Charges can be set only for mods with auras
+        if (!mod->ownerAura)
+        {
+            ASSERT(!mod->charges);
+        }
+
+        if (!IsAffectedBySpellmod(spellInfo, mod, spell))
+        {
+            continue;
+        }
+
+        if (mod->ownerAura->IsUsingCharges())
+        {
+            if (!chargedMod || (chargedMod->ownerAura->GetSpellInfo()->SpellPriority < mod->ownerAura->GetSpellInfo()->SpellPriority))
+            {
+                chargedMod = mod;
+            }
+
+            continue;
+        }
+
+        calculateSpellMod(mod);
+    }
+
+    if (chargedMod)
+    {
+        calculateSpellMod(chargedMod);
+    }
+
+    float diff = 0.0f;
+    if (op == SPELLMOD_CASTING_TIME || op == SPELLMOD_DURATION)
+    {
+        diff = ((float)basevalue + totalflat) * (totalmul - 1.0f) + (float)totalflat;
+    }
+    else
+    {
+        diff = (float)basevalue * (totalmul - 1.0f) + (float)totalflat;
+    }
+
+    basevalue = T((float)basevalue + diff);
+    return T(diff);
+}
 #endif

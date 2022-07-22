@@ -957,6 +957,26 @@ void AuraScript::OnMovementPacketHandler::Call(AuraScript* auraScript)
     (auraScript->*_OnMovementPacketHandlerScript)();
 }
 
+AuraScript::OnAttackHitHandler::OnAttackHitHandler(OnAttackHitFnType OnAttackHitScript)
+{
+    _OnAttackHitHandlerScript = OnAttackHitScript;
+}
+
+void AuraScript::OnAttackHitHandler::Call(AuraScript* auraScript, Unit*& const target, DamageInfo& const dmgInfo)
+{
+    (auraScript->*_OnAttackHitHandlerScript)(target, dmgInfo);
+}
+
+AuraScript::AfterAttackHandler::AfterAttackHandler(AfterAttackFnType AfterAttackScript)
+{
+    _AfterAttackHandlerScript = AfterAttackScript;
+}
+
+void AuraScript::AfterAttackHandler::Call(AuraScript* auraScript)
+{
+    (auraScript->*_AfterAttackHandlerScript)();
+}
+
 AuraScript::AuraAddRemoveHandler::AuraAddRemoveHandler(AuraAddRemoveFnType auraAddRemoveScript)
 {
     _AuraAddRemoveHandlerScript = auraAddRemoveScript;
@@ -966,6 +986,9 @@ void AuraScript::AuraAddRemoveHandler::Call(AuraScript* auraScript, Aura* aura, 
 {
     (auraScript->*_AuraAddRemoveHandlerScript)(aura, added);
 }
+
+
+
 
 bool AuraScript::_Load(Aura* aura)
 {

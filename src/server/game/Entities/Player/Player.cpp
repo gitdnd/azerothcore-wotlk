@@ -9511,7 +9511,7 @@ void Player::AddSpellMod(SpellModifier* mod, bool apply)
             data << uint8(mod->op);
             data << int32(val);
             SendDirectMessage(&data);
-        }
+        } 
     }
 
     if (apply)
@@ -14780,6 +14780,11 @@ uint8 Player::GetMostPointsTalentTree() const
 void Player::SetReputation(uint32 factionentry, float value)
 {
     GetReputationMgr().SetReputation(sFactionStore.LookupEntry(factionentry), value);
+}
+
+void Player::AddReputation(uint32 factionentry, float value)
+{
+	GetReputationMgr().ModifyReputation(sFactionStore.LookupEntry(factionentry), value);
 }
 
 uint32 Player::GetReputation(uint32 factionentry) const

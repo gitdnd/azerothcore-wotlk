@@ -11828,6 +11828,103 @@ float Unit::processDummyAuras(float TakenTotalMod) const
     return TakenTotalMod;
 }
 
+void Unit::DoOnAttackHitScripts(Unit*& const target, DamageInfo& const dmgInfo)
+{
+    std::vector<AuraApplicationMap::iterator> passed = {};
+    AuraApplicationMap appliedAurasCopy = m_appliedAuras;
+    for (AuraApplicationMap::iterator it = appliedAurasCopy.begin(); it != appliedAurasCopy.end(); )
+    {
+        if (it->second)
+        {
+            bool succ = it->second->GetBase()->CallScriptOnAttackHit(target, dmgInfo);
+            if (!succ)
+            {
+                appliedAurasCopy.erase(it);
+                int remaining = -1;
+                bool exit = false;
+                for (AuraApplicationMap::iterator it2 = appliedAurasCopy.begin(); it2 != appliedAurasCopy.end();)
+                {
+                    for (auto o : passed)
+                    {
+                        if (o == it2)
+                        {
+                            ++it2;
+                            remaining++;
+                        }
+                        else
+                        {
+                            passed.erase(passed.begin() + remaining + 1, passed.end());
+                            exit = true;
+                            break;
+                        }
+                    }
+                    if (exit)
+                        break;
+                }
+                if (remaining >= 0)
+                {
+                    it = passed[remaining];
+                    ++it;
+                }
+                else
+                    it = appliedAurasCopy.begin();
+                continue;
+            }
+        }
+        passed.push_back(it);
+        ++it;
+    }
+}
+
+void Unit::DoAfterAttackScripts()
+{
+    std::vector<AuraApplicationMap::iterator> passed = {};
+    AuraApplicationMap appliedAurasCopy = m_appliedAuras;
+    for (AuraApplicationMap::iterator it = appliedAurasCopy.begin(); it != appliedAurasCopy.end(); )
+    {
+        if (it->second)
+        {
+            bool succ = it->second->GetBase()->CallScriptAfterAttack();
+            if (!succ)
+            {
+                appliedAurasCopy.erase(it);
+                int remaining = -1;
+                bool exit = false;
+                for (AuraApplicationMap::iterator it2 = appliedAurasCopy.begin(); it2 != appliedAurasCopy.end();)
+                {
+                    for (auto o : passed)
+                    {
+                        if (o == it2)
+                        {
+                            ++it2;
+                            remaining++;
+                        }
+                        else
+                        {
+                            passed.erase(passed.begin() + remaining + 1, passed.end());
+                            exit = true;
+                            break;
+                        }
+                    }
+                    if (exit)
+                        break;
+                }
+                if (remaining >= 0)
+                {
+                    it = passed[remaining];
+                    ++it;
+                }
+                else
+                    it = appliedAurasCopy.begin();
+                continue;
+            }
+        }
+        passed.push_back(it);
+        ++it;
+    }
+}
+ 
+
 int32 Unit::SpellBaseDamageBonusDone(SpellSchoolMask schoolMask) const
 {
     int32 DoneAdvertisedBenefit = 0;
@@ -14791,15 +14888,21 @@ void Unit::ModSpellCastTime(SpellInfo const* spellInfo, int32& castTime, Spell* 
     if (Player* modOwner = GetSpellModOwner())
         // TODO:(MadAgos) Eventually check and delete the bool argument
         modOwner->ApplySpellMod(spellInfo->Id, SPELLMOD_CASTING_TIME, castTime, spell, bool(modOwner != this && !IsPet()));
-
     switch (spellInfo->DmgClass)
     {
         case SPELL_DAMAGE_CLASS_NONE:
+        {
+            bool minCastTime = false;
+            if (castTime > 200)
+                minCastTime = true;
             if (spellInfo->AttributesEx5 & SPELL_ATTR5_SPELL_HASTE_AFFECTS_PERIODIC) // required double check
                 castTime = int32(float(castTime) * GetFloatValue(UNIT_MOD_CAST_SPEED));
             else if (spellInfo->SpellVisual[0] == 3881 && HasAura(67556)) // cooking with Chef Hat.
                 castTime = 500;
+            if (minCastTime && castTime < 200)
+                castTime = 200;
             break;
+        }
         case SPELL_DAMAGE_CLASS_MELEE:
             break; // no known cases
         case SPELL_DAMAGE_CLASS_MAGIC:

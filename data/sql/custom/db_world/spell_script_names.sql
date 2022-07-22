@@ -20,4 +20,7 @@ REPLACE INTO `spell_script_names` (`spell_id`, `ScriptName`) VALUES
 	(100028, 'spell_elk_attack'),
 	(100029, 'spell_elk_attack'),
 	(100030, 'spell_elk_attack'),
-	(100031, 'spell_elk_attack');
+	(100031, 'spell_elk_attack'),
+	(210002, 'spell_elk_retribution_aura'),
+	(210003, 'spell_elk_retribution_aura_2'),
+	(210004, 'spell_holy_power_aura');

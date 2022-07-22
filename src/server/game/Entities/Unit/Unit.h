@@ -2775,6 +2775,16 @@ private:
     uint32 _lastExtraAttackSpell;
     std::unordered_map<ObjectGuid /*guid*/, uint32 /*count*/> extraAttacksTargets;
     ObjectGuid _lastDamagedTargetGuid;
+
+    const SpellInfo* _lastSpellUsed = nullptr;
+    uint32 _strikeAura = 0;
+public:
+    void DoOnAttackHitScripts(Unit*& const target, DamageInfo& const dmgInfo);
+    void DoAfterAttackScripts();
+    void SetLastSpellUsed(const SpellInfo* spell) { _lastSpellUsed = spell; }
+    const SpellInfo* GetLastSpellUsed() { return _lastSpellUsed; }
+    void SetStrikeAura(uint32 strikeAura) { _strikeAura = strikeAura; }
+    uint32 GetStrikeAura() { return _strikeAura; }
 };
 
 namespace Acore

@@ -79,10 +79,13 @@ enum SpellsC // Creature Spells.
     ARCANE_MISSILES =           150028,
     ARCANE_TORRENT =            150029,
 };
-enum SpellClass : uint32
+enum SpellsStrike : uint32
 {
-    SPELL_CRUSADER_STRIKE = 999999,
-    SPELL_UNDEATH_STRIKE = 999998,
+    SPELL_PLAGUE_SCOURGE_STRIKE =       200001,
+    SPELL_BLOOD_DEATH_STRIKE =          200002,
+    SPELL_FROST_STRIKE_OBLITERATE =     200003,
+
+    SPELL_CRUSADER_STRIKE =             210001,
 };
 
 

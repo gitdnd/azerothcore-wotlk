@@ -18,6 +18,7 @@ class spell_elk_attack_hit : public SpellScript
     std::map<MapDummy, std::optional<std::any>> spellMap;
     int32 dummies = 0;
     Unit* caster;
+    uint8 targetsHit = 0;
     void SpellBegin()
     {
         Spell* spell = GetSpell();
@@ -56,13 +57,18 @@ class spell_elk_attack_hit : public SpellScript
         caster->CalculateMeleeDamage(victim, 0, &damageInfo);
         damageInfo.HitInfo |= HITINFO_NO_ANIMATION;
         Unit::DealDamageMods(victim, damageInfo.damage, &damageInfo.absorb);
-        // caster->SendAttackStateUpdate(&damageInfo);
+        caster->PlayDistanceSound(129);
+        //caster->SendAttackStateUpdate(&damageInfo);
+        targetsHit++;
 
         caster->DealMeleeDamage(&damageInfo, true);
 
         DamageInfo dmgInfo(damageInfo);
         caster->ProcDamageAndSpell(damageInfo.target, damageInfo.procAttacker, damageInfo.procVictim, damageInfo.procEx, damageInfo.damage,
             damageInfo.attackType, nullptr, nullptr, -1, nullptr, &dmgInfo);
+
+        caster->DoOnAttackHitScripts(victim, dmgInfo);
+
 
         Spell* spell = GetSpell();
         caster->ModifyPower(POWER_MANA, caster->GetStat(STAT_SPIRIT));
@@ -81,22 +87,6 @@ class spell_elk_attack_hit : public SpellScript
         {
         case 0:
             break; 
-        case SPELL_UNDEATH_STRIKE:
-        {
-            caster->CastSpell(victim, 1, true);
-            Aura* festeringStacks = victim->GetAura(1);
-            if (festeringStacks)
-            {
-                int stacks = festeringStacks->GetStackAmount();
-                if (stacks >= 6)
-                {
-                    caster->DealDamage(caster, victim, stacks * 300);
-                    victim->RemoveAura(festeringStacks);
-                    caster->CastSpell(victim, 1, true);
-                }
-            }
-            break;
-        }
         }
     }
     void SpellFinish()
@@ -104,6 +94,7 @@ class spell_elk_attack_hit : public SpellScript
         if (!(caster))
             return;
 
+        caster->DoAfterAttackScripts();
         Spell* spell = GetSpell();
         spellMap = spell->GetTriggerDummy();
 
@@ -111,7 +102,8 @@ class spell_elk_attack_hit : public SpellScript
         switch (dummies)
         {
         case SPELL_CRUSADER_STRIKE:
-            caster->CastSpell(caster, 1, true); // cast a spell i guess
+            if(targetsHit)
+                caster->CastSpell(caster, 1, true); // cast a spell i guess
             break;
         } 
     }
@@ -177,7 +169,10 @@ class spell_elk_deflect_aura : public AuraScript
         if (success)
         {
             for (int i = 0; i < MAX_RUNES; i++)
-                caster->SetRuneCooldown(i, caster->GetRuneCooldown(i) - 15000);
+            {
+                uint32 cd = caster->GetRuneCooldown(i);
+                caster->SetRuneCooldown(i, (cd > 15000) ? cd - 15000 : 0);
+            }
         }
     }
     void Register() override

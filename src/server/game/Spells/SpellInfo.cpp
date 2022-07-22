@@ -1312,13 +1312,28 @@ bool SpellInfo::IsAffectedBySpellMod(SpellModifier const* mod) const
         return true;
     }
 
-    // False if affect_spell == nullptr or spellFamily not equal
-    if (affectSpell->SpellFamilyName != SpellFamilyName)
-        return false;
+    switch (mod->mode)
+    {
+    case SPELL_MODIFIER_NORMAL:
+    {
+        // False if affect_spell == nullptr or spellFamily not equal
+        if (affectSpell->SpellFamilyName != SpellFamilyName)
+            return false;
 
-    // true
-    if (mod->mask & SpellFamilyFlags)
-        return true;
+        // true
+        if (mod->mask & SpellFamilyFlags)
+            return true;
+        break;
+    }
+    case SPELL_MODIFIER_SPELL_SCHOOL:
+        if(mod->spellSchools & SchoolMask)
+            return true;
+        break;
+    case SPELL_MODIFIER_SPELL_TARGET:
+        if (mod->spellTargetId == Id)
+            return true;
+        break;
+    }
 
     return false;
 }

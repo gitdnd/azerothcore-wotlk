@@ -236,8 +236,10 @@ public:
 	void CallScriptAfterEffectProcHandlers(AuraEffect const* aurEff, AuraApplication const* aurApp, ProcEventInfo& eventInfo);
     bool CallScriptOnResourceChange(Powers power, int amount, PowerChangeReason reason, std::variant<Spell*, Aura*> reasonObj);
     bool CallScriptOnMovementPacket();
+	bool CallScriptOnAttackHit(Unit*& const target, DamageInfo& const dmgInfo);
+    bool CallScriptAfterAttack();
     bool CallScriptAuraAddRemove(Aura* aura, bool added);
-
+    
     AuraScript* GetScriptByName(std::string const& scriptName) const;
 
     std::list<AuraScript*> m_loadedScripts;

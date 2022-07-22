@@ -208,8 +208,20 @@ REPLACE INTO `npc_text` (`ID`, `text0_0`, `Probability0`) VALUES
 	(200205, "If the energies I've released work as I expect them to, perhaps try using some of their Essence, extract the pure part and use it to cast a Dispel or two on me.", 1),
 	(200206, "Just do it already.", 1),
 	(200207, "Do I know you? I can't quite remember.", 1),
-	(200208, "<The Orb radiates an intellectual power. If you destroyed it, you could devour some of it's power.>", 1),
+	(200208, "<The Orb radiates a sort of... intellectual energy. If you destroyed it, you could devour some of it's power.>", 1),
 	(200209, "...", 1),
-	(200210, "<The scroll smells corrosive, rotten and damp.	>", 1),
+	(200210, "<The scroll smells corrosive, rotten and damp.>", 1),
 	(200211, "'...may the bodies of those deceased carry on their use for our Master and King, and may the Damned be free of the shackles of life forever more...'", 1),
-	(200212, "'...as the Damned rise from the dead to fulfill their duties to the KING of all that is Death, ruler beyond Life, they shall partake in the grace of His Will and breathe the air of his cold plague...", 1);
+	(200212, "'...as the Damned rise from the dead to fulfill their duties to the KING of all that is Death, ruler beyond Life, they shall partake in the grace of His Will and breathe the air of his cold plague...", 1),
+	(200213, "<...may the Spirited Inamorata sing cold praise of his Eternal Wisdom and Strength, and may their echoes chill our homely bones and freeze the blood of the defiers...>", 1),
+	(200214, "<...Learn form your Masters...>", 1),
+	(200215, "Congragulations on your early Alumna, $n.", 1),
+	(200216, "Good then. I'm going to need you to return my Scrying Orb, one of my rare Scourge Magic Scrolls, and my notes, libriform. The Falthrien disaster shall be rectified, and as our race wills it, it shall rise from the ashes! Go forth!", 1),
+	(200215, "Very well, I'm going to need you to return my Scrying Orb, my collection of Scourge Magic Scrolls, and my notes, libriform.", 1),
+	(200215, "Very well, I'm going to need you to return my Scrying Orb, my collection of Scourge Magic Scrolls, and my notes, libriform.", 1),
+	(200215, "Very well, I'm going to need you to return my Scrying Orb, my collection of Scourge Magic Scrolls, and my notes, libriform.", 1),
+	(200215, "Very well, I'm going to need you to return my Scrying Orb, my collection of Scourge Magic Scrolls, and my notes, libriform.", 1),
+	(200215, "Very well, I'm going to need you to return my Scrying Orb, my collection of Scourge Magic Scrolls, and my notes, libriform.", 1),
+	(200215, "Very well, I'm going to need you to return my Scrying Orb, my collection of Scourge Magic Scrolls, and my notes, libriform.", 1),
+	(200215, "Very well, I'm going to need you to return my Scrying Orb, my collection of Scourge Magic Scrolls, and my notes, libriform.", 1);
+	

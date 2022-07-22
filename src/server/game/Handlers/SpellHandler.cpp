@@ -328,8 +328,8 @@ void WorldSession::HandleGameobjectReportUse(WorldPacket& recvPacket)
     if (!go->IsWithinDistInMap(_player, INTERACTION_DISTANCE))
         return;
 
-    if (go->AI()->GossipHello(_player, true))
-        return;
+    //if (go->AI()->GossipHello(_player, true))
+    //    return; don't know why this line exists
 
     _player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_USE_GAMEOBJECT, go->GetEntry());
 }

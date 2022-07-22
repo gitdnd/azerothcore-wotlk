@@ -524,7 +524,9 @@ enum AuraScriptHookType
     AURA_SCRIPT_HOOK_REMOVE, */
     AURA_SCRIPT_RESOURCE_CHANGE,
     AURA_SCRIPT_MOVEMENT_PACKET,
-    AURA_SCRIPT_AURA_ADDREMOVE,
+    AURA_SCRIPT_ON_ATTACK_HIT,
+    AURA_SCRIPT_AFTER_ATTACK,
+    AURA_SCRIPT_AURA_ADDREMOVE, 
 };
 /*
 #define HOOK_AURA_EFFECT_START HOOK_AURA_EFFECT_APPLY
@@ -552,7 +554,9 @@ public:
         typedef void(CLASSNAME::*AuraEffectProcFnType)(AuraEffect const*, ProcEventInfo&); \
         typedef void(CLASSNAME::*OnResourceChangeFnType)(Powers power, int amount, PowerChangeReason reason, std::variant<Spell*, Aura*> reasonObj); \
         typedef void(CLASSNAME::*OnMovementPacketFnType)(); \
-        typedef void(CLASSNAME::*AuraAddRemoveFnType)(Aura* aura, bool added); \
+        typedef void(CLASSNAME::*OnAttackHitFnType)(Unit*& const target, DamageInfo& const dmgInfo); \
+        typedef void(CLASSNAME::*AfterAttackFnType)(); \
+        typedef void(CLASSNAME::*AuraAddRemoveFnType)(Aura* aura, bool added); 
 
     AURASCRIPT_FUNCTION_TYPE_DEFINES(AuraScript)
 
@@ -694,6 +698,24 @@ public:
         OnMovementPacketFnType _OnMovementPacketHandlerScript;
     };
 
+    class OnAttackHitHandler
+    {
+    public:
+        OnAttackHitHandler(OnAttackHitFnType onMoevementPacketScript);
+        void Call(AuraScript* auraScript, Unit*& const target, DamageInfo& const dmgInfo);
+    private:
+        OnAttackHitFnType _OnAttackHitHandlerScript;
+    };
+
+    class AfterAttackHandler
+    {
+    public:
+        AfterAttackHandler(AfterAttackFnType onMoevementPacketScript);
+        void Call(AuraScript* auraScript);
+    private:
+        AfterAttackFnType _AfterAttackHandlerScript;
+    };
+
     class AuraAddRemoveHandler
     {
     public:
@@ -719,7 +741,10 @@ public:
         class EffectProcHandlerFunction : public AuraScript::EffectProcHandler { public: EffectProcHandlerFunction(AuraEffectProcFnType effectHandlerScript, uint8 effIndex, uint16 effName) : AuraScript::EffectProcHandler((AuraScript::AuraEffectProcFnType)effectHandlerScript, effIndex, effName) {} }; \
         class OnResourceChangeFunction : public AuraScript::OnResourceChangeHandler { public: OnResourceChangeFunction(OnResourceChangeFnType onResourceChangeScript) : AuraScript::OnResourceChangeHandler((AuraScript::OnResourceChangeFnType)onResourceChangeScript) {} }; \
         class OnMovementPacketFunction : public AuraScript::OnMovementPacketHandler { public: OnMovementPacketFunction(OnMovementPacketFnType onMovementPacketScript) : AuraScript::OnMovementPacketHandler((AuraScript::OnMovementPacketFnType)onMovementPacketScript) {} }; \
+        class OnAttackHitFunction : public AuraScript::OnAttackHitHandler { public: OnAttackHitFunction(OnAttackHitFnType OnAttackHitScript) : AuraScript::OnAttackHitHandler((AuraScript::OnAttackHitFnType)OnAttackHitScript) {} }; \
+        class AfterAttackFunction : public AuraScript::AfterAttackHandler { public: AfterAttackFunction(AfterAttackFnType AfterAttackScript) : AuraScript::AfterAttackHandler((AuraScript::AfterAttackFnType)AfterAttackScript) {} }; \
         class AuraAddRemoveFunction : public AuraScript::AuraAddRemoveHandler { public: AuraAddRemoveFunction(AuraAddRemoveFnType auraAddRemoveScript) : AuraScript::AuraAddRemoveHandler((AuraScript::AuraAddRemoveFnType)auraAddRemoveScript) {} }; \
+         
 
 #define PrepareAuraScript(CLASSNAME) AURASCRIPT_FUNCTION_TYPE_DEFINES(CLASSNAME) AURASCRIPT_FUNCTION_CAST_DEFINES(CLASSNAME)
 
@@ -896,11 +921,24 @@ public:
     HookList<OnMovementPacketHandler> OnMovementPacket;
 #define OnMovementPacketFn(F) OnMovementPacketFunction(&F)
 
+	// executed on attack hit
+	// example: OnAttackHit += OnAttackHitFn(class::function);
+	// where function is: void function();
+	HookList<OnAttackHitHandler> OnAttackHit;
+#define OnAttackHitFn(F) OnAttackHitFunction(&F)
+
+    // executed after a series of attack hits
+    // example: AfterAttack += AfterAttackFn(class::function);
+    // where function is: void function();
+    HookList<AfterAttackHandler> AfterAttack;
+#define AfterAttackFn(F) AfterAttackFunction(&F)
+
     // executed on another aura being added or removed
-    // example: AfterEffectProc += OnMovementPacket(class::function);
+    // example: AuraAddRemove += AuraAddRemoveFn(class::function);
     // where function is: void function(Aura* aura, bool added);
     HookList<AuraAddRemoveHandler> AuraAddRemove;
 #define AuraAddRemoveFn(F) AuraAddRemoveFunction(&F)
+
 
     // AuraScript interface - hook/effect execution manipulators
 
