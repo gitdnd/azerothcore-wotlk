@@ -16,13 +16,14 @@ class spell_elk_attack_hit : public SpellScript
 
     bool WasInAir = false;
     std::map<MapDummy, std::optional<std::any>> spellMap;
-    int32 dummies = 0;
+    uint32 strike = 0;
     Unit* caster;
     uint8 targetsHit = 0;
     void SpellBegin()
     {
         Spell* spell = GetSpell();
         caster = GetCaster(); 
+        strike = caster->GetStrikeAura();
         spellMap = spell->GetTriggerDummy();
         auto& inAir = spellMap[MapDummy::WasInAir];
         if (inAir.has_value())
@@ -38,10 +39,6 @@ class spell_elk_attack_hit : public SpellScript
         }
         else
             WasInAir = false;
-        if (spellMap[MapDummy::TriggeringSpell].has_value())
-        {
-            dummies = std::any_cast<uint32>(spellMap[MapDummy::TriggeringSpell].value());
-        } 
         spell->SetBonusRange(caster->GetCombatReach());
     }
     void SpellHit()
@@ -82,10 +79,10 @@ class spell_elk_attack_hit : public SpellScript
         {
             caster->CastSpell(victim, ATTACK_SLOW_DEBUFF, true);
         }
-        switch (dummies)
+        switch (strike)
 
         {
-        case 0:
+        default:
             break; 
         }
     }
@@ -99,11 +96,16 @@ class spell_elk_attack_hit : public SpellScript
         spellMap = spell->GetTriggerDummy();
 
 
-        switch (dummies)
+        switch (strike)
         {
         case SPELL_CRUSADER_STRIKE:
-            if(targetsHit)
-                caster->CastSpell(caster, 1, true); // cast a spell i guess
+            if (targetsHit)
+            {
+                if (Aura* aura = caster->GetAura(SPELL_HOLY_POWER); aura->GetStackAmount() >= 2 + caster->GetSpellData(SPELL_CRUSADER_STRIKE).development)
+                {}
+                else
+                    caster->CastSpell(caster, 210004, true); // cast a spell i guess
+            }
             break;
         } 
     }
@@ -371,6 +373,7 @@ class spell_elk_dash_aura : public AuraScript
 
 void AddSC_elk_spell_scripts()
 {
+    RegisterSpellScript(spell_elk_strike_aura);
     RegisterSpellScript(spell_elk_attack);
     RegisterSpellScript(spell_elk_attack_hit);
     RegisterSpellAndAuraScriptPair(spell_elk_deflect, spell_elk_deflect_aura);
@@ -378,6 +381,5 @@ void AddSC_elk_spell_scripts()
     RegisterSpellScript(spell_elk_rush_aura);
     RegisterSpellScript(spell_elk_sprint_aura);
     RegisterSpellScript(spell_elk_dash_aura);
-    
 
 }

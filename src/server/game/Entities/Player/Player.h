@@ -131,7 +131,6 @@ struct PlayerSpell
     bool Active            : 1; // UPPER CASE TO CAUSE CONSOLE ERRORS (CHECK EVERY USAGE)! lower rank of a spell are not useable, but learnt
     uint8 specMask         : 8;
     bool IsInSpec(uint8 spec) { return (specMask & (1 << spec)); }
-    uint8 development = 0;
 };
 
 struct PlayerTalent
@@ -2848,6 +2847,7 @@ public:
 
     bool GetChestFlag(ChestFlags index) { return m_chestFlag[index]; }
     void AddChestFlag(ChestFlags index) { m_chestFlag[index] = true; }
+    void AddGossip(){}
 };
 
 void AddItemsSetItem(Player* player, Item* item);
@@ -2899,11 +2899,6 @@ template <class T> T Player::ApplySpellMod(uint32 spellId, SpellModOp op, T& bas
                 return;
             }
 
-            // special case (skip > 10sec spell casts for instant cast setting)
-            if (mod->op == SPELLMOD_CASTING_TIME && basevalue >= T(10000) && mod->value <= -100)
-            {
-                return;
-            }
             // xinef: special exception for surge of light, dont affect crit chance if previous mods were not applied
             else if (mod->op == SPELLMOD_CRITICAL_CHANCE && spell && !HasSpellMod(mod, spell))
             {

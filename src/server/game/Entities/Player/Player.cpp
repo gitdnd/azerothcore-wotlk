@@ -2841,13 +2841,8 @@ bool Player::addTalent(uint32 spellId, uint8 addSpecMask, uint8 oldTalentRank, u
     if (GetActiveSpecMask() & addSpecMask)
         _addTalentAurasAndSpells(spellId, development);
 
-    auto entry = std::find_if(std::begin(m_spells), std::end(m_spells),
-        [&](std::pair<uint32, PlayerSpell*> const& spell) { return spell.first == spellId; } ) ;
-  
-    if (entry != GetSpellMap().end() && (*entry).second)
-    {
-        (*entry).second->development = development;
-    }
+    auto entry = GetSpellData(spellId); 
+    entry.development = development; 
     // xinef: find the spell on our talent map
     PlayerTalentMap::iterator itr = m_talents.find(spellId);
 

@@ -88,7 +88,40 @@ enum SpellsStrike : uint32
     SPELL_CRUSADER_STRIKE =             210001,
 };
 
+enum SpellsELKPaladin : uint32
+{
+    SPELL_RETRIBUTION_AURA = 210002,
+    SPELL_RETRIBUTION_AURA_2 = 210003,
+    SPELL_HOLY_POWER = 210004,
 
+    SUBSPELL_LONG_RETRIBUTION = 219999,
+};
+
+class spell_elk_strike_aura : public AuraScript
+{
+
+    PrepareAuraScript(spell_elk_strike_aura);
+
+    void SpellApply(AuraEffect const* aurEff, AuraEffectHandleModes mode)
+    {
+        Unit* target= GetTarget();
+        if (!target)
+            return;
+        target->SetStrikeAura(GetSpellInfo()->Id);
+    }
+    void SpellRemove(AuraEffect const* aurEff, AuraEffectHandleModes mode)
+    {
+        Unit* target = GetTarget();
+        if (!target)
+            return;
+        target->SetStrikeAura(0);
+    }
+    void Register() override
+    {
+        OnEffectApply += AuraEffectApplyFn(spell_elk_strike_aura::SpellApply, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+        OnEffectRemove += AuraEffectRemoveFn(spell_elk_strike_aura::SpellRemove, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+    }
+};
 
 class spell_elk_attack : public SpellScript
 {

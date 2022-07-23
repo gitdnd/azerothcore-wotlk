@@ -4101,6 +4101,7 @@ void Spell::_cast(bool skipCheck)
         }
     }
     m_caster->SetLastSpellUsed(m_spellInfo);
+    m_caster->DoOnSpellCastScripts(this);
 }
 
 void Spell::handle_immediate()
@@ -8516,7 +8517,7 @@ void Spell::CallScriptBeforeSpellLoadHandlers()
 {
     for (std::list<SpellScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
     {
-        (*scritr)->_PrepareScriptCall(SPELL_SCRIPT_HOOK_BEFORE_CAST_TIME);
+        (*scritr)->_PrepareScriptCall(SPELL_SCRIPT_HOOK_BEFORE_SPELL_LOAD);
         std::list<SpellScript::CastHandler>::iterator hookItrEnd = (*scritr)->BeforeSpellLoad.end(), hookItr = (*scritr)->BeforeSpellLoad.begin();
         for (; hookItr != hookItrEnd; ++hookItr)
         {

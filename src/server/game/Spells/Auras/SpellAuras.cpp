@@ -2808,6 +2808,21 @@ bool Aura::CallScriptAuraAddRemove(Aura* aura, bool added)
         return false;
     return true;
 } 
+bool Aura::CallScriptOnSpellCast(Spell* spell)
+{
+    for (std::list<AuraScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
+    {
+        (*scritr)->_PrepareScriptCall(AURA_SCRIPT_ON_SPELL_CAST);
+        std::list<AuraScript::OnSpellCastHandler>::iterator hookItrEnd = (*scritr)->OnSpellCast.end(), hookItr = (*scritr)->OnSpellCast.begin();
+        for (; hookItr != hookItrEnd; ++hookItr)
+            hookItr->Call(*scritr, spell);
+
+        (*scritr)->_FinishScriptCall();
+    }
+    if (IsRemoved())
+        return false;
+    return true;
+}
 void Aura::SetTriggeredByAuraSpellInfo(SpellInfo const* triggeredByAuraSpellInfo)
 {
     m_triggeredByAuraSpellInfo = triggeredByAuraSpellInfo;

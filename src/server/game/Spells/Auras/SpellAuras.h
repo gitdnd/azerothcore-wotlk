@@ -239,6 +239,7 @@ public:
 	bool CallScriptOnAttackHit(Unit*& const target, DamageInfo& const dmgInfo);
     bool CallScriptAfterAttack();
     bool CallScriptAuraAddRemove(Aura* aura, bool added);
+	bool CallScriptOnSpellCast(Spell* spell);
     
     AuraScript* GetScriptByName(std::string const& scriptName) const;
 
@@ -277,6 +278,7 @@ protected:
     bool m_isUsingCharges: 1;
 
     uint8 development = 1;
+    uint16 spellPowerBonus = 0;
 private:
     Unit::AuraApplicationList m_removedApplications;
 
@@ -285,6 +287,9 @@ private:
 public:
     void SetDevelopment(uint8 dev) { development = dev; RecalculateAmountOfEffects(); }
     uint8 GetDevelopment() { return development; }
+
+    void SetSpellPowerBonus(uint8 sPB) { spellPowerBonus = sPB; RecalculateAmountOfEffects(); }
+    uint16 GetSpellPowerBonus() { return spellPowerBonus; }
 
     std::map<MapDummy, std::optional<std::any>> triggerDummy = {};
     std::map<MapDummy, std::optional<std::any>>& GetTriggerDummy() { return triggerDummy; }
