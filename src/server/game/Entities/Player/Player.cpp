@@ -2945,10 +2945,7 @@ void Player::_addTalentAurasAndSpells(uint32 spellId, uint8 development)
                         break;
                     }
                 }
-                if (learnedSpell)
-                {
-                    learnedSpell->development = development;
-                }
+                m_spellData[spellInfo->Id].development = development;
             }
     }
     else if (spellInfo->IsPassive() || (spellInfo->HasAttribute(SPELL_ATTR0_DO_NOT_DISPLAY) && spellInfo->Stances))

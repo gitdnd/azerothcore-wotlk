@@ -2358,12 +2358,12 @@ public:
     Unit* GetMagicHitRedirectTarget(Unit* victim, SpellInfo const* spellInfo);
     Unit* GetMeleeHitRedirectTarget(Unit* victim, SpellInfo const* spellInfo = nullptr);
 
-    int32 SpellBaseDamageBonusDone(SpellSchoolMask schoolMask) const;
+    int32 SpellBaseDamageBonusDone(SpellSchoolMask schoolMask, int16 bonusSpellPower = 0) const;
     int32 SpellBaseDamageBonusTaken(SpellSchoolMask schoolMask, bool isDoT = false);
     float SpellPctDamageModsDone(Unit* victim, SpellInfo const* spellProto, DamageEffectType damagetype);
     uint32 SpellDamageBonusDone(Unit* victim, SpellInfo const* spellProto, uint32 pdamage, DamageEffectType damagetype, uint8 effIndex, float TotalMod = 0.0f, uint32 stack = 1);
     uint32 SpellDamageBonusTaken(Unit* caster, SpellInfo const* spellProto, uint32 pdamage, DamageEffectType damagetype, uint32 stack = 1);
-    int32 SpellBaseHealingBonusDone(SpellSchoolMask schoolMask);
+    int32 SpellBaseHealingBonusDone(SpellSchoolMask schoolMask, int16 bonusSpellPower = 0);
     int32 SpellBaseHealingBonusTaken(SpellSchoolMask schoolMask);
     float SpellPctHealingModsDone(Unit* victim, SpellInfo const* spellProto, DamageEffectType damagetype);
     uint32 SpellHealingBonusDone(Unit* victim, SpellInfo const* spellProto, uint32 healamount, DamageEffectType damagetype, uint8 effIndex, float TotalMod = 0.0f, uint32 stack = 1);
@@ -2722,6 +2722,32 @@ protected:
     Runes* m_runes;
     uint16 m_runeCount;
 
+    struct lifeSteal
+    {
+        std::unique_ptr<lifeSteal> nextLs; 
+        uint32 damageTaken;
+        uint32 duration;
+        bool Tick(const uint16& amount)
+        {
+            if (nextLs)
+                if (!nextLs->Tick(amount))
+                    nextLs = nullptr;
+            if (duration <= amount)
+                return false;
+            else
+                duration -= amount;
+            return true;
+
+        }
+        void _Tick(const uint16& amount)
+        {
+        }
+    };
+    std::map<uint32, lifeSteal> m_lifeSteal;
+    void StealLife(uint32 target)
+    {
+
+    }
 private:
     bool IsTriggeredAtSpellProcEvent(Unit* victim, Aura* aura, WeaponAttackType attType, bool isVictim, bool active, SpellProcEventEntry const*& spellProcEvent, ProcEventInfo const& eventInfo);
     bool HandleDummyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggeredByAura, SpellInfo const* procSpell, uint32 procFlag, uint32 procEx, uint32 cooldown, Spell const* spellProc = nullptr);
@@ -2776,6 +2802,8 @@ private:
     std::unordered_map<ObjectGuid /*guid*/, uint32 /*count*/> extraAttacksTargets;
     ObjectGuid _lastDamagedTargetGuid;
 
+protected:
+
     const SpellInfo* _lastSpellUsed = nullptr;
     uint32 _strikeAura = 0;
     struct spellData
@@ -2784,7 +2812,7 @@ private:
     };
     std::map<uint32, spellData> m_spellData;
 public:
-    void DoOnAttackHitScripts(Unit*& const target, DamageInfo& const dmgInfo);
+    void DoOnAttackHitScripts(Unit* const target, DamageInfo const dmgInfo);
     void DoAfterAttackScripts();
     void DoOnSpellCastScripts(Spell* spell);
     void SetLastSpellUsed(const SpellInfo* spell) { _lastSpellUsed = spell; }

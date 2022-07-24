@@ -962,7 +962,7 @@ AuraScript::OnAttackHitHandler::OnAttackHitHandler(OnAttackHitFnType OnAttackHit
     _OnAttackHitHandlerScript = OnAttackHitScript;
 }
 
-void AuraScript::OnAttackHitHandler::Call(AuraScript* auraScript, Unit*& const target, DamageInfo& const dmgInfo)
+void AuraScript::OnAttackHitHandler::Call(AuraScript* auraScript, Unit* const target, DamageInfo const dmgInfo)
 {
     (auraScript->*_OnAttackHitHandlerScript)(target, dmgInfo);
 }

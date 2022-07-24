@@ -47,10 +47,10 @@ class spell_elk_retribution_aura_2 : public AuraScript
             hits++;
         }
     }
-    void OnAttack(Unit*& const target, DamageInfo& const dmgInfo)
+    void OnAttack(Unit* const target, DamageInfo const dmgInfo)
     {  
-        if (target && hits)
-            target->DealDamage(target, target, uint32(float(dmgInfo.GetDamage()) / 3.33f), nullptr, SPELL_DIRECT_DAMAGE, SPELL_SCHOOL_MASK_HOLY);
+        if (target && hits && GetCaster())
+            GetCaster()->DealDamage(GetCaster(), target, uint32(float(dmgInfo.GetDamage()) / 3.33f), nullptr, SPELL_DIRECT_DAMAGE, SPELL_SCHOOL_MASK_HOLY);
     }
     void AfterAtk()
     { 
@@ -101,31 +101,70 @@ class spell_holy_power_aura : public AuraScript
     }
 };
 
+class spell_seal_of_righteousness_aura : public AuraScript
+{
+    PrepareAuraScript(spell_seal_of_righteousness_aura);
+    bool hit = false;
+    void OnAttack(Unit* const target, DamageInfo const dmgInfo)
+    {
+        hit = true;
+    }
+    void AfterAtk()
+    {
+        if (!hit)
+            return;
+        hit = false;
+        if (GetAura())
+            GetAura()->ModCharges(-1);
+        for (auto aura : GetCaster()->GetAppliedAuras())
+        {
+            if (aura.second->GetBase()->IsPermanent())
+                continue;
+            if (!(aura.second->IsPositive()))
+            {
+                aura.second->GetBase()->SetDuration(int32(float(aura.second->GetBase()->GetDuration()) * 0.93));
+            }
+        }
+    }
+    void Register() override
+    {
+        OnAttackHit += OnAttackHitFn(spell_seal_of_righteousness_aura::OnAttack);
+        AfterAttack += AfterAttackFn(spell_seal_of_righteousness_aura::AfterAtk);
+    }
+};
+
 class spell_hammer_of_wrath : public SpellScript
 {
     PrepareSpellScript(spell_hammer_of_wrath);
 
-    void Damage(SpellEffIndex effIndex)
+    void Damage()
     {
-        Unit* target = GetHitUnit();
-        if (!target)
-            return;
-        SetHitDamage(float(GetHitDamage()) * (1.0f + 2 * float(target->GetHealth()) / float(target->GetMaxHealth())));
         Unit* caster = GetCaster();
         if (!caster)
             return;
+        Unit* target = GetHitUnit();
+        if (!target)
+            return;
+        SetHitDamage(float(GetHitDamage()) * (1.0f + 2 * float(target->GetHealth()) / float(target->GetMaxHealth())) + caster->GetPower(POWER_RAGE));
+        caster->ModifyPowerPct(POWER_RAGE, -100.f);
         for (auto aura : caster->GetAppliedAuras())
         {
-            if (aura.second->IsPositive())
+            if (aura.second->GetBase()->IsPermanent())
+                continue;
+            if (aura.second->IsPositive() && aura.second->GetBase()->GetSpellInfo()->GetSchoolMask() & SPELL_SCHOOL_MASK_HOLY)
             {
-                aura.second->GetBase()->GetEffect()
+                aura.second->GetBase()->ModSpellPowerBonus(caster->GetBaseSpellPowerBonus()/10);
+            }
+            else
+            {
+                aura.second->GetBase()->ModSpellPowerBonus(-1 * caster->GetBaseSpellPowerBonus() / 10);
             }
         }
     }
 
     void Register() override
     {
-        OnEffectHitTarget += SpellEffectFn(spell_hammer_of_wrath::Damage, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+        OnHit += SpellHitFn(spell_hammer_of_wrath::Damage);
     }
 };
 void AddSC_elk_paladin_scripts()
@@ -134,6 +173,7 @@ void AddSC_elk_paladin_scripts()
     RegisterSpellScript(spell_elk_retribution_aura_2);
     RegisterSpellScript(spell_holy_power_aura);
 
+    RegisterSpellScript(spell_seal_of_righteousness_aura);
 
     RegisterSpellScript(spell_hammer_of_wrath);
 }

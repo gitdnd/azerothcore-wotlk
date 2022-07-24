@@ -11828,7 +11828,7 @@ float Unit::processDummyAuras(float TakenTotalMod) const
     return TakenTotalMod;
 }
 
-void Unit::DoOnAttackHitScripts(Unit*& const target, DamageInfo& const dmgInfo)
+void Unit::DoOnAttackHitScripts(Unit* const target, DamageInfo const dmgInfo)
 {
     std::vector<AuraApplicationMap::iterator> passed = {};
     AuraApplicationMap appliedAurasCopy = m_appliedAuras;
@@ -11973,7 +11973,7 @@ void Unit::DoOnSpellCastScripts(Spell* spell)
 }
 
 
-int32 Unit::SpellBaseDamageBonusDone(SpellSchoolMask schoolMask) const
+int32 Unit::SpellBaseDamageBonusDone(SpellSchoolMask schoolMask, int16 bonusSpellPower) const
 {
     int32 DoneAdvertisedBenefit = 0;
 
@@ -11987,7 +11987,7 @@ int32 Unit::SpellBaseDamageBonusDone(SpellSchoolMask schoolMask) const
             DoneAdvertisedBenefit += (*i)->GetAmount();
      
     // Base value
-    DoneAdvertisedBenefit += GetBaseSpellPowerBonus();
+    DoneAdvertisedBenefit += GetBaseSpellPowerBonus() + bonusSpellPower;
 
     // Damage bonus from stats
     AuraEffectList const& mDamageDoneOfStatPercent = GetAuraEffectsByType(SPELL_AURA_MOD_SPELL_DAMAGE_OF_STAT_PERCENT);
@@ -12648,7 +12648,7 @@ uint32 Unit::SpellHealingBonusDone(Unit* victim, SpellInfo const* spellProto, ui
     return uint32(std::max(heal, 0.0f));
 }
 
-int32 Unit::SpellBaseHealingBonusDone(SpellSchoolMask schoolMask)
+int32 Unit::SpellBaseHealingBonusDone(SpellSchoolMask schoolMask, int16 bonusSpellPower)
 {
     int32 AdvertisedBenefit = 0;
 
@@ -12659,7 +12659,7 @@ int32 Unit::SpellBaseHealingBonusDone(SpellSchoolMask schoolMask)
 
     // Healing bonus of spirit, intellect and strength 
     // Base value
-    AdvertisedBenefit += GetBaseSpellPowerBonus();
+    AdvertisedBenefit += GetBaseSpellPowerBonus() + bonusSpellPower;
 
     // Healing bonus from stats
     AuraEffectList const& mHealingDoneOfStatPercent = GetAuraEffectsByType(SPELL_AURA_MOD_SPELL_HEALING_OF_STAT_PERCENT);

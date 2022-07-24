@@ -2763,7 +2763,7 @@ bool Aura::CallScriptOnMovementPacket()
         return false;
     return true;
 }
-bool Aura::CallScriptOnAttackHit(Unit*& const target, DamageInfo& const dmgInfo)
+bool Aura::CallScriptOnAttackHit(Unit* const target, DamageInfo const dmgInfo)
 {
     for (std::list<AuraScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
     {

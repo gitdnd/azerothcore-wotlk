@@ -236,7 +236,7 @@ public:
 	void CallScriptAfterEffectProcHandlers(AuraEffect const* aurEff, AuraApplication const* aurApp, ProcEventInfo& eventInfo);
     bool CallScriptOnResourceChange(Powers power, int amount, PowerChangeReason reason, std::variant<Spell*, Aura*> reasonObj);
     bool CallScriptOnMovementPacket();
-	bool CallScriptOnAttackHit(Unit*& const target, DamageInfo& const dmgInfo);
+	bool CallScriptOnAttackHit(Unit* const target, DamageInfo const dmgInfo);
     bool CallScriptAfterAttack();
     bool CallScriptAuraAddRemove(Aura* aura, bool added);
 	bool CallScriptOnSpellCast(Spell* spell);
@@ -278,7 +278,7 @@ protected:
     bool m_isUsingCharges: 1;
 
     uint8 development = 1;
-    uint16 spellPowerBonus = 0;
+    int16 spellPowerBonus = 0;
 private:
     Unit::AuraApplicationList m_removedApplications;
 
@@ -288,8 +288,8 @@ public:
     void SetDevelopment(uint8 dev) { development = dev; RecalculateAmountOfEffects(); }
     uint8 GetDevelopment() { return development; }
 
-    void SetSpellPowerBonus(uint8 sPB) { spellPowerBonus = sPB; RecalculateAmountOfEffects(); }
-    uint16 GetSpellPowerBonus() { return spellPowerBonus; }
+    void ModSpellPowerBonus(int16 sPB) { spellPowerBonus += sPB; RecalculateAmountOfEffects(); }
+    int16 GetSpellPowerBonus() { return spellPowerBonus; }
 
     std::map<MapDummy, std::optional<std::any>> triggerDummy = {};
     std::map<MapDummy, std::optional<std::any>>& GetTriggerDummy() { return triggerDummy; }

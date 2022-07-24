@@ -556,7 +556,7 @@ public:
         typedef void(CLASSNAME::*AuraEffectProcFnType)(AuraEffect const*, ProcEventInfo&); \
         typedef void(CLASSNAME::*OnResourceChangeFnType)(Powers power, int amount, PowerChangeReason reason, std::variant<Spell*, Aura*> reasonObj); \
         typedef void(CLASSNAME::*OnMovementPacketFnType)(); \
-        typedef void(CLASSNAME::*OnAttackHitFnType)(Unit*& const target, DamageInfo& const dmgInfo); \
+        typedef void(CLASSNAME::*OnAttackHitFnType)(Unit* const target, DamageInfo const dmgInfo); \
         typedef void(CLASSNAME::*AfterAttackFnType)(); \
         typedef void(CLASSNAME::*AuraAddRemoveFnType)(Aura* aura, bool added); \
         typedef void(CLASSNAME::*OnSpellCastFnType)(Spell* spell);
@@ -705,7 +705,7 @@ public:
     {
     public:
         OnAttackHitHandler(OnAttackHitFnType onMoevementPacketScript);
-        void Call(AuraScript* auraScript, Unit*& const target, DamageInfo& const dmgInfo);
+        void Call(AuraScript* auraScript, Unit* const target, DamageInfo const dmgInfo);
     private:
         OnAttackHitFnType _OnAttackHitHandlerScript;
     };

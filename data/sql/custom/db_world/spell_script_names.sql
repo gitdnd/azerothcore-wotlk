@@ -24,4 +24,6 @@ REPLACE INTO `spell_script_names` (`spell_id`, `ScriptName`) VALUES
 	(210001, 'spell_elk_strike_aura'),
 	(210002, 'spell_elk_retribution_aura'),
 	(210003, 'spell_elk_retribution_aura_2'),
-	(210004, 'spell_holy_power_aura');
+	(210004, 'spell_holy_power_aura'),
+	(210008, 'spell_seal_of_righteousness_aura'),
+	(210009, 'spell_hammer_of_wrath');

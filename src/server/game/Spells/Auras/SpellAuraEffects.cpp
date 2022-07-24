@@ -453,7 +453,7 @@ int32 AuraEffect::CalculateAmount(Unit* caster)
 {
     int32 amount;
     // default amount calculation
-    amount = m_spellInfo->Effects[m_effIndex].CalcValue(caster, &m_baseAmount, nullptr);
+    amount = m_spellInfo->Effects[m_effIndex].CalcValue(caster, &m_baseAmount, nullptr, GetBase()->GetSpellPowerBonus());
 
     // check item enchant aura cast
     if (!amount && caster)
@@ -566,6 +566,7 @@ int32 AuraEffect::CalculateAmount(Unit* caster)
         }
 
     amount *= GetBase()->GetStackAmount() * GetBase()->GetDevelopment();
+    
     return amount;
 }
 

@@ -101,7 +101,7 @@ class spell_elk_attack_hit : public SpellScript
         case SPELL_CRUSADER_STRIKE:
             if (targetsHit)
             {
-                if (Aura* aura = caster->GetAura(SPELL_HOLY_POWER); aura->GetStackAmount() >= 2 + caster->GetSpellData(SPELL_CRUSADER_STRIKE).development)
+                if (Aura* aura = caster->GetAura(SPELL_HOLY_POWER); aura && aura->GetStackAmount() >= 2 + caster->GetSpellData(SPELL_CRUSADER_STRIKE).development)
                 {}
                 else
                     caster->CastSpell(caster, 210004, true); // cast a spell i guess
