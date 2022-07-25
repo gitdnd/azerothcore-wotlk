@@ -96,6 +96,41 @@ enum SpellsELKPaladin : uint32
 
     SUBSPELL_LONG_RETRIBUTION = 219999,
 };
+class ELKAuraScript : public AuraScript
+{
+protected:
+};
+class ELKSpellScript : public SpellScript
+{
+protected:
+    void AttackBegin()
+    {
+        GetSpell()->SetBonusRange(GetCaster()->GetCombatReach());
+    }
+    void AttackHit()
+    {
+        Unit* victim = GetHitUnit();
+
+        CalcDamageInfo damageInfo;
+        GetCaster()->CalculateMeleeDamage(victim, 0, &damageInfo);
+        damageInfo.HitInfo |= HITINFO_NO_ANIMATION;
+        Unit::DealDamageMods(victim, damageInfo.damage, &damageInfo.absorb);
+        GetCaster()->PlayDistanceSound(129);
+
+        GetCaster()->DealMeleeDamage(&damageInfo, true);
+
+        DamageInfo dmgInfo(damageInfo);
+        GetCaster()->ProcDamageAndSpell(damageInfo.target, damageInfo.procAttacker, damageInfo.procVictim, damageInfo.procEx, damageInfo.damage,
+            damageInfo.attackType, nullptr, nullptr, -1, nullptr, &dmgInfo);
+
+        GetCaster()->DoOnAttackHitScripts(victim, dmgInfo);
+
+    }
+    void AfterAttack()
+    {
+        GetCaster()->DoAfterAttackScripts();
+    } 
+};
 
 class spell_elk_strike_aura : public AuraScript
 {

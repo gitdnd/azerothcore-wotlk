@@ -252,7 +252,8 @@ enum UnitModifierType
     BASE_PCT = 1,
     TOTAL_VALUE = 2,
     TOTAL_PCT = 3,
-    MODIFIER_TYPE_END = 4
+    MODIFIER_TYPE_END = 4,
+    RECURSIVE_VALUE = 5
 };
 
 enum WeaponDamageRange
@@ -892,7 +893,7 @@ struct CalcDamageInfo
 
     struct
     {
-        uint32 damageSchoolMask;
+        uint32 damageSchoolMask = 0;
         uint32 damage;
         uint32 absorb;
         uint32 resist;
@@ -1516,7 +1517,7 @@ public:
     [[nodiscard]] uint32 getClassMask() const { return 1 << (getClass() - 1); }
     [[nodiscard]] uint8 getGender() const { return GetByteValue(UNIT_FIELD_BYTES_0, 2); }
 
-    [[nodiscard]] float GetStat(Stats stat) const { return float(GetUInt32Value(static_cast<uint16>(UNIT_FIELD_STAT0) + stat)); }
+    [[nodiscard]] float GetStat(Stats stat) const { return float(GetUInt32Value(static_cast<uint16>(UNIT_FIELD_STAT0) + stat) - ); }
     void SetStat(Stats stat, int32 val) { SetStatInt32Value(static_cast<uint16>(UNIT_FIELD_STAT0) + stat, val); }
     [[nodiscard]] uint32 GetArmor() const { return GetResistance(SPELL_SCHOOL_NORMAL); }
     void SetArmor(int32 val) { SetResistance(SPELL_SCHOOL_NORMAL, val); }
@@ -2748,7 +2749,14 @@ protected:
     {
 
     }
+    std::map<UnitMods, std::unordered_map<float, uint16>> m_negativeModifiers;
+    std::unordered_map<UnitMods, uint16> m_derivedModifiers;
 private:
+    void AddNegativeModifier(UnitMods mod, float amount) { m_negativeModifiers[mod][amount] += 1; }
+    void RemoveNegativeModifier(UnitMods mod, float amount) { m_negativeModifiers[mod][amount] -= 1; }
+    void AddDerivedModifier(UnitMods mod, float amount) { m_derivedModifiers[mod] += amount; }
+    void RemoveDerivedModifier(UnitMods mod, float amount) { m_derivedModifiers[mod] -= amount; }
+
     bool IsTriggeredAtSpellProcEvent(Unit* victim, Aura* aura, WeaponAttackType attType, bool isVictim, bool active, SpellProcEventEntry const*& spellProcEvent, ProcEventInfo const& eventInfo);
     bool HandleDummyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggeredByAura, SpellInfo const* procSpell, uint32 procFlag, uint32 procEx, uint32 cooldown, Spell const* spellProc = nullptr);
     bool HandleAuraProc(Unit* victim, uint32 damage, Aura* triggeredByAura, SpellInfo const* procSpell, uint32 procFlag, uint32 procEx, uint32 cooldown, bool* handled);

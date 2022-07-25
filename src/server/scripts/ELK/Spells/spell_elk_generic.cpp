@@ -10,7 +10,7 @@
 
 
 
-class spell_elk_attack_hit : public SpellScript
+class spell_elk_attack_hit : public ELKSpellScript
 {
     PrepareSpellScript(spell_elk_attack_hit);
 
@@ -39,32 +39,11 @@ class spell_elk_attack_hit : public SpellScript
         }
         else
             WasInAir = false;
-        spell->SetBonusRange(caster->GetCombatReach());
+        AttackBegin();
     }
     void SpellHit()
-    {
-        Unit* victim = GetHitUnit();
-
-        if (!(caster && victim))
-        {
-            return;
-        }
-        SetHitDamage(0);
-        CalcDamageInfo damageInfo;
-        caster->CalculateMeleeDamage(victim, 0, &damageInfo);
-        damageInfo.HitInfo |= HITINFO_NO_ANIMATION;
-        Unit::DealDamageMods(victim, damageInfo.damage, &damageInfo.absorb);
-        caster->PlayDistanceSound(129);
-        //caster->SendAttackStateUpdate(&damageInfo);
-        targetsHit++;
-
-        caster->DealMeleeDamage(&damageInfo, true);
-
-        DamageInfo dmgInfo(damageInfo);
-        caster->ProcDamageAndSpell(damageInfo.target, damageInfo.procAttacker, damageInfo.procVictim, damageInfo.procEx, damageInfo.damage,
-            damageInfo.attackType, nullptr, nullptr, -1, nullptr, &dmgInfo);
-
-        caster->DoOnAttackHitScripts(victim, dmgInfo);
+    { 
+        AttackHit();
 
 
         Spell* spell = GetSpell();
@@ -77,7 +56,7 @@ class spell_elk_attack_hit : public SpellScript
         }
         else
         {
-            caster->CastSpell(victim, ATTACK_SLOW_DEBUFF, true);
+            caster->CastSpell(GetHitUnit(), ATTACK_SLOW_DEBUFF, true);
         }
         switch (strike)
 
@@ -91,7 +70,7 @@ class spell_elk_attack_hit : public SpellScript
         if (!(caster))
             return;
 
-        caster->DoAfterAttackScripts();
+        AfterAttack();
         Spell* spell = GetSpell();
         spellMap = spell->GetTriggerDummy();
 

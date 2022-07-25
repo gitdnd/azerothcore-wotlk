@@ -793,10 +793,10 @@ void AuraEffect::HandleEffect(Unit* target, uint8 mode, bool apply)
 
 void AuraEffect::ApplySpellMod(Unit* target, bool apply)
 {
-    if (!m_spellmod || target->GetTypeId() != TYPEID_PLAYER)
+    if (!m_spellmod)
         return;
 
-    target->ToPlayer()->AddSpellMod(m_spellmod, apply);
+    target->AddSpellMod(m_spellmod, apply);
 
     // Auras with charges do not mod amount of passive auras
     if (GetBase()->IsUsingCharges())
@@ -3918,9 +3918,8 @@ void AuraEffect::HandleAuraModResistanceExclusive(AuraApplication const* aurApp,
             if (amount < GetAmount())
             {
                 float value = float(GetAmount() - amount);
-                target->HandleStatModifier(UnitMods(UNIT_MOD_RESISTANCE_START + x), BASE_VALUE, value, apply);
-                if (target->GetTypeId() == TYPEID_PLAYER)
-                    target->ApplyResistanceBuffModsMod(SpellSchools(x), aurApp->IsPositive(), value, apply);
+                target->HandleStatModifier(UnitMods(UNIT_MOD_RESISTANCE_START + x), BASE_VALUE, value, apply); 
+                target->ApplyResistanceBuffModsMod(SpellSchools(x), aurApp->IsPositive(), value, apply);
             }
         }
     }
@@ -3937,9 +3936,8 @@ void AuraEffect::HandleAuraModResistance(AuraApplication const* aurApp, uint8 mo
     {
         if (GetMiscValue() & int32(1 << x))
         {
-            target->HandleStatModifier(UnitMods(UNIT_MOD_RESISTANCE_START + x), TOTAL_VALUE, float(GetAmount()), apply);
-            if (target->GetTypeId() == TYPEID_PLAYER || target->IsPet())
-                target->ApplyResistanceBuffModsMod(SpellSchools(x), GetAmount() > 0, (float)GetAmount(), apply);
+            target->HandleStatModifier(UnitMods(UNIT_MOD_RESISTANCE_START + x), TOTAL_VALUE, float(GetAmount()), apply); 
+            target->ApplyResistanceBuffModsMod(SpellSchools(x), GetAmount() > 0, (float)GetAmount(), apply);
         }
     }
 }
@@ -3950,12 +3948,12 @@ void AuraEffect::HandleAuraModBaseResistancePCT(AuraApplication const* aurApp, u
         return;
 
     Unit* target = aurApp->GetTarget();
+
+
     for (int8 x = SPELL_SCHOOL_NORMAL; x < MAX_SPELL_SCHOOL; x++)
     {
         if (GetMiscValue() & int32(1 << x))
-        {
             target->HandleStatModifier(UnitMods(UNIT_MOD_RESISTANCE_START + x), BASE_PCT, float(GetAmount()), apply);
-        }
     }
 }
 
@@ -3970,12 +3968,9 @@ void AuraEffect::HandleModResistancePercent(AuraApplication const* aurApp, uint8
     {
         if (GetMiscValue() & int32(1 << i))
         {
-            target->HandleStatModifier(UnitMods(UNIT_MOD_RESISTANCE_START + i), TOTAL_PCT, float(GetAmount()), apply);
-            if (target->GetTypeId() == TYPEID_PLAYER || target->IsPet())
-            {
-                target->ApplyResistanceBuffModsPercentMod(SpellSchools(i), true, (float)GetAmount(), apply);
-                target->ApplyResistanceBuffModsPercentMod(SpellSchools(i), false, (float)GetAmount(), apply);
-            }
+            target->HandleStatModifier(UnitMods(UNIT_MOD_RESISTANCE_START + i), TOTAL_PCT, float(GetAmount()), apply); 
+            target->ApplyResistanceBuffModsPercentMod(SpellSchools(i), true, (float)GetAmount(), apply);
+            target->ApplyResistanceBuffModsPercentMod(SpellSchools(i), false, (float)GetAmount(), apply); 
         }
     }
 }
@@ -4005,11 +4000,11 @@ void AuraEffect::HandleModTargetResistance(AuraApplication const* aurApp, uint8 
     // applied to damage as HandleNoImmediateEffect in Unit::CalcAbsorbResist and Unit::CalcArmorReducedDamage
 
     // show armor penetration
-    if (target->GetTypeId() == TYPEID_PLAYER && (GetMiscValue() & SPELL_SCHOOL_MASK_NORMAL))
+    if (GetMiscValue() & SPELL_SCHOOL_MASK_NORMAL)
         target->ApplyModInt32Value(PLAYER_FIELD_MOD_TARGET_PHYSICAL_RESISTANCE, GetAmount(), apply);
 
     // edited to include holy.
-    if (target->GetTypeId() == TYPEID_PLAYER && (GetMiscValue() & SPELL_SCHOOL_MASK_MAGIC) == SPELL_SCHOOL_MASK_MAGIC)
+    if ((GetMiscValue() & SPELL_SCHOOL_MASK_MAGIC) == SPELL_SCHOOL_MASK_MAGIC)
         target->ApplyModInt32Value(PLAYER_FIELD_MOD_TARGET_RESISTANCE, GetAmount(), apply);
 }
 
@@ -4037,8 +4032,7 @@ void AuraEffect::HandleAuraModStat(AuraApplication const* aurApp, uint8 mode, bo
         {
             //target->ApplyStatMod(Stats(i), m_amount, apply);
             target->HandleStatModifier(UnitMods(UNIT_MOD_STAT_START + i), TOTAL_VALUE, float(GetAmount()), apply);
-            if (target->GetTypeId() == TYPEID_PLAYER || target->IsPet())
-                target->ApplyStatBuffMod(Stats(i), (float)GetAmount(), apply);
+            target->ApplyStatBuffMod(Stats(i), (float)GetAmount(), apply);
         }
     }
 }
@@ -4055,10 +4049,7 @@ void AuraEffect::HandleModPercentStat(AuraApplication const* aurApp, uint8 mode,
         LOG_ERROR("spells.aura.effect", "WARNING: Misc Value for SPELL_AURA_MOD_PERCENT_STAT not valid");
         return;
     }
-
-    // only players have base stats
-    if (target->GetTypeId() != TYPEID_PLAYER)
-        return;
+     
 
     for (int32 i = STAT_STRENGTH; i < MAX_STATS; ++i)
     {
@@ -4080,7 +4071,7 @@ void AuraEffect::HandleModSpellDamagePercentFromStat(AuraApplication const* aurA
     // Magic damage modifiers implemented in Unit::SpellDamageBonus
     // This information for client side use only
     // Recalculate bonus
-    target->ToPlayer()->UpdateSpellDamageAndHealingBonus();
+    target->UpdateSpellDamageAndHealingBonus();
 }
 
 void AuraEffect::HandleModSpellHealingPercentFromStat(AuraApplication const* aurApp, uint8 mode, bool /*apply*/) const
@@ -4094,7 +4085,7 @@ void AuraEffect::HandleModSpellHealingPercentFromStat(AuraApplication const* aur
         return;
 
     // Recalculate bonus
-    target->ToPlayer()->UpdateSpellDamageAndHealingBonus();
+    target->UpdateSpellDamageAndHealingBonus();
 }
 
 void AuraEffect::HandleModSpellDamagePercentFromAttackPower(AuraApplication const* aurApp, uint8 mode, bool /*apply*/) const
@@ -4110,7 +4101,7 @@ void AuraEffect::HandleModSpellDamagePercentFromAttackPower(AuraApplication cons
     // Magic damage modifiers implemented in Unit::SpellDamageBonus
     // This information for client side use only
     // Recalculate bonus
-    target->ToPlayer()->UpdateSpellDamageAndHealingBonus();
+    target->UpdateSpellDamageAndHealingBonus();
 }
 
 void AuraEffect::HandleModSpellHealingPercentFromAttackPower(AuraApplication const* aurApp, uint8 mode, bool /*apply*/) const
@@ -4124,7 +4115,7 @@ void AuraEffect::HandleModSpellHealingPercentFromAttackPower(AuraApplication con
         return;
 
     // Recalculate bonus
-    target->ToPlayer()->UpdateSpellDamageAndHealingBonus();
+    target->UpdateSpellDamageAndHealingBonus();
 }
 
 void AuraEffect::HandleModHealingDone(AuraApplication const* aurApp, uint8 mode, bool /*apply*/) const
@@ -4138,7 +4129,7 @@ void AuraEffect::HandleModHealingDone(AuraApplication const* aurApp, uint8 mode,
         return;
     // implemented in Unit::SpellHealingBonus
     // this information is for client side only
-    target->ToPlayer()->UpdateSpellDamageAndHealingBonus();
+    target->UpdateSpellDamageAndHealingBonus();
 }
 
 void AuraEffect::HandleModTotalPercentStat(AuraApplication const* aurApp, uint8 mode, bool apply) const
@@ -4205,8 +4196,6 @@ void AuraEffect::HandleAuraModResistenceOfStatPercent(AuraApplication const* aur
 
     Unit* target = aurApp->GetTarget();
 
-    if (target->GetTypeId() != TYPEID_PLAYER)
-        return;
 
     if (GetMiscValue() != SPELL_SCHOOL_MASK_NORMAL)
     {
@@ -4226,12 +4215,10 @@ void AuraEffect::HandleAuraModExpertise(AuraApplication const* aurApp, uint8 mod
         return;
 
     Unit* target = aurApp->GetTarget();
+     
 
-    if (target->GetTypeId() != TYPEID_PLAYER)
-        return;
-
-    target->ToPlayer()->UpdateExpertise(BASE_ATTACK);
-    target->ToPlayer()->UpdateExpertise(OFF_ATTACK);
+    target->UpdateExpertise(BASE_ATTACK);
+    target->UpdateExpertise(OFF_ATTACK);
 }
 
 /********************************/
@@ -4243,13 +4230,11 @@ void AuraEffect::HandleModPowerRegen(AuraApplication const* aurApp, uint8 mode, 
         return;
 
     Unit* target = aurApp->GetTarget();
-
-    if (target->GetTypeId() != TYPEID_PLAYER)
-        return;
+     
 
     // Update manaregen value
     if (GetMiscValue() == POWER_MANA)
-        target->ToPlayer()->UpdateManaRegen(); 
+        target->UpdateManaRegen(); 
     // other powers are not immediate effects - implemented in Player::Regenerate, Creature::Regenerate
 }
 
@@ -4264,12 +4249,10 @@ void AuraEffect::HandleModManaRegen(AuraApplication const* aurApp, uint8 mode, b
         return;
 
     Unit* target = aurApp->GetTarget();
-
-    if (target->GetTypeId() != TYPEID_PLAYER)
-        return;
+     
 
     //Note: an increase in regen does NOT cause threat.
-    target->ToPlayer()->UpdateManaRegen();
+    target->UpdateManaRegen();
 }
 
 void AuraEffect::HandleAuraModIncreaseHealth(AuraApplication const* aurApp, uint8 mode, bool apply) const
@@ -4404,14 +4387,11 @@ void AuraEffect::HandleAuraModParryPercent(AuraApplication const* aurApp, uint8 
         return;
 
     Unit* target = aurApp->GetTarget();
-
-    if (target->GetTypeId() != TYPEID_PLAYER)
-        return;
-
-    if (!target->ToPlayer()->CanParry())
-        target->ToPlayer()->SetCanParry(true);
+     
+    if (!target->CanParry())
+        target->SetCanParry(true);
     else
-        target->ToPlayer()->UpdateParryPercentage();
+        target->UpdateParryPercentage();
 }
 
 void AuraEffect::HandleAuraModDodgePercent(AuraApplication const* aurApp, uint8 mode, bool /*apply*/) const
@@ -4420,11 +4400,9 @@ void AuraEffect::HandleAuraModDodgePercent(AuraApplication const* aurApp, uint8 
         return;
 
     Unit* target = aurApp->GetTarget();
+     
 
-    if (target->GetTypeId() != TYPEID_PLAYER)
-        return;
-
-    target->ToPlayer()->UpdateDodgePercentage();
+    target->UpdateDodgePercentage();
 }
 
 void AuraEffect::HandleAuraModBlockPercent(AuraApplication const* aurApp, uint8 mode, bool /*apply*/) const
@@ -4433,11 +4411,8 @@ void AuraEffect::HandleAuraModBlockPercent(AuraApplication const* aurApp, uint8 
         return;
 
     Unit* target = aurApp->GetTarget();
-
-    if (target->GetTypeId() != TYPEID_PLAYER)
-        return;
-
-    target->ToPlayer()->UpdateBlockPercentage();
+     
+    target->UpdateBlockPercentage();
 }
 
 void AuraEffect::HandleAuraModRegenInterrupt(AuraApplication const* aurApp, uint8 mode, bool apply) const
@@ -4481,17 +4456,9 @@ void AuraEffect::HandleModHitChance(AuraApplication const* aurApp, uint8 mode, b
         return;
 
     Unit* target = aurApp->GetTarget();
-
-    if (target->GetTypeId() == TYPEID_PLAYER)
-    {
-        target->ToPlayer()->UpdateMeleeHitChances();
-        target->ToPlayer()->UpdateRangedHitChances();
-    }
-    else
-    {
-        target->m_modMeleeHitChance += (apply) ? GetAmount() : (-GetAmount());
-        target->m_modRangedHitChance += (apply) ? GetAmount() : (-GetAmount());
-    }
+     
+    target->UpdateMeleeHitChances();
+    target->UpdateRangedHitChances(); 
 }
 
 void AuraEffect::HandleModSpellHitChance(AuraApplication const* aurApp, uint8 mode, bool apply) const
@@ -4500,11 +4467,8 @@ void AuraEffect::HandleModSpellHitChance(AuraApplication const* aurApp, uint8 mo
         return;
 
     Unit* target = aurApp->GetTarget();
-
-    if (target->GetTypeId() == TYPEID_PLAYER)
-        target->ToPlayer()->UpdateSpellHitChances();
-    else
-        target->m_modSpellHitChance += (apply) ? GetAmount() : (-GetAmount());
+     
+    target->UpdateSpellHitChances(); 
 }
 
 void AuraEffect::HandleModSpellCritChance(AuraApplication const* aurApp, uint8 mode, bool apply) const
@@ -4513,11 +4477,8 @@ void AuraEffect::HandleModSpellCritChance(AuraApplication const* aurApp, uint8 m
         return;
 
     Unit* target = aurApp->GetTarget();
-
-    if (target->GetTypeId() == TYPEID_PLAYER)
-        target->ToPlayer()->UpdateAllSpellCritChances();
-    else
-        target->m_baseSpellCritChance += (apply) ? GetAmount() : -GetAmount();
+     
+    target->UpdateAllSpellCritChances(); 
 }
 
 void AuraEffect::HandleModSpellCritChanceShool(AuraApplication const* aurApp, uint8 mode, bool /*apply*/) const
@@ -4526,13 +4487,11 @@ void AuraEffect::HandleModSpellCritChanceShool(AuraApplication const* aurApp, ui
         return;
 
     Unit* target = aurApp->GetTarget();
-
-    if (target->GetTypeId() != TYPEID_PLAYER)
-        return;
+     
 
     for (int school = SPELL_SCHOOL_NORMAL; school < MAX_SPELL_SCHOOL; ++school)
         if (GetMiscValue() & (1 << school))
-            target->ToPlayer()->UpdateSpellCritChance(school);
+            target->UpdateSpellCritChance(school);
 }
 
 void AuraEffect::HandleAuraModCritPct(AuraApplication const* aurApp, uint8 mode, bool apply) const
@@ -4541,19 +4500,14 @@ void AuraEffect::HandleAuraModCritPct(AuraApplication const* aurApp, uint8 mode,
         return;
 
     Unit* target = aurApp->GetTarget();
+     
 
-    if (target->GetTypeId() != TYPEID_PLAYER)
-    {
-        target->m_baseSpellCritChance += (apply) ? GetAmount() : -GetAmount();
-        return;
-    }
-
-    target->ToPlayer()->HandleBaseModValue(CRIT_PERCENTAGE,         FLAT_MOD, float (GetAmount()), apply);
-    target->ToPlayer()->HandleBaseModValue(OFFHAND_CRIT_PERCENTAGE, FLAT_MOD, float (GetAmount()), apply);
-    target->ToPlayer()->HandleBaseModValue(RANGED_CRIT_PERCENTAGE,  FLAT_MOD, float (GetAmount()), apply);
+    target->HandleBaseModValue(CRIT_PERCENTAGE,         FLAT_MOD, float (GetAmount()), apply);
+    target->HandleBaseModValue(OFFHAND_CRIT_PERCENTAGE, FLAT_MOD, float (GetAmount()), apply);
+    target->HandleBaseModValue(RANGED_CRIT_PERCENTAGE,  FLAT_MOD, float (GetAmount()), apply);
 
     // included in Player::UpdateSpellCritChance calculation
-    target->ToPlayer()->UpdateAllSpellCritChances();
+    target->UpdateAllSpellCritChances();
 }
 
 /********************************/
@@ -4640,9 +4594,7 @@ void AuraEffect::HandleRangedAmmoHaste(AuraApplication const* aurApp, uint8 mode
         return;
 
     Unit* target = aurApp->GetTarget();
-
-    if (target->GetTypeId() != TYPEID_PLAYER)
-        return;
+     
 
     target->ApplyAttackTimePercentMod(RANGED_ATTACK, (float)GetAmount(), apply);
 }
@@ -4657,13 +4609,11 @@ void AuraEffect::HandleModRating(AuraApplication const* aurApp, uint8 mode, bool
         return;
 
     Unit* target = aurApp->GetTarget();
-
-    if (target->GetTypeId() != TYPEID_PLAYER)
-        return;
+     
 
     for (uint32 rating = 0; rating < MAX_COMBAT_RATING; ++rating)
         if (GetMiscValue() & (1 << rating))
-            target->ToPlayer()->ApplyRatingMod(CombatRating(rating), GetAmount(), apply);
+            target->ApplyRatingMod(CombatRating(rating), GetAmount(), apply);
 }
 
 void AuraEffect::HandleModRatingFromStat(AuraApplication const* aurApp, uint8 mode, bool apply) const
@@ -4672,14 +4622,12 @@ void AuraEffect::HandleModRatingFromStat(AuraApplication const* aurApp, uint8 mo
         return;
 
     Unit* target = aurApp->GetTarget();
-
-    if (target->GetTypeId() != TYPEID_PLAYER)
-        return;
+     
 
     // Just recalculate ratings
     for (uint32 rating = 0; rating < MAX_COMBAT_RATING; ++rating)
         if (GetMiscValue() & (1 << rating))
-            target->ToPlayer()->ApplyRatingMod(CombatRating(rating), 0, apply);
+            target->ApplyRatingMod(CombatRating(rating), 0, apply);
 }
 
 /********************************/
@@ -4739,11 +4687,7 @@ void AuraEffect::HandleAuraModRangedAttackPowerOfStatPercent(AuraApplication con
     if (!(mode & (AURA_EFFECT_HANDLE_CHANGE_AMOUNT_MASK | AURA_EFFECT_HANDLE_STAT)))
         return;
 
-    Unit* target = aurApp->GetTarget();
-
-    // Recalculate bonus
-    if (target->GetTypeId() == TYPEID_PLAYER && !(target->getClassMask() & CLASSMASK_WAND_USERS))
-        target->ToPlayer()->UpdateAttackPowerAndDamage(true);
+    aurApp->GetTarget()->UpdateAttackPowerAndDamage(true);
 }
 
 void AuraEffect::HandleAuraModAttackPowerOfStatPercent(AuraApplication const* aurApp, uint8 mode, bool apply) const
@@ -4756,11 +4700,7 @@ void AuraEffect::HandleAuraModAttackPowerOfArmor(AuraApplication const* aurApp, 
     if (!(mode & (AURA_EFFECT_HANDLE_CHANGE_AMOUNT_MASK | AURA_EFFECT_HANDLE_STAT)))
         return;
 
-    Unit* target = aurApp->GetTarget();
-
-    // Recalculate bonus
-    if (target->GetTypeId() == TYPEID_PLAYER)
-        target->ToPlayer()->UpdateAttackPowerAndDamage(false);
+    aurApp->GetTarget()->UpdateAttackPowerAndDamage(false);
 }
 /********************************/
 /***        DAMAGE BONUS      ***/
@@ -4904,9 +4844,8 @@ void AuraEffect::HandleShieldBlockValue(AuraApplication const* aurApp, uint8 mod
     BaseModType modType = FLAT_MOD;
     if (GetAuraType() == SPELL_AURA_MOD_SHIELD_BLOCKVALUE_PCT)
         modType = PCT_MOD;
-
-    if (target->GetTypeId() == TYPEID_PLAYER)
-        target->ToPlayer()->HandleBaseModValue(SHIELD_BLOCK_VALUE, modType, float(GetAmount()), apply);
+     
+    target->HandleBaseModValue(SHIELD_BLOCK_VALUE, modType, float(GetAmount()), apply);
 }
 
 /********************************/

@@ -258,18 +258,19 @@ void Unit::UpdateArmor()
     float value = GetModifierValue(unitMod, BASE_VALUE);   // base armor (from items)
     value *= GetModifierValue(unitMod, BASE_PCT);           // armor percent from items 
     value += GetModifierValue(unitMod, TOTAL_VALUE);
+    m_derivedModifiers[unitMod] = 0;
 
     //add dynamic flat mods
     AuraEffectList const& mResbyIntellect = GetAuraEffectsByType(SPELL_AURA_MOD_RESISTANCE_OF_STAT_PERCENT);
     for (AuraEffectList::const_iterator i = mResbyIntellect.begin(); i != mResbyIntellect.end(); ++i)
     {
         if ((*i)->GetMiscValue() & SPELL_SCHOOL_MASK_NORMAL)
-            value += CalculatePct(GetStat(Stats((*i)->GetMiscValueB())), (*i)->GetAmount());
+            m_derivedModifiers[unitMod] += CalculatePct(GetStat(Stats((*i)->GetMiscValueB())), (*i)->GetAmount());
     }
 
     value *= GetModifierValue(unitMod, TOTAL_PCT);
 
-    SetArmor(int32(value));
+    SetArmor(int32(value + m_derivedModifiers[unitMod]));
 
     UpdateAttackPowerAndDamage();                           // armor dependent auras update for SPELL_AURA_MOD_ATTACK_POWER_OF_ARMOR
     UpdateWeight();
@@ -349,24 +350,24 @@ void Unit::UpdateAttackPowerAndDamage(bool ranged)
 
     float base_attPower  = GetModifierValue(unitMod, BASE_VALUE) * GetModifierValue(unitMod, BASE_PCT);
     float attPowerMod = GetModifierValue(unitMod, TOTAL_VALUE);
-
+    float attPowerDerived = 0;
     //add dynamic flat mods
     if (ranged)
     {
         AuraEffectList const& mRAPbyStat = GetAuraEffectsByType(SPELL_AURA_MOD_RANGED_ATTACK_POWER_OF_STAT_PERCENT);
-        for (AuraEffectList::const_iterator i = mRAPbyStat.begin(); i != mRAPbyStat.end(); ++i)
-            attPowerMod += CalculatePct(GetStat(Stats((*i)->GetMiscValue())), (*i)->GetAmount());
+        for (AuraEffectList::const_iterator i = mRAPbyStat.begin(); i != mRAPbyStat.end(); ++i) 
+            attPowerDerived += CalculatePct(GetStat(Stats((*i)->GetMiscValue())), (*i)->GetAmount());
     }
     else
     {
         AuraEffectList const& mAPbyStat = GetAuraEffectsByType(SPELL_AURA_MOD_ATTACK_POWER_OF_STAT_PERCENT);
         for (AuraEffectList::const_iterator i = mAPbyStat.begin(); i != mAPbyStat.end(); ++i)
-            attPowerMod += CalculatePct(GetStat(Stats((*i)->GetMiscValue())), (*i)->GetAmount());
+            attPowerDerived += CalculatePct(GetStat(Stats((*i)->GetMiscValue())), (*i)->GetAmount());
 
         AuraEffectList const& mAPbyArmor = GetAuraEffectsByType(SPELL_AURA_MOD_ATTACK_POWER_OF_ARMOR);
         for (AuraEffectList::const_iterator iter = mAPbyArmor.begin(); iter != mAPbyArmor.end(); ++iter)
             // always: ((*i)->GetModifier()->m_miscvalue == 1 == SPELL_SCHOOL_MASK_NORMAL)
-            attPowerMod += int32(GetArmor() * (*iter)->GetAmount()) / (int32)100;
+            attPowerDerived += int32(GetArmor() * (*iter)->GetAmount()) / (int32)100;
     }
 
     float attPowerMultiplier = GetModifierValue(unitMod, TOTAL_PCT) - 1.0f;

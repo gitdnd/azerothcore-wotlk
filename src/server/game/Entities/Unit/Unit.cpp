@@ -1532,12 +1532,12 @@ void Unit::CalculateMeleeDamage(Unit* victim, CalcDamageInfo* damageInfo, Weapon
 
     for (uint8 i = 0; i < MAX_ITEM_PROTO_DAMAGES; ++i)
     {
-        damageInfo->damages[i].damageSchoolMask = GetMeleeDamageSchoolMask(attackType, i);
+        if(damageInfo->damageSchoolMask == 0)
+            damageInfo->damages[i].damageSchoolMask = GetMeleeDamageSchoolMask(attackType, i);
         damageInfo->damages[i].damage = 0;
         damageInfo->damages[i].absorb = 0;
         damageInfo->damages[i].resist = 0;
     }
-
     damageInfo->attackType       = attackType;
     damageInfo->cleanDamage      = 0;
     damageInfo->blocked_amount   = 0;
@@ -15177,7 +15177,13 @@ bool Unit::HandleStatModifier(UnitMods unitMod, UnitModifierType modifierType, f
     {
         case BASE_VALUE:
         case TOTAL_VALUE:
-            m_auraModifiersGroup[unitMod][modifierType] += apply ? amount : -amount;
+            if(amount >= 0)
+                m_auraModifiersGroup[unitMod][modifierType] += apply ? amount : -amount;
+            else 
+                if (apply)
+                    AddNegativeModifier(unitMod, amount);
+                else
+                    RemoveNegativeModifier(unitMod, amount); 
             break;
         case BASE_PCT:
         case TOTAL_PCT:
@@ -15275,7 +15281,25 @@ float Unit::GetTotalStatValue(Stats stat, float additionalValue) const
     float value  = m_auraModifiersGroup[unitMod][BASE_VALUE] + GetCreateStat(stat);
     value *= m_auraModifiersGroup[unitMod][BASE_PCT];
     value += m_auraModifiersGroup[unitMod][TOTAL_VALUE] + additionalValue;
+    value += m_derivedModifiers[unitMod];
     value *= m_auraModifiersGroup[unitMod][TOTAL_PCT];
+    if (value == 0.0f)
+        return value;
+    float ogVal = value;
+
+
+    const auto statVals = m_negativeModifiers.find(unitMod);
+    if (statVals == m_negativeModifiers.end())
+        return value;
+    for (const auto& [key, val] : (*statVals).second)
+    {
+        for (int i = 0; i < val; i++)
+        {
+            if (value <= 0.0f)
+                return 0.0f;
+            value += key * (value / ogVal);
+        }
+    }
 
     return value;
 }
