@@ -309,7 +309,7 @@ class spell_sha_fire_elemental_scaling : public AuraScript
         // xinef: fire elemental inherits 300% / 150% of SP as AP
         if (Unit* owner = GetUnitOwner()->GetOwner())
         {
-            int32 fire = owner->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_FIRE);
+            int32 fire = owner->SpellBasePowerBonusDone(SPELL_SCHOOL_MASK_FIRE);
             amount = CalculatePct(std::max<int32>(0, fire), (GetUnitOwner()->GetEntry() == NPC_FIRE_ELEMENTAL ? 300 : 150));
         }
     }
@@ -319,7 +319,7 @@ class spell_sha_fire_elemental_scaling : public AuraScript
         // xinef: fire elemental inherits 100% of SP
         if (Unit* owner = GetUnitOwner()->GetOwner())
         {
-            int32 fire = owner->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_FIRE);
+            int32 fire = owner->SpellBasePowerBonusDone(SPELL_SCHOOL_MASK_FIRE);
             amount = CalculatePct(std::max<int32>(0, fire), 100);
 
             // xinef: Update appropriate player field

@@ -321,7 +321,7 @@ public:
     // SpellScript interface
     // hooks to which you can attach your functions
     //
-    // example: BeforeCast += SpellCastFn(class::function);
+    // example: BeforeSpellLoad += SpellCastFn(class::function);
     HookList<CastHandler> BeforeSpellLoad;
     // example: BeforeCast += SpellCastFn(class::function);
     HookList<CastHandler> BeforeCastTime;
@@ -528,7 +528,8 @@ enum AuraScriptHookType
     AURA_SCRIPT_ON_ATTACK_HIT,
     AURA_SCRIPT_AFTER_ATTACK,
     AURA_SCRIPT_AURA_ADDREMOVE, 
-    AURA_SCRIPT_ON_SPELL_CAST, 
+    AURA_SCRIPT_BEFORE_SPELL_CAST,
+	AURA_SCRIPT_ON_SPELL_CAST,
 };
 /*
 #define HOOK_AURA_EFFECT_START HOOK_AURA_EFFECT_APPLY
@@ -559,6 +560,7 @@ public:
         typedef void(CLASSNAME::*OnAttackHitFnType)(Unit* const target, DamageInfo const dmgInfo); \
         typedef void(CLASSNAME::*AfterAttackFnType)(); \
         typedef void(CLASSNAME::*AuraAddRemoveFnType)(Aura* aura, bool added); \
+        typedef void(CLASSNAME::*BeforeSpellCastFnType)(Spell* spell); \
         typedef void(CLASSNAME::*OnSpellCastFnType)(Spell* spell);
 
     AURASCRIPT_FUNCTION_TYPE_DEFINES(AuraScript)
@@ -727,6 +729,14 @@ public:
     private:
         AuraAddRemoveFnType _AuraAddRemoveHandlerScript;
     };
+    class BeforeSpellCastHandler
+    {
+    public:
+        BeforeSpellCastHandler(BeforeSpellCastFnType beforeMoevementPacketScript);
+        void Call(AuraScript* auraScript, Spell* spell);
+    private:
+        BeforeSpellCastFnType _BeforeSpellCastHandlerScript;
+    };
     class OnSpellCastHandler
     {
     public:
@@ -756,8 +766,9 @@ public:
         class OnAttackHitFunction : public AuraScript::OnAttackHitHandler { public: OnAttackHitFunction(OnAttackHitFnType OnAttackHitScript) : AuraScript::OnAttackHitHandler((AuraScript::OnAttackHitFnType)OnAttackHitScript) {} }; \
         class AfterAttackFunction : public AuraScript::AfterAttackHandler { public: AfterAttackFunction(AfterAttackFnType AfterAttackScript) : AuraScript::AfterAttackHandler((AuraScript::AfterAttackFnType)AfterAttackScript) {} }; \
         class AuraAddRemoveFunction : public AuraScript::AuraAddRemoveHandler { public: AuraAddRemoveFunction(AuraAddRemoveFnType auraAddRemoveScript) : AuraScript::AuraAddRemoveHandler((AuraScript::AuraAddRemoveFnType)auraAddRemoveScript) {} }; \
+        class BeforeSpellCastFunction : public AuraScript::BeforeSpellCastHandler { public: BeforeSpellCastFunction(BeforeSpellCastFnType BeforeSpellCastScript) : AuraScript::BeforeSpellCastHandler((AuraScript::BeforeSpellCastFnType)BeforeSpellCastScript) {} }; \
         class OnSpellCastFunction : public AuraScript::OnSpellCastHandler { public: OnSpellCastFunction(OnSpellCastFnType OnSpellCastScript) : AuraScript::OnSpellCastHandler((AuraScript::OnSpellCastFnType)OnSpellCastScript) {} }; \
-         
+
 
 #define PrepareAuraScript(CLASSNAME) AURASCRIPT_FUNCTION_TYPE_DEFINES(CLASSNAME) AURASCRIPT_FUNCTION_CAST_DEFINES(CLASSNAME)
 
@@ -951,6 +962,12 @@ public:
     // where function is: void function(Aura* aura, bool added);
     HookList<AuraAddRemoveHandler> AuraAddRemove;
 #define AuraAddRemoveFn(F) AuraAddRemoveFunction(&F)
+
+    // executed before spell cast while having this aura
+    // example: BeforeSpellCast += BeforeSpellCastFn(class::function);
+    // where function is: void function(Spell* spell);
+    HookList<BeforeSpellCastHandler> BeforeSpellCast;
+#define BeforeSpellCastFn(F) BeforeSpellCastFunction(&F)
 
 	// executed on spell cast while having this aura
 	// example: OnSpellCast += OnSpellCastFn(class::function);

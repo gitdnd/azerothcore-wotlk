@@ -359,6 +359,9 @@ Unit::Unit(bool isWorldObject) : WorldObject(isWorldObject),
     m_runeCount = 0;
 
     m_valuesCount = PLAYER_END; // REMEMBER TO OPTIMIZE THIS LATER CUZ I SURE WONT RIGHT NOW LMAO
+
+    m_baseSpellPowerSchool.resize(MAX_SPELL_SCHOOL);
+    m_derivedSpellPowerSchool.resize(MAX_SPELL_SCHOOL);
     
 }
 void Unit::_Create(const ObjectGuid::LowType& guidlow, const uint32& entry, const HighGuid& guidhigh)
@@ -8373,7 +8376,7 @@ bool Unit::HandleDummyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggere
 
                     float fire_onhit = float(CalculatePct(dummySpell->Effects[EFFECT_0]. CalcValue(), 1.0f));
 
-                    float add_spellpower = (float)(SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_FIRE)
+                    float add_spellpower = (float)(SpellBasePowerBonusDone(SPELL_SCHOOL_MASK_FIRE)
                                                    + victim->SpellBaseDamageBonusTaken(SPELL_SCHOOL_MASK_FIRE));
 
                     // 1.3speed = 5%, 2.6speed = 10%, 4.0 speed = 15%, so, 1.0speed = 3.84%
@@ -9724,7 +9727,7 @@ bool Unit::HandleProcTriggerSpell(Unit* victim, uint32 damage, AuraEffect* trigg
 
                         if (AuraEffect* aurEff = owner->GetDummyAuraEffect(SPELLFAMILY_WARLOCK, 3220, 0))
                         {
-                            int32 spellPower = owner->SpellBaseDamageBonusDone(SpellSchoolMask(SPELL_SCHOOL_MASK_MAGIC));
+                            int32 spellPower = owner->SpellBasePowerBonusDone(SpellSchoolMask(SPELL_SCHOOL_MASK_MAGIC));
                             if (AuraEffect const* demonicAuraEffect = GetAuraEffect(trigger_spell_id, EFFECT_0))
                                 spellPower -= demonicAuraEffect->GetAmount();
 
@@ -11923,7 +11926,55 @@ void Unit::DoAfterAttackScripts()
         ++it;
     }
 }
- 
+
+void Unit::DoBeforeSpellCastScripts(Spell* spell)
+{
+    std::vector<AuraApplicationMap::iterator> passed = {};
+    AuraApplicationMap appliedAurasCopy = m_appliedAuras;
+    for (AuraApplicationMap::iterator it = appliedAurasCopy.begin(); it != appliedAurasCopy.end(); )
+    {
+        if (it->second)
+        {
+            bool succ = it->second->GetBase()->CallScriptBeforeSpellCast(spell);
+            if (!succ)
+            {
+                appliedAurasCopy.erase(it);
+                int remaining = -1;
+                bool exit = false;
+                for (AuraApplicationMap::iterator it2 = appliedAurasCopy.begin(); it2 != appliedAurasCopy.end();)
+                {
+                    for (auto o : passed)
+                    {
+                        if (o == it2)
+                        {
+                            ++it2;
+                            remaining++;
+                        }
+                        else
+                        {
+                            passed.erase(passed.begin() + remaining + 1, passed.end());
+                            exit = true;
+                            break;
+                        }
+                    }
+                    if (exit)
+                        break;
+                }
+                if (remaining >= 0)
+                {
+                    it = passed[remaining];
+                    ++it;
+                }
+                else
+                    it = appliedAurasCopy.begin();
+                continue;
+            }
+        }
+        passed.push_back(it);
+        ++it;
+    }
+}
+
 void Unit::DoOnSpellCastScripts(Spell* spell)
 {
     std::vector<AuraApplicationMap::iterator> passed = {};
@@ -11972,42 +12023,60 @@ void Unit::DoOnSpellCastScripts(Spell* spell)
     }
 }
 
-
-int32 Unit::SpellBaseDamageBonusDone(SpellSchoolMask schoolMask, int16 bonusSpellPower) const
+int32 Unit::SpellBasePowerBonusDone(SpellSchoolMask schoolMask, int16 bonusSpellPower, bool noDerived) const
 {
-    int32 DoneAdvertisedBenefit = 0;
-
-    AuraEffectList const& mDamageDone = GetAuraEffectsByType(SPELL_AURA_MOD_DAMAGE_DONE);
-    for (AuraEffectList::const_iterator i = mDamageDone.begin(); i != mDamageDone.end(); ++i)
-        if (((*i)->GetMiscValue() & schoolMask) != 0 &&
-                (*i)->GetSpellInfo()->EquippedItemClass == -1 &&
-                // -1 == any item class (not wand then)
-                (*i)->GetSpellInfo()->EquippedItemInventoryTypeMask == 0)
-            // 0 == any inventory type (not wand then)
-            DoneAdvertisedBenefit += (*i)->GetAmount();
-     
-    // Base value
-    DoneAdvertisedBenefit += GetBaseSpellPowerBonus() + bonusSpellPower;
-
-    // Damage bonus from stats
-    AuraEffectList const& mDamageDoneOfStatPercent = GetAuraEffectsByType(SPELL_AURA_MOD_SPELL_DAMAGE_OF_STAT_PERCENT);
-    for (AuraEffectList::const_iterator i = mDamageDoneOfStatPercent.begin(); i != mDamageDoneOfStatPercent.end(); ++i)
+    uint8 schools = 0;
+    uint32 amount = 0;
+    if (schoolMask & SPELL_SCHOOL_MASK_NORMAL)
     {
-        if ((*i)->GetMiscValue() & schoolMask)
-        {
-            // stat used stored in miscValueB for this aura
-            Stats usedStat = Stats((*i)->GetMiscValueB());
-            DoneAdvertisedBenefit += int32(CalculatePct(GetStat(usedStat), (*i)->GetAmount()));
-        }
+        amount += m_baseSpellPowerSchool[SPELL_SCHOOL_NORMAL];
+        if(!noDerived)
+            amount += m_derivedSpellPowerSchool[SPELL_SCHOOL_NORMAL];
+        schools++;
     }
-    // ... and attack power
-    AuraEffectList const& mDamageDonebyAP = GetAuraEffectsByType(SPELL_AURA_MOD_SPELL_DAMAGE_OF_ATTACK_POWER);
-    for (AuraEffectList::const_iterator i = mDamageDonebyAP.begin(); i != mDamageDonebyAP.end(); ++i)
-        if ((*i)->GetMiscValue() & schoolMask)
-            DoneAdvertisedBenefit += int32(CalculatePct(GetTotalAttackPowerValue(BASE_ATTACK), (*i)->GetAmount()));
-
-
-    return DoneAdvertisedBenefit;
+    if (schoolMask & SPELL_SCHOOL_MASK_HOLY)
+    {
+        amount += m_baseSpellPowerSchool[SPELL_SCHOOL_HOLY];
+        if (!noDerived)
+            amount += m_derivedSpellPowerSchool[SPELL_SCHOOL_HOLY];
+        schools++;
+    }
+    if (schoolMask & SPELL_SCHOOL_MASK_FIRE)
+    {
+        amount += m_baseSpellPowerSchool[SPELL_SCHOOL_FIRE];
+        if (!noDerived)
+            amount += m_derivedSpellPowerSchool[SPELL_SCHOOL_FIRE];
+        schools++;
+    }
+    if (schoolMask & SPELL_SCHOOL_MASK_NATURE)
+    {
+        amount += m_baseSpellPowerSchool[SPELL_SCHOOL_NATURE];
+        if (!noDerived)
+            amount += m_derivedSpellPowerSchool[SPELL_SCHOOL_NATURE];
+        schools++;
+    }
+    if (schoolMask & SPELL_SCHOOL_MASK_FROST)
+    {
+        amount += m_baseSpellPowerSchool[SPELL_SCHOOL_FROST];
+        if (!noDerived)
+            amount += m_derivedSpellPowerSchool[SPELL_SCHOOL_FROST];
+        schools++;
+    }
+    if (schoolMask & SPELL_SCHOOL_MASK_SHADOW)
+    {
+        amount += m_baseSpellPowerSchool[SPELL_SCHOOL_SHADOW];
+        if (!noDerived)
+            amount += m_derivedSpellPowerSchool[SPELL_SCHOOL_SHADOW];
+        schools++;
+    }
+    if (schoolMask & SPELL_SCHOOL_MASK_ARCANE)
+    {
+        amount += m_baseSpellPowerSchool[SPELL_SCHOOL_ARCANE];
+        if (!noDerived)
+            amount += m_derivedSpellPowerSchool[SPELL_SCHOOL_ARCANE];
+        schools++;
+    }
+    return (amount / schools) + GetBaseSpellPowerBonus() + bonusSpellPower;
 }
 
 int32 Unit::SpellBaseDamageBonusTaken(SpellSchoolMask schoolMask, bool isDoT)
@@ -12646,37 +12715,6 @@ uint32 Unit::SpellHealingBonusDone(Unit* victim, SpellInfo const* spellProto, ui
     float heal = float(int32(healamount) + TakenTotal) * TakenTotalMod;
 
     return uint32(std::max(heal, 0.0f));
-}
-
-int32 Unit::SpellBaseHealingBonusDone(SpellSchoolMask schoolMask, int16 bonusSpellPower)
-{
-    int32 AdvertisedBenefit = 0;
-
-    AuraEffectList const& mHealingDone = GetAuraEffectsByType(SPELL_AURA_MOD_HEALING_DONE);
-    for (AuraEffectList::const_iterator i = mHealingDone.begin(); i != mHealingDone.end(); ++i)
-        if (!(*i)->GetMiscValue() || ((*i)->GetMiscValue() & schoolMask) != 0)
-            AdvertisedBenefit += (*i)->GetAmount();
-
-    // Healing bonus of spirit, intellect and strength 
-    // Base value
-    AdvertisedBenefit += GetBaseSpellPowerBonus() + bonusSpellPower;
-
-    // Healing bonus from stats
-    AuraEffectList const& mHealingDoneOfStatPercent = GetAuraEffectsByType(SPELL_AURA_MOD_SPELL_HEALING_OF_STAT_PERCENT);
-    for (AuraEffectList::const_iterator i = mHealingDoneOfStatPercent.begin(); i != mHealingDoneOfStatPercent.end(); ++i)
-    {
-        // stat used dependent from misc value (stat index)
-        Stats usedStat = Stats((*i)->GetSpellInfo()->Effects[(*i)->GetEffIndex()].MiscValue);
-        AdvertisedBenefit += int32(CalculatePct(GetStat(usedStat), (*i)->GetAmount()));
-    }
-
-    // ... and attack power
-    AuraEffectList const& mHealingDonebyAP = GetAuraEffectsByType(SPELL_AURA_MOD_SPELL_HEALING_OF_ATTACK_POWER);
-    for (AuraEffectList::const_iterator i = mHealingDonebyAP.begin(); i != mHealingDonebyAP.end(); ++i)
-        if ((*i)->GetMiscValue() & schoolMask)
-            AdvertisedBenefit += int32(CalculatePct(GetTotalAttackPowerValue(BASE_ATTACK), (*i)->GetAmount()));
-
-    return AdvertisedBenefit;
 }
 
 int32 Unit::SpellBaseHealingBonusTaken(SpellSchoolMask schoolMask)
@@ -15281,7 +15319,7 @@ float Unit::GetTotalStatValue(Stats stat, float additionalValue) const
     float value  = m_auraModifiersGroup[unitMod][BASE_VALUE] + GetCreateStat(stat);
     value *= m_auraModifiersGroup[unitMod][BASE_PCT];
     value += m_auraModifiersGroup[unitMod][TOTAL_VALUE] + additionalValue;
-    value += m_derivedModifiers[unitMod];
+    value += GetDerivedModifier(unitMod);
     value *= m_auraModifiersGroup[unitMod][TOTAL_PCT];
     if (value == 0.0f)
         return value;
@@ -21218,6 +21256,8 @@ void Unit::BuildValuesUpdate(uint8 updateType, ByteBuffer* data, Player* target)
             else if (index == UNIT_FIELD_DISPLAYID)
             {
                 uint32 displayId = m_uint32Values[UNIT_FIELD_DISPLAYID];
+                if (target->GetPetGUID() == GetGUID())
+                    displayId = Player::GetPetFakeReal(displayId);
                 if (creature)
                 {
                     CreatureTemplate const* cinfo = creature->GetCreatureTemplate();
@@ -21802,10 +21842,11 @@ float Unit::OCTRegenMPPerSpirit()
     return regen;
 }
 
-void Unit::ApplyRatingMod(CombatRating cr, int32 value, bool apply)
+void Unit::ApplyRatingMod(CombatRating cr, int32 value, bool apply, bool derived)
 {
     float oldRating = m_baseRatingValue[cr];
     m_baseRatingValue[cr] += (apply ? value : -value);
+    m_derivedCombatRatings[cr] += (apply ? value : -value);
     // explicit affected values
     if (cr == CR_HASTE_MELEE || cr == CR_HASTE_RANGED || cr == CR_HASTE_SPELL)
     {
@@ -21834,4 +21875,64 @@ void Unit::ApplyRatingMod(CombatRating cr, int32 value, bool apply)
     }
 
     UpdateRating(cr);
+}
+
+// Binary predicate for sorting SpellModifiers
+class SpellModPred
+{
+public:
+    SpellModPred() {}
+    bool operator() (SpellModifier const* a, SpellModifier const* b) const
+    {
+        if (a->type != b->type)
+            return a->type == SPELLMOD_FLAT;
+        return a->value < b->value;
+    }
+};
+
+void Unit::AddSpellMod(SpellModifier* mod, bool apply)
+{
+    LOG_DEBUG("spells.aura", "Unit::AddSpellMod {}", mod->spellId);
+    uint16 Opcode = (mod->type == SPELLMOD_FLAT) ? SMSG_SET_FLAT_SPELL_MODIFIER : SMSG_SET_PCT_SPELL_MODIFIER;
+
+    if (Player* player = ToPlayer())
+    {
+        int i = 0;
+        flag96 _mask = 0;
+        for (int eff = 0; eff < 96; ++eff)
+        {
+            if (eff != 0 && eff % 32 == 0)
+                _mask[i++] = 0;
+
+            _mask[i] = uint32(1) << (eff - (32 * i));
+            if (mod->mask & _mask)
+            {
+                int32 val = 0;
+                for (SpellModList::iterator itr = m_spellMods[mod->op].begin(); itr != m_spellMods[mod->op].end(); ++itr)
+                {
+                    if ((*itr)->type == mod->type && (*itr)->mask & _mask)
+                        val += (*itr)->value;
+                }
+                val += apply ? mod->value : -(mod->value);
+                WorldPacket data(Opcode, (1 + 1 + 4));
+                data << uint8(eff);
+                data << uint8(mod->op);
+                data << int32(val);
+                player->SendDirectMessage(&data);
+            }
+        }
+    }
+
+    if (apply)
+    {
+        m_spellMods[mod->op].push_back(mod);
+        m_spellMods[mod->op].sort(SpellModPred());
+    }
+    else
+    {
+        m_spellMods[mod->op].remove(mod);
+        // mods bound to aura will be removed in AuraEffect::~AuraEffect
+        if (!mod->ownerAura)
+            delete mod;
+    }
 }

@@ -3635,6 +3635,9 @@ SpellCastResult Spell::prepare(SpellCastTargets const* targets, AuraEffect const
         }
     }
 
+    CallScriptBeforeCastTimeHandlers();
+    if (skip)
+        return SPELL_FAILED_ERROR;
     // set timer base at cast time
     ReSetTimer();
 
@@ -3693,7 +3696,6 @@ SpellCastResult Spell::prepare(SpellCastTargets const* targets, AuraEffect const
             TriggerGlobalCooldown();
     }
 
-    CallScriptBeforeCastTimeHandlers();
     return SPELL_CAST_OK;
 }
 
@@ -3795,6 +3797,8 @@ void Spell::_cast(bool skipCheck)
         cancel();
         return;
     }
+
+    m_caster->DoBeforeSpellCastScripts(this);
 
     // cancel at lost explicit target during cast
     if (m_targets.GetObjectTargetGUID() && !m_targets.GetObjectTarget())
@@ -3898,8 +3902,10 @@ void Spell::_cast(bool skipCheck)
         return;
     }
 
+
     if (modOwner)
         modOwner->SetSpellModTakingSpell(this, true);
+
 
     PrepareTriggersExecutedOnHit();
 
@@ -3935,6 +3941,7 @@ void Spell::_cast(bool skipCheck)
         if (targetItem->GetOwnerGUID() != m_caster->GetGUID())
             TakeReagents();
     }
+    
 
     SendSpellCooldown();
 

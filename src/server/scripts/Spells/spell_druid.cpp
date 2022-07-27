@@ -332,7 +332,7 @@ class spell_dru_treant_scaling : public AuraScript
         // xinef: treant inherits 105% of SP as AP - 15% of damage increase per hit
         if (Unit* owner = GetUnitOwner()->GetOwner())
         {
-            int32 nature = owner->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_NATURE);
+            int32 nature = owner->SpellBasePowerBonusDone(SPELL_SCHOOL_MASK_NATURE);
             amount = CalculatePct(std::max<int32>(0, nature), 105);
 
             // xinef: brambles talent
@@ -346,7 +346,7 @@ class spell_dru_treant_scaling : public AuraScript
         // xinef: treant inherits 15% of SP
         if (Unit* owner = GetUnitOwner()->GetOwner())
         {
-            int32 nature = owner->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_NATURE);
+            int32 nature = owner->SpellBasePowerBonusDone(SPELL_SCHOOL_MASK_NATURE);
             amount = CalculatePct(std::max<int32>(0, nature), 15);
 
             // xinef: Update appropriate player field

@@ -28,6 +28,7 @@
 #include "MotionMaster.h"
 #include "Object.h"
 #include "Optional.h"
+#include "SharedDefines.h"
 #include "SpellAuraDefines.h"
 #include "SpellDefines.h"
 #include "ThreatMgr.h"
@@ -292,6 +293,7 @@ enum UnitMods
     UNIT_MOD_DAMAGE_OFFHAND,
     UNIT_MOD_DAMAGE_RANGED,
     UNIT_MOD_WEIGHT,
+    UNIT_MOD_MANA_REGEN_FLAT,
     UNIT_MOD_END,
     // synonyms
     UNIT_MOD_STAT_START = UNIT_MOD_STAT_STRENGTH,
@@ -771,7 +773,7 @@ private:
     Unit* const m_attacker;
     Unit* const m_victim;
     uint32 m_damage;
-    SpellInfo const* const m_spellInfo;
+    const SpellInfo* m_spellInfo;
     SpellSchoolMask const m_schoolMask;
     DamageEffectType const m_damageType;
     WeaponAttackType m_attackType;
@@ -793,6 +795,8 @@ public:
     void AbsorbDamage(uint32 amount);
     void ResistDamage(uint32 amount);
     void BlockDamage(uint32 amount);
+
+    void SetSpellInfo(const SpellInfo* spellInfo) { m_spellInfo = spellInfo; }
 
     [[nodiscard]] Unit* GetAttacker() const { return m_attacker; };
     [[nodiscard]] Unit* GetVictim() const { return m_victim; };
@@ -842,6 +846,40 @@ public:
     [[nodiscard]] SpellInfo const* GetSpellInfo() const { return m_spellInfo; };
     [[nodiscard]] SpellSchoolMask GetSchoolMask() const { return m_schoolMask; };
 };
+
+
+// Spell modifier (used for modify other spells)
+enum SpellModifierModes : uint8
+{
+    SPELL_MODIFIER_NORMAL,
+    SPELL_MODIFIER_SPELL_SCHOOL,
+    SPELL_MODIFIER_SPELL_TARGET,
+};
+// Note: SPELLMOD_* values is aura types in fact
+enum SpellModType
+{
+    SPELLMOD_FLAT = 107,                            // SPELL_AURA_ADD_FLAT_MODIFIER
+    SPELLMOD_PCT = 108                             // SPELL_AURA_ADD_PCT_MODIFIER
+};
+
+struct SpellModifier
+{
+    SpellModifier(Aura* _ownerAura = nullptr) : op(SPELLMOD_DAMAGE), type(SPELLMOD_FLAT), charges(0), mask(), ownerAura(_ownerAura) {}
+    SpellModOp   op : 8;
+    SpellModType type : 8;
+    int16 charges : 16;
+    int32 value{ 0 };
+    flag96 mask;
+    uint32 spellId{ 0 };
+    uint32 spellTargetId;
+    SpellSchoolMask spellSchools;
+    uint8 mode = SPELL_MODIFIER_NORMAL;
+    Aura* const ownerAura;
+    void SetSpellSchool(SpellSchoolMask school) { spellSchools = school; mode = SPELL_MODIFIER_SPELL_SCHOOL; }
+    void SetSpellTarget(uint32 spell) { spellTargetId = spell; mode = SPELL_MODIFIER_SPELL_TARGET; }
+};
+
+typedef std::list<SpellModifier*> SpellModList;
 
 class ProcEventInfo
 {
@@ -1517,7 +1555,7 @@ public:
     [[nodiscard]] uint32 getClassMask() const { return 1 << (getClass() - 1); }
     [[nodiscard]] uint8 getGender() const { return GetByteValue(UNIT_FIELD_BYTES_0, 2); }
 
-    [[nodiscard]] float GetStat(Stats stat) const { return float(GetUInt32Value(static_cast<uint16>(UNIT_FIELD_STAT0) + stat) - ); }
+    [[nodiscard]] float GetStat(Stats stat) const { return float(GetUInt32Value(static_cast<uint16>(UNIT_FIELD_STAT0) + stat)); }
     void SetStat(Stats stat, int32 val) { SetStatInt32Value(static_cast<uint16>(UNIT_FIELD_STAT0) + stat, val); }
     [[nodiscard]] uint32 GetArmor() const { return GetResistance(SPELL_SCHOOL_NORMAL); }
     void SetArmor(int32 val) { SetResistance(SPELL_SCHOOL_NORMAL, val); }
@@ -2215,15 +2253,15 @@ public:
     bool UpdateAllStats();
     void ApplySpellPenetrationBonus(int32 amount, bool apply);
     void UpdateResistances(uint32 school);
-    void UpdateArmor();
+    void UpdateArmor(bool derived = false);
     void UpdateMaxHealth();
     void UpdateMaxPower(Powers power);
     void ApplyFeralAPBonus(int32 amount, bool apply);
-    void UpdateAttackPowerAndDamage(bool ranged = false);
+    void UpdateAttackPowerAndDamage(bool ranged = false, bool derived = false);
     void UpdateShieldBlockValue();
     void ApplySpellPowerBonus(int32 amount, bool apply);
     void UpdateSpellDamageAndHealingBonus();
-    void ApplyRatingMod(CombatRating cr, int32 value, bool apply);
+    void ApplyRatingMod(CombatRating cr, int32 value, bool apply, bool derived = false);
     void UpdateRating(CombatRating cr);
     void UpdateAllRatings();
 
@@ -2359,12 +2397,11 @@ public:
     Unit* GetMagicHitRedirectTarget(Unit* victim, SpellInfo const* spellInfo);
     Unit* GetMeleeHitRedirectTarget(Unit* victim, SpellInfo const* spellInfo = nullptr);
 
-    int32 SpellBaseDamageBonusDone(SpellSchoolMask schoolMask, int16 bonusSpellPower = 0) const;
+    int32 SpellBasePowerBonusDone(SpellSchoolMask schoolMask, int16 bonusSpellPower = 0, bool noDerived = false) const;
     int32 SpellBaseDamageBonusTaken(SpellSchoolMask schoolMask, bool isDoT = false);
     float SpellPctDamageModsDone(Unit* victim, SpellInfo const* spellProto, DamageEffectType damagetype);
-    uint32 SpellDamageBonusDone(Unit* victim, SpellInfo const* spellProto, uint32 pdamage, DamageEffectType damagetype, uint8 effIndex, float TotalMod = 0.0f, uint32 stack = 1);
-    uint32 SpellDamageBonusTaken(Unit* caster, SpellInfo const* spellProto, uint32 pdamage, DamageEffectType damagetype, uint32 stack = 1);
-    int32 SpellBaseHealingBonusDone(SpellSchoolMask schoolMask, int16 bonusSpellPower = 0);
+    uint32 SpellDamageBonusDone(Unit* victim, SpellInfo const* spellProto, uint32 pdamage, DamageEffectType damagetype, float TotalMod = 0.0f, uint32 stack = 1);
+    uint32 SpellDamageBonusTaken(Unit* caster, SpellInfo const* spellProto, uint32 pdamage, DamageEffectType damagetype, uint32 stack = 1); 
     int32 SpellBaseHealingBonusTaken(SpellSchoolMask schoolMask);
     float SpellPctHealingModsDone(Unit* victim, SpellInfo const* spellProto, DamageEffectType damagetype);
     uint32 SpellHealingBonusDone(Unit* victim, SpellInfo const* spellProto, uint32 healamount, DamageEffectType damagetype, uint8 effIndex, float TotalMod = 0.0f, uint32 stack = 1);
@@ -2750,12 +2787,18 @@ protected:
 
     }
     std::map<UnitMods, std::unordered_map<float, uint16>> m_negativeModifiers;
+
     std::unordered_map<UnitMods, uint16> m_derivedModifiers;
+    std::unordered_map<CombatRating, uint16> m_derivedCombatRatings;
+    std::vector<uint16> m_baseSpellPowerSchool;
+    std::vector<uint16> m_derivedSpellPowerSchool;
 private:
     void AddNegativeModifier(UnitMods mod, float amount) { m_negativeModifiers[mod][amount] += 1; }
     void RemoveNegativeModifier(UnitMods mod, float amount) { m_negativeModifiers[mod][amount] -= 1; }
-    void AddDerivedModifier(UnitMods mod, float amount) { m_derivedModifiers[mod] += amount; }
-    void RemoveDerivedModifier(UnitMods mod, float amount) { m_derivedModifiers[mod] -= amount; }
+
+     
+    uint16 GetDerivedModifier(UnitMods mod) const { auto it = m_derivedModifiers.find(mod);  if (it != m_derivedModifiers.end()) return it->second; return 0; }
+    uint16 GetDerivedCombatRating(CombatRating cr) const { auto it = m_derivedCombatRatings.find(cr);  if (it != m_derivedCombatRatings.end()) return it->second; return 0; } 
 
     bool IsTriggeredAtSpellProcEvent(Unit* victim, Aura* aura, WeaponAttackType attType, bool isVictim, bool active, SpellProcEventEntry const*& spellProcEvent, ProcEventInfo const& eventInfo);
     bool HandleDummyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggeredByAura, SpellInfo const* procSpell, uint32 procFlag, uint32 procEx, uint32 cooldown, Spell const* spellProc = nullptr);
@@ -2779,6 +2822,21 @@ protected:
     void SetRooted(bool apply, bool isStun = false);
 
     uint32 m_rootTimes;
+protected:
+    SpellModList m_spellMods[MAX_SPELLMOD];
+    bool m_canParry;
+public:
+
+    void AddSpellMod(SpellModifier* mod, bool apply);
+
+    [[nodiscard]] bool CanParry() const { return m_canParry; }
+    void SetCanParry(bool value)
+    {
+        if (m_canParry == value)
+            return;
+        m_canParry = value;
+        UpdateParryPercentage();
+    }
 
 private:
     uint32 m_state;                                     // Even derived shouldn't modify
@@ -2819,9 +2877,12 @@ protected:
         uint8 development = 1;
     };
     std::map<uint32, spellData> m_spellData;
+
+    uint32 critTempo = 0;
 public:
     void DoOnAttackHitScripts(Unit* const target, DamageInfo const dmgInfo);
     void DoAfterAttackScripts();
+    void DoBeforeSpellCastScripts(Spell* spell);
     void DoOnSpellCastScripts(Spell* spell);
     void SetLastSpellUsed(const SpellInfo* spell) { _lastSpellUsed = spell; }
     const SpellInfo* GetLastSpellUsed() { return _lastSpellUsed; }
@@ -2829,6 +2890,12 @@ public:
     uint32 GetStrikeAura() { return _strikeAura; }
 
     spellData& GetSpellData(uint32 key) { return m_spellData[key]; }
+
+    uint32 ConsumePercentOffense(float percent) { uint32 ret = GetPower(POWER_RAGE) / 10; ModifyPowerPct(POWER_RAGE, -1.f * percent); return ret; }
+
+    uint32 GetCritTempo() { return critTempo; }
+    void ModCritTempo(uint16 tempo) { critTempo += tempo; }
+    
 };
 
 namespace Acore

@@ -102,6 +102,7 @@ enum class MapDummy : uint8
     Strike,
     WasInAir,
     Que,
+    ComboLength,
 };
 
 struct SpellDestination
@@ -817,6 +818,7 @@ public:
     float bonusRange = 0;
 public:
     Unit* GetCastTarget() { return unitTarget; }
+	void SetCastTarget(Unit* unit) { unitTarget = unit; }
     SpellDestination* GetDestTargets(int index)
     {
         if (index == 0 || index == 1 || index == 2)

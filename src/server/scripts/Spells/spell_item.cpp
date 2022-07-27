@@ -3642,7 +3642,7 @@ class spell_item_wraith_scythe_drain_life : public SpellScript
         Unit* caster = GetCaster();
         if (target && caster)
         {
-            uint32 sp = caster->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_ALL);
+            uint32 sp = caster->SpellBasePowerBonusDone(SPELL_SCHOOL_MASK_ALL);
             SetHitDamage(GetHitDamage() + sp);
         }
     }

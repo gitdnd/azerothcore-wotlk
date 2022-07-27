@@ -2807,7 +2807,22 @@ bool Aura::CallScriptAuraAddRemove(Aura* aura, bool added)
     if (IsRemoved())
         return false;
     return true;
-} 
+}
+bool Aura::CallScriptBeforeSpellCast(Spell* spell)
+{
+	for (std::list<AuraScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
+	{
+		(*scritr)->_PrepareScriptCall(AURA_SCRIPT_BEFORE_SPELL_CAST);
+		std::list<AuraScript::BeforeSpellCastHandler>::iterator hookItrEnd = (*scritr)->BeforeSpellCast.end(), hookItr = (*scritr)->BeforeSpellCast.begin();
+		for (; hookItr != hookItrEnd; ++hookItr)
+			hookItr->Call(*scritr, spell);
+
+		(*scritr)->_FinishScriptCall();
+	}
+	if (IsRemoved())
+		return false;
+	return true;
+}
 bool Aura::CallScriptOnSpellCast(Spell* spell)
 {
     for (std::list<AuraScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)

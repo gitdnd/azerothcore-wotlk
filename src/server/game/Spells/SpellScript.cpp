@@ -987,6 +987,16 @@ void AuraScript::AuraAddRemoveHandler::Call(AuraScript* auraScript, Aura* aura, 
     (auraScript->*_AuraAddRemoveHandlerScript)(aura, added);
 }
 
+AuraScript::BeforeSpellCastHandler::BeforeSpellCastHandler(BeforeSpellCastFnType BeforeSpellCastScript)
+{
+	_BeforeSpellCastHandlerScript = BeforeSpellCastScript;
+}
+
+void AuraScript::BeforeSpellCastHandler::Call(AuraScript* auraScript, Spell* spell)
+{
+	(auraScript->*_BeforeSpellCastHandlerScript)(spell);
+}
+
 AuraScript::OnSpellCastHandler::OnSpellCastHandler(OnSpellCastFnType OnSpellCastScript)
 {
     _OnSpellCastHandlerScript = OnSpellCastScript;

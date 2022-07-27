@@ -12715,16 +12715,7 @@ void Player::SetOriginalGroup(Group* group, int8 subgroup)
         m_originalGroup.setSubGroup((uint8)subgroup);
     }
 }
-
-void Player::SetCanParry(bool value)
-{
-    if (m_canParry == value)
-        return;
-
-    m_canParry = value;
-    UpdateParryPercentage();
-}
-
+ 
 void Player::SetCanBlock(bool value)
 {
     if (m_canBlock == value)

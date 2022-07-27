@@ -222,7 +222,7 @@ REPLACE INTO `npc_text` (`ID`, `text0_0`, `Probability0`) VALUES
 
 If you are to survive this upheaval... and carry on thine birthright of this russet land, then you MUST learn how to thrive in the depths of this buzzardly world. All Sin'dorei must. Master your insatiable hungering for magic before it throws you into a slough of despair. ", 1),
 	(200215, "Worry not $n, your weak blade shall be saved from shattering by the bond of thine friends and allies. You have made friends while here, haven't you? If not, now is the time to start.", 1),
-	(200215, "Very well, I'm going to need you to return my Scrying Orb, my collection of Scourge Magic Scrolls, and my notes, libriform.", 1),
+	(200215, "We suspect Felendren is responsible for Sunstrider Isle's plight. He has left me and my friends wondering over the sorcerry he is commanding, questioning his motives for what could have been the cause.", 1),
 	(200215, "Very well, I'm going to need you to return my Scrying Orb, my collection of Scourge Magic Scrolls, and my notes, libriform.", 1),
 	(200215, "Very well, I'm going to need you to return my Scrying Orb, my collection of Scourge Magic Scrolls, and my notes, libriform.", 1),
 	(200215, "Very well, I'm going to need you to return my Scrying Orb, my collection of Scourge Magic Scrolls, and my notes, libriform.", 1);

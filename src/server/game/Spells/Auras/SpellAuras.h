@@ -239,6 +239,7 @@ public:
 	bool CallScriptOnAttackHit(Unit* const target, DamageInfo const dmgInfo);
     bool CallScriptAfterAttack();
     bool CallScriptAuraAddRemove(Aura* aura, bool added);
+    bool CallScriptBeforeSpellCast(Spell* spell);
 	bool CallScriptOnSpellCast(Spell* spell);
     
     AuraScript* GetScriptByName(std::string const& scriptName) const;

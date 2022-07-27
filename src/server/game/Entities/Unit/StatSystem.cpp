@@ -161,7 +161,7 @@ bool Unit::UpdateStats(Stats stat)
     {
         for (uint32 rating = 0; rating < MAX_COMBAT_RATING; ++rating)
             if (mask & (1 << rating))
-                ApplyRatingMod(CombatRating(rating), 0, true);
+                ApplyRatingMod(CombatRating(rating), 0, true, true);
     }
     return true;
 }
@@ -170,21 +170,75 @@ void Unit::ApplySpellPowerBonus(int32 amount, bool apply)
 {
     apply = _ModifyUInt32(apply, m_baseSpellPower, amount);
 
-    // For speed just update for client
-    ApplyModUInt32Value(PLAYER_FIELD_MOD_HEALING_DONE_POS, amount, apply);
     for (int i = SPELL_SCHOOL_HOLY; i < MAX_SPELL_SCHOOL; ++i)
         ApplyModInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_POS + i, amount, apply);
 }
 
+void AddSpellPowerBonus(std::vector<uint16>& vec, SpellSchoolMask schoolMask, uint32 amount)
+{
+    if (schoolMask & SPELL_SCHOOL_MASK_NORMAL)
+    {
+        vec[SPELL_SCHOOL_NORMAL] += amount;
+    }
+    if (schoolMask & SPELL_SCHOOL_MASK_HOLY)
+    {
+        vec[SPELL_SCHOOL_HOLY] += amount;
+    }
+    if (schoolMask & SPELL_SCHOOL_MASK_FIRE)
+    {
+        vec[SPELL_SCHOOL_FIRE] += amount;
+    }
+    if (schoolMask & SPELL_SCHOOL_MASK_NATURE)
+    {
+        vec[SPELL_SCHOOL_NATURE] += amount;
+    }
+    if (schoolMask & SPELL_SCHOOL_MASK_FROST)
+    {
+        vec[SPELL_SCHOOL_FROST] += amount;
+    }
+    if (schoolMask & SPELL_SCHOOL_MASK_SHADOW)
+    {
+        vec[SPELL_SCHOOL_SHADOW] += amount;
+    }
+    if (schoolMask & SPELL_SCHOOL_MASK_ARCANE)
+    {
+        vec[SPELL_SCHOOL_ARCANE] += amount;
+    }
+}
 void Unit::UpdateSpellDamageAndHealingBonus()
 {
-    // Magic damage modifiers implemented in Unit::SpellDamageBonusDone
-    // This information for client side use only
-    // Get healing bonus for all schools
-    SetStatInt32Value(PLAYER_FIELD_MOD_HEALING_DONE_POS, SpellBaseHealingBonusDone(SPELL_SCHOOL_MASK_ALL));
-    // Get damage bonus for all schools
+    for (int i = 0; i < MAX_SPELL_SCHOOL; i++)
+    {
+        m_baseSpellPowerSchool[i] = 0;
+        m_derivedSpellPowerSchool[i] = 0;
+    }
+    AuraEffectList const& mDamageDone = GetAuraEffectsByType(SPELL_AURA_MOD_DAMAGE_DONE);
+    for (AuraEffectList::const_iterator i = mDamageDone.begin(); i != mDamageDone.end(); ++i)
+        if ((*i)->GetSpellInfo()->EquippedItemClass == -1 &&
+            // -1 == any item class (not wand then)
+            (*i)->GetSpellInfo()->EquippedItemInventoryTypeMask == 0)
+            // 0 == any inventory type (not wand then)
+            AddSpellPowerBonus(m_baseSpellPowerSchool, (SpellSchoolMask)(*i)->GetMiscValue(), (*i)->GetAmount());
+     
+
+    // Damage bonus from stats
+    AuraEffectList const& mDamageDoneOfStatPercent = GetAuraEffectsByType(SPELL_AURA_MOD_SPELL_DAMAGE_OF_STAT_PERCENT);
+    for (AuraEffectList::const_iterator i = mDamageDoneOfStatPercent.begin(); i != mDamageDoneOfStatPercent.end(); ++i)
+    { 
+        // stat used stored in miscValueB for this aura
+        Stats usedStat = Stats((*i)->GetMiscValueB());
+        AddSpellPowerBonus(m_derivedSpellPowerSchool, (SpellSchoolMask)(*i)->GetMiscValue(), int32(CalculatePct(GetStat(usedStat), (*i)->GetAmount())));
+        // if this is derived, derived doesn't help any stat buffs, both +ATK auras and +SPELL POWER TO ATK auras
+    }
+    // ... and attack power
+    AuraEffectList const& mDamageDonebyAP = GetAuraEffectsByType(SPELL_AURA_MOD_SPELL_DAMAGE_OF_ATTACK_POWER);
+    for (AuraEffectList::const_iterator i = mDamageDonebyAP.begin(); i != mDamageDonebyAP.end(); ++i)
+        AddSpellPowerBonus(m_derivedSpellPowerSchool, (SpellSchoolMask)(*i)->GetMiscValue(), int32(CalculatePct(GetTotalAttackPowerValue(BASE_ATTACK), (*i)->GetAmount())));
+
+
+
     for (int i = SPELL_SCHOOL_HOLY; i < MAX_SPELL_SCHOOL; ++i)
-        SetStatInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_POS + i, SpellBaseDamageBonusDone(SpellSchoolMask(1 << i)));
+        SetStatInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_POS + i, SpellBasePowerBonusDone(SpellSchoolMask(1 << i)));
 }
 
 bool Unit::UpdateAllStats()
@@ -251,24 +305,31 @@ void Unit::UpdateResistances(uint32 school)
         UpdateArmor();
 }
 
-void Unit::UpdateArmor()
+void Unit::UpdateArmor(bool derived)
 {
     UnitMods unitMod = UNIT_MOD_ARMOR;
-
-    float value = GetModifierValue(unitMod, BASE_VALUE);   // base armor (from items)
-    value *= GetModifierValue(unitMod, BASE_PCT);           // armor percent from items 
-    value += GetModifierValue(unitMod, TOTAL_VALUE);
-    m_derivedModifiers[unitMod] = 0;
-
-    //add dynamic flat mods
-    AuraEffectList const& mResbyIntellect = GetAuraEffectsByType(SPELL_AURA_MOD_RESISTANCE_OF_STAT_PERCENT);
-    for (AuraEffectList::const_iterator i = mResbyIntellect.begin(); i != mResbyIntellect.end(); ++i)
+    float value;
+    if (derived)
     {
-        if ((*i)->GetMiscValue() & SPELL_SCHOOL_MASK_NORMAL)
-            m_derivedModifiers[unitMod] += CalculatePct(GetStat(Stats((*i)->GetMiscValueB())), (*i)->GetAmount());
+        value = GetArmor() - m_derivedModifiers[unitMod];
+        m_derivedModifiers[unitMod] = 0;
+        //add dynamic flat mods
+        AuraEffectList const& mResbyIntellect = GetAuraEffectsByType(SPELL_AURA_MOD_RESISTANCE_OF_STAT_PERCENT);
+        for (AuraEffectList::const_iterator i = mResbyIntellect.begin(); i != mResbyIntellect.end(); ++i)
+        {
+            if ((*i)->GetMiscValue() & SPELL_SCHOOL_MASK_NORMAL)
+                m_derivedModifiers[unitMod] += CalculatePct(GetStat(Stats((*i)->GetMiscValueB())), (*i)->GetAmount());
+        }
     }
+    else
+    {
+        value = GetModifierValue(unitMod, BASE_VALUE);   // base armor (from items)
+        value *= GetModifierValue(unitMod, BASE_PCT);           // armor percent from items 
+        value += GetModifierValue(unitMod, TOTAL_VALUE);
 
-    value *= GetModifierValue(unitMod, TOTAL_PCT);
+
+        value *= GetModifierValue(unitMod, TOTAL_PCT);
+    }
 
     SetArmor(int32(value + m_derivedModifiers[unitMod]));
 
@@ -320,7 +381,7 @@ void Unit::ApplyFeralAPBonus(int32 amount, bool apply)
     UpdateAttackPowerAndDamage();
 }
 
-void Unit::UpdateAttackPowerAndDamage(bool ranged)
+void Unit::UpdateAttackPowerAndDamage(bool ranged, bool derived)
 {
     float val2 = 0.0f;
     float level = float(GetLevel());
@@ -350,24 +411,31 @@ void Unit::UpdateAttackPowerAndDamage(bool ranged)
 
     float base_attPower  = GetModifierValue(unitMod, BASE_VALUE) * GetModifierValue(unitMod, BASE_PCT);
     float attPowerMod = GetModifierValue(unitMod, TOTAL_VALUE);
-    float attPowerDerived = 0;
+    m_derivedModifiers[unitMod] = 0;
+
     //add dynamic flat mods
     if (ranged)
     {
         AuraEffectList const& mRAPbyStat = GetAuraEffectsByType(SPELL_AURA_MOD_RANGED_ATTACK_POWER_OF_STAT_PERCENT);
-        for (AuraEffectList::const_iterator i = mRAPbyStat.begin(); i != mRAPbyStat.end(); ++i) 
-            attPowerDerived += CalculatePct(GetStat(Stats((*i)->GetMiscValue())), (*i)->GetAmount());
+        for (AuraEffectList::const_iterator i = mRAPbyStat.begin(); i != mRAPbyStat.end(); ++i)
+        {
+            auto stat = Stats((*i)->GetMiscValue());
+            m_derivedModifiers[unitMod] += CalculatePct(GetStat(stat) - m_derivedModifiers[UnitMods(UNIT_MOD_STAT_START + stat)], (*i)->GetAmount());
+        }
     }
     else
     {
         AuraEffectList const& mAPbyStat = GetAuraEffectsByType(SPELL_AURA_MOD_ATTACK_POWER_OF_STAT_PERCENT);
         for (AuraEffectList::const_iterator i = mAPbyStat.begin(); i != mAPbyStat.end(); ++i)
-            attPowerDerived += CalculatePct(GetStat(Stats((*i)->GetMiscValue())), (*i)->GetAmount());
+        {
+            auto stat = Stats((*i)->GetMiscValue());
+            m_derivedModifiers[unitMod] += CalculatePct(GetStat(stat) - m_derivedModifiers[UnitMods(UNIT_MOD_STAT_START + stat)], (*i)->GetAmount());
+        }
 
         AuraEffectList const& mAPbyArmor = GetAuraEffectsByType(SPELL_AURA_MOD_ATTACK_POWER_OF_ARMOR);
         for (AuraEffectList::const_iterator iter = mAPbyArmor.begin(); iter != mAPbyArmor.end(); ++iter)
             // always: ((*i)->GetModifier()->m_miscvalue == 1 == SPELL_SCHOOL_MASK_NORMAL)
-            attPowerDerived += int32(GetArmor() * (*iter)->GetAmount()) / (int32)100;
+            m_derivedModifiers[unitMod] += int32((GetArmor() - m_derivedModifiers[UNIT_MOD_ARMOR]) * (*iter)->GetAmount()) / (int32)100;
     }
 
     float attPowerMultiplier = GetModifierValue(unitMod, TOTAL_PCT) - 1.0f;
@@ -749,19 +817,22 @@ void Unit::UpdateManaRegen()
     float power_regen_mp5 = (GetTotalAuraModifierByMiscValue(SPELL_AURA_MOD_POWER_REGEN, POWER_MANA) + m_baseManaRegen) / 5.0f;
 
     // Get bonus from SPELL_AURA_MOD_MANA_REGEN_FROM_STAT aura
+
+    m_derivedModifiers[UNIT_MOD_MANA_REGEN_FLAT] = 0;
+
     AuraEffectList const& regenAura = GetAuraEffectsByType(SPELL_AURA_MOD_MANA_REGEN_FROM_STAT);
     for (AuraEffectList::const_iterator i = regenAura.begin(); i != regenAura.end(); ++i)
     {
-        power_regen_mp5 += GetStat(Stats((*i)->GetMiscValue())) * (*i)->GetAmount() / 500.0f;
+        m_derivedModifiers[UNIT_MOD_MANA_REGEN_FLAT] += GetStat(Stats((*i)->GetMiscValue())) * (*i)->GetAmount() / 500.0f;
     }
 
     // Set regen rate in cast state apply only on spirit based regen
     int32 modManaRegenInterrupt = GetTotalAuraModifier(SPELL_AURA_MOD_MANA_REGEN_INTERRUPT);
     if (modManaRegenInterrupt > 100)
         modManaRegenInterrupt = 100;
-    SetStatFloatValue(UNIT_FIELD_POWER_REGEN_INTERRUPTED_FLAT_MODIFIER, power_regen_mp5 + CalculatePct(power_regen, modManaRegenInterrupt));
+    SetStatFloatValue(UNIT_FIELD_POWER_REGEN_INTERRUPTED_FLAT_MODIFIER, m_derivedModifiers[UNIT_MOD_MANA_REGEN_FLAT] + power_regen_mp5 + CalculatePct(power_regen, modManaRegenInterrupt));
 
-    SetStatFloatValue(UNIT_FIELD_POWER_REGEN_FLAT_MODIFIER, power_regen_mp5 + power_regen);
+    SetStatFloatValue(UNIT_FIELD_POWER_REGEN_FLAT_MODIFIER, m_derivedModifiers[UNIT_MOD_MANA_REGEN_FLAT] + power_regen_mp5 + power_regen);
 }
 
 void Unit::UpdateWeight()

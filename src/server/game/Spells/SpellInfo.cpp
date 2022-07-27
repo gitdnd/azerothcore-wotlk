@@ -513,7 +513,7 @@ int32 SpellEffectInfo::CalcValue(Unit const* caster, int32 const* bp, Unit const
         case SPELL_EFFECT_HEALTH_LEECH:
         case SPELL_EFFECT_HEAL:
         case SPELL_EFFECT_POWER_BURN:
-            value *= (1.f + (float)caster->SpellBaseDamageBonusDone(_spellInfo->GetSchoolMask(), bonusSpellPower) / 100.f);
+            value *= (1.f + (float)caster->SpellBasePowerBonusDone(_spellInfo->GetSchoolMask(), bonusSpellPower) / 100.f);
             break;
         }
         switch (ApplyAuraName)
@@ -524,12 +524,9 @@ int32 SpellEffectInfo::CalcValue(Unit const* caster, int32 const* bp, Unit const
         case SPELL_AURA_PROC_TRIGGER_DAMAGE:
         case SPELL_AURA_PERIODIC_LEECH:
         case SPELL_AURA_SCHOOL_ABSORB:
-            value *= (1.f + (float)caster->SpellBaseDamageBonusDone(_spellInfo->GetSchoolMask(), bonusSpellPower) / 100.f);
+            value *= (1.f + (float)caster->SpellBasePowerBonusDone(_spellInfo->GetSchoolMask(), bonusSpellPower) / 100.f);
             break;
         case SPELL_AURA_MOD_ATTACKSPEED:
-        case SPELL_AURA_MOD_DAMAGE_DONE:
-        case SPELL_AURA_MOD_DAMAGE_TAKEN:
-        case SPELL_AURA_MOD_RESISTANCE:
         case SPELL_AURA_PERIODIC_ENERGIZE:
         case SPELL_AURA_MOD_STAT:
         case SPELL_AURA_MOD_INCREASE_HEALTH:
@@ -550,7 +547,6 @@ int32 SpellEffectInfo::CalcValue(Unit const* caster, int32 const* bp, Unit const
         case SPELL_AURA_MOD_BASE_RESISTANCE:
         case SPELL_AURA_MOD_REGEN:
         case SPELL_AURA_MOD_POWER_REGEN:
-        case SPELL_AURA_MOD_ATTACK_POWER:
         //case SPELL_AURA_MOD_RESISTANCE_PCT:
         case SPELL_AURA_MOD_MELEE_ATTACK_POWER_VERSUS:
         case SPELL_AURA_MOD_TOTAL_THREAT:
@@ -572,7 +568,7 @@ int32 SpellEffectInfo::CalcValue(Unit const* caster, int32 const* bp, Unit const
         case SPELL_AURA_MOD_RANGED_ATTACK_POWER_VERSUS:
         case SPELL_AURA_MOD_INCREASE_ENERGY_PERCENT:
         case SPELL_AURA_MOD_INCREASE_HEALTH_PERCENT:
-        case SPELL_AURA_MOD_HEALING_DONE:
+        // case SPELL_AURA_MOD_HEALING_DONE:
         case SPELL_AURA_MOD_HEALING_DONE_PERCENT:
         case SPELL_AURA_MOD_TOTAL_STAT_PERCENTAGE:
         case SPELL_AURA_MOD_MELEE_HASTE:
@@ -588,12 +584,10 @@ int32 SpellEffectInfo::CalcValue(Unit const* caster, int32 const* bp, Unit const
         //case SPELL_AURA_MOD_RANGED_ATTACK_POWER_PCT:
         case SPELL_AURA_MOD_DAMAGE_DONE_VERSUS:
         case SPELL_AURA_MOD_CRIT_PERCENT_VERSUS:
-        case SPELL_AURA_MOD_SPELL_DAMAGE_OF_STAT_PERCENT:
-        case SPELL_AURA_MOD_SPELL_HEALING_OF_STAT_PERCENT:
+        //case SPELL_AURA_MOD_SPELL_HEALING_OF_STAT_PERCENT:
         case SPELL_AURA_MOD_DEBUFF_RESISTANCE:
         case SPELL_AURA_MOD_ATTACKER_SPELL_CRIT_CHANCE:
         case SPELL_AURA_MOD_FLAT_SPELL_DAMAGE_VERSUS:
-        case SPELL_AURA_MOD_RESISTANCE_OF_STAT_PERCENT:
         case SPELL_AURA_MOD_CRITICAL_THREAT:
         case SPELL_AURA_MOD_ATTACKER_MELEE_HIT_CHANCE:
         case SPELL_AURA_MOD_ATTACKER_RANGED_HIT_CHANCE:
@@ -610,37 +604,48 @@ int32 SpellEffectInfo::CalcValue(Unit const* caster, int32 const* bp, Unit const
         case SPELL_AURA_MOD_ATTACKER_MELEE_CRIT_DAMAGE:
         case SPELL_AURA_MOD_ATTACKER_RANGED_CRIT_DAMAGE:
         case SPELL_AURA_MOD_SCHOOL_CRIT_DMG_TAKEN:
-        case SPELL_AURA_MOD_RANGED_ATTACK_POWER_OF_STAT_PERCENT:
         case SPELL_AURA_MOD_RAGE_FROM_DAMAGE_DEALT:
         case SPELL_AURA_HASTE_SPELLS:
         case SPELL_AURA_MOD_MELEE_HASTE_2:
         case SPELL_AURA_HASTE_RANGED:
-        case SPELL_AURA_MOD_MANA_REGEN_FROM_STAT:
-        case SPELL_AURA_MOD_RATING_FROM_STAT:
         case SPELL_AURA_MOD_AOE_DAMAGE_AVOIDANCE:
         case SPELL_AURA_PROC_TRIGGER_SPELL_WITH_VALUE:
         case SPELL_AURA_MOD_DISPEL_RESIST:
-        case SPELL_AURA_MOD_SPELL_DAMAGE_OF_ATTACK_POWER:
-        case SPELL_AURA_MOD_SPELL_HEALING_OF_ATTACK_POWER:
+        // case SPELL_AURA_MOD_SPELL_HEALING_OF_ATTACK_POWER:
         case SPELL_AURA_MOD_EXPERTISE:
-        case SPELL_AURA_MOD_SPELL_DAMAGE_FROM_HEALING:
+        //case SPELL_AURA_MOD_SPELL_DAMAGE_FROM_HEALING:
         case SPELL_AURA_MOD_INCREASE_HEALTH_2:
         case SPELL_AURA_MOD_ENEMY_DODGE:
         case SPELL_AURA_MOD_BLOCK_CRIT_CHANCE:
         case SPELL_AURA_MOD_MECHANIC_DAMAGE_TAKEN_PERCENT:
-        case SPELL_AURA_MOD_ATTACK_POWER_OF_STAT_PERCENT:
-        case SPELL_AURA_MOD_DAMAGE_FROM_CASTER:
         //case SPELL_AURA_MOD_ARMOR_PENETRATION_PCT:
         //case SPELL_AURA_MOD_BASE_HEALTH_PCT:
         case SPELL_AURA_MOD_HEALING_RECEIVED:
-        case SPELL_AURA_MOD_ATTACK_POWER_OF_ARMOR:
         //case SPELL_AURA_MOD_CRIT_PCT:
         //case SPELL_AURA_SHARE_DAMAGE_PCT:
         case SPELL_AURA_SCHOOL_HEAL_ABSORB:
         case SPELL_AURA_MOD_CRIT_CHANCE_FOR_CASTER:
         case SPELL_AURA_MOD_CREATURE_AOE_DAMAGE_AVOIDANCE:
-        case SPELL_AURA_PERIODIC_HASTE: 
-            value *= 1.0f + float(bonusSpellPower) / 100.0f + float(caster->GetBaseSpellPowerBonus()) / 100.0f;
+        case SPELL_AURA_PERIODIC_HASTE:
+            value *= (1.f + (float)caster->SpellBasePowerBonusDone(_spellInfo->GetSchoolMask(), bonusSpellPower) / 100.f); 
+            break;
+        case SPELL_AURA_MOD_ATTACK_POWER:
+            value *= (1.f + (float)caster->SpellBasePowerBonusDone(_spellInfo->GetSchoolMask(), bonusSpellPower, true) / 100.f);
+            break;
+        case SPELL_AURA_MOD_RESISTANCE:
+        case SPELL_AURA_MOD_MANA_REGEN_FROM_STAT:
+        case SPELL_AURA_MOD_RATING_FROM_STAT:
+        case SPELL_AURA_MOD_SPELL_DAMAGE_OF_STAT_PERCENT:
+        case SPELL_AURA_MOD_RESISTANCE_OF_STAT_PERCENT:
+        case SPELL_AURA_MOD_RANGED_ATTACK_POWER_OF_STAT_PERCENT:
+        case SPELL_AURA_MOD_SPELL_DAMAGE_OF_ATTACK_POWER:
+        case SPELL_AURA_MOD_ATTACK_POWER_OF_STAT_PERCENT:
+        case SPELL_AURA_MOD_DAMAGE_FROM_CASTER:
+        case SPELL_AURA_MOD_ATTACK_POWER_OF_ARMOR:
+            value *= (1.f + (float)caster->SpellBasePowerBonusDone(_spellInfo->GetSchoolMask(), 0, true) / 100.f);
+            break;
+        case SPELL_AURA_MOD_DAMAGE_TAKEN:
+        case SPELL_AURA_MOD_DAMAGE_DONE:
             break;
         }
     }

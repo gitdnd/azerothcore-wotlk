@@ -4075,11 +4075,11 @@ class spell_gen_gift_of_naaru : public AuraScript
             case SPELLFAMILY_MAGE:
             case SPELLFAMILY_WARLOCK:
             case SPELLFAMILY_PRIEST:
-                heal = 1.885f * float(GetCaster()->SpellBaseDamageBonusDone(GetSpellInfo()->GetSchoolMask()));
+                heal = 1.885f * float(GetCaster()->SpellBasePowerBonusDone(GetSpellInfo()->GetSchoolMask()));
                 break;
             case SPELLFAMILY_PALADIN:
             case SPELLFAMILY_SHAMAN:
-                heal = std::max(1.885f * float(GetCaster()->SpellBaseDamageBonusDone(GetSpellInfo()->GetSchoolMask())), 1.1f * float(GetCaster()->GetTotalAttackPowerValue(BASE_ATTACK)));
+                heal = std::max(1.885f * float(GetCaster()->SpellBasePowerBonusDone(GetSpellInfo()->GetSchoolMask())), 1.1f * float(GetCaster()->GetTotalAttackPowerValue(BASE_ATTACK)));
                 break;
             case SPELLFAMILY_WARRIOR:
             case SPELLFAMILY_HUNTER:

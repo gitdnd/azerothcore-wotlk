@@ -103,7 +103,7 @@ class spell_pri_shadowfiend_scaling : public AuraScript
         // xinef: shadowfiend inherits 333% of SP as AP - 35.7% of damage increase per hit
         if (Unit* owner = GetUnitOwner()->GetOwner())
         {
-            int32 shadow = owner->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_SHADOW);
+            int32 shadow = owner->SpellBasePowerBonusDone(SPELL_SCHOOL_MASK_SHADOW);
             amount = CalculatePct(std::max<int32>(0, shadow), 300); // xinef: deacrased to 300, including 15% from self buff
         }
     }
@@ -113,7 +113,7 @@ class spell_pri_shadowfiend_scaling : public AuraScript
         // xinef: shadowfiend inherits 30% of SP
         if (Unit* owner = GetUnitOwner()->GetOwner())
         {
-            int32 shadow = owner->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_SHADOW);
+            int32 shadow = owner->SpellBasePowerBonusDone(SPELL_SCHOOL_MASK_SHADOW);
             amount = CalculatePct(std::max<int32>(0, shadow), 30);
 
             // xinef: Update appropriate player field
@@ -626,7 +626,7 @@ static int32 CalculateSpellAmount(Unit* caster, int32 amount, SpellInfo const* s
     if (AuraEffect const* borrowedTime = caster->GetDummyAuraEffect(SPELLFAMILY_PRIEST, PRIEST_ICON_ID_BORROWED_TIME, EFFECT_1))
         bonus += CalculatePct(1.0f, borrowedTime->GetAmount());
 
-    bonus *= caster->SpellBaseHealingBonusDone(spellInfo->GetSchoolMask());
+    bonus *= caster->SpellBasePowerBonusDone(spellInfo->GetSchoolMask());
 
     // Improved PW: Shield: its weird having a SPELLMOD_ALL_EFFECTS here but its blizzards doing :)
     // Improved PW: Shield is only applied at the spell healing bonus because it was already applied to the base value in CalculateSpellDamage

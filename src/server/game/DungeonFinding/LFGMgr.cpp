@@ -1050,8 +1050,8 @@ namespace lfg
                     talents[1] = 0;
                     talents[2] = 0;
                     p->GetTalentTreePoints(talents);
-                    spellDamage = p->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_ALL);
-                    spellHeal = p->SpellBaseHealingBonusDone(SPELL_SCHOOL_MASK_ALL);
+                    spellDamage = p->SpellBasePowerBonusDone(SPELL_SCHOOL_MASK_ALL);
+                    spellHeal = p->SpellBasePowerBonusDone(SPELL_SCHOOL_MASK_ALL);
                     mp5 = p->GetFloatValue(UNIT_FIELD_POWER_REGEN_FLAT_MODIFIER);
                     mp5combat = p->GetFloatValue(UNIT_FIELD_POWER_REGEN_INTERRUPTED_FLAT_MODIFIER);
                     baseAP = p->GetTotalAttackPowerValue(BASE_ATTACK);

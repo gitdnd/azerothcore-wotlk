@@ -4206,7 +4206,7 @@ void AuraEffect::HandleAuraModResistenceOfStatPercent(AuraApplication const* aur
     }
 
     // Recalculate Armor
-    target->UpdateArmor();
+    target->UpdateArmor(true);
 }
 
 void AuraEffect::HandleAuraModExpertise(AuraApplication const* aurApp, uint8 mode, bool /*apply*/) const
@@ -4687,7 +4687,7 @@ void AuraEffect::HandleAuraModRangedAttackPowerOfStatPercent(AuraApplication con
     if (!(mode & (AURA_EFFECT_HANDLE_CHANGE_AMOUNT_MASK | AURA_EFFECT_HANDLE_STAT)))
         return;
 
-    aurApp->GetTarget()->UpdateAttackPowerAndDamage(true);
+    aurApp->GetTarget()->UpdateAttackPowerAndDamage(true, true);
 }
 
 void AuraEffect::HandleAuraModAttackPowerOfStatPercent(AuraApplication const* aurApp, uint8 mode, bool apply) const
@@ -4700,7 +4700,7 @@ void AuraEffect::HandleAuraModAttackPowerOfArmor(AuraApplication const* aurApp, 
     if (!(mode & (AURA_EFFECT_HANDLE_CHANGE_AMOUNT_MASK | AURA_EFFECT_HANDLE_STAT)))
         return;
 
-    aurApp->GetTarget()->UpdateAttackPowerAndDamage(false);
+    aurApp->GetTarget()->UpdateAttackPowerAndDamage(false, true);
 }
 /********************************/
 /***        DAMAGE BONUS      ***/

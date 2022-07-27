@@ -202,7 +202,7 @@ class spell_pal_sacred_shield_base : public AuraScript
             amount = spellInfo->Effects[EFFECT_0].CalcValue();
 
             // +75.00% from sp bonus
-            amount += CalculatePct(caster->SpellBaseDamageBonusDone(spellInfo->GetSchoolMask()), 75.0f);
+            amount += CalculatePct(caster->SpellBasePowerBonusDone(spellInfo->GetSchoolMask()), 75.0f);
 
             // Xinef: removed divine guardian because it will affect triggered spell with increased amount
             // Arena - Dampening
@@ -1051,7 +1051,7 @@ class spell_pal_seal_of_righteousness : public AuraScript
         PreventDefaultAction();
 
         float ap = GetTarget()->GetTotalAttackPowerValue(BASE_ATTACK);
-        int32 holy = GetTarget()->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_HOLY);
+        int32 holy = GetTarget()->SpellBasePowerBonusDone(SPELL_SCHOOL_MASK_HOLY);
         holy += eventInfo.GetProcTarget()->SpellBaseDamageBonusTaken(SPELL_SCHOOL_MASK_HOLY);
 
         // Xinef: Libram of Divine Purpose

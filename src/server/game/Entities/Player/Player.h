@@ -89,13 +89,6 @@ typedef void(*bgZoneRef)(Battleground*, WorldPacket&);
 #define SKILL_PERM_BONUS(x)    int16(PAIR32_HIPART(x))
 #define MAKE_SKILL_BONUS(t, p) MAKE_PAIR32(t, p)
 
-// Note: SPELLMOD_* values is aura types in fact
-enum SpellModType
-{
-    SPELLMOD_FLAT         = 107,                            // SPELL_AURA_ADD_FLAT_MODIFIER
-    SPELLMOD_PCT          = 108                             // SPELL_AURA_ADD_PCT_MODIFIER
-};
-
 // 2^n values, Player::m_isunderwater is a bitmask. These are Trinity internal values, they are never send to any client
 enum PlayerUnderwaterState
 {
@@ -179,33 +172,8 @@ enum TalentTree // talent tabs
 
 #define SPEC_MASK_ALL 255
 
-// Spell modifier (used for modify other spells)
-enum SpellModifierModes : uint8
-{
-    SPELL_MODIFIER_NORMAL,
-    SPELL_MODIFIER_SPELL_SCHOOL,
-    SPELL_MODIFIER_SPELL_TARGET,
-};
-struct SpellModifier
-{
-    SpellModifier(Aura* _ownerAura = nullptr) : op(SPELLMOD_DAMAGE), type(SPELLMOD_FLAT), charges(0),  mask(), ownerAura(_ownerAura) {}
-    SpellModOp   op   : 8;
-    SpellModType type : 8;
-    int16 charges     : 16;
-    int32 value{0};
-    flag96 mask;
-    uint32 spellId{0};
-	uint32 spellTargetId;
-    SpellSchoolMask spellSchools;
-    uint8 mode = SPELL_MODIFIER_NORMAL;
-    Aura* const ownerAura;
-    void SetSpellSchool(SpellSchoolMask school) { spellSchools = school; mode = SPELL_MODIFIER_SPELL_SCHOOL; }
-    void SetSpellTarget(uint32 spell) { spellTargetId = spell; mode = SPELL_MODIFIER_SPELL_TARGET; }
-};
-
 typedef std::unordered_map<uint32, PlayerTalent*> PlayerTalentMap;
 typedef std::unordered_map<uint32, PlayerSpell*> PlayerSpellMap;
-typedef std::list<SpellModifier*> SpellModList;
 
 typedef GuidList WhisperListContainer;
 
@@ -1711,7 +1679,6 @@ public:
     [[nodiscard]] SpellCooldowns const& GetSpellCooldownMap() const { return m_spellCooldowns; }
     SpellCooldowns&       GetSpellCooldownMap()       { return m_spellCooldowns; }
 
-    void AddSpellMod(SpellModifier* mod, bool apply);
     bool IsAffectedBySpellmod(SpellInfo const* spellInfo, SpellModifier* mod, Spell* spell = nullptr);
     bool HasSpellMod(SpellModifier* mod, Spell* spell);
     template <class T>
@@ -2059,8 +2026,6 @@ public:
     void SendCorpseReclaimDelay(uint32 delay);
 
     [[nodiscard]] uint32 GetShieldBlockValue() const override;                 // overwrite Unit version (virtual)
-    [[nodiscard]] bool CanParry() const { return m_canParry; }
-    void SetCanParry(bool value);
     [[nodiscard]] bool CanBlock() const { return m_canBlock; }
     void SetCanBlock(bool value);
     [[nodiscard]] bool CanTitanGrip() const { return m_canTitanGrip; }
@@ -2657,10 +2622,6 @@ public:
     ActionButtonList m_actionButtons;
 
 
-    SpellModList m_spellMods[MAX_SPELLMOD];
-    //uint32 m_pad;
-    //        Spell* m_spellModTakingSpell;  // Spell for which charges are dropped in spell::finish
-
     EnchantDurationList m_enchantDuration;
     ItemDurationList m_itemDuration;
     ItemDurationList m_itemSoulboundTradeable;
@@ -2698,7 +2659,6 @@ public:
 
     uint32 m_WeaponProficiency;
     uint32 m_ArmorProficiency;
-    bool m_canParry;
     bool m_canBlock;
     bool m_canTitanGrip;
     uint8 m_swingErrorMsg;
@@ -2848,6 +2808,11 @@ public:
     bool GetChestFlag(ChestFlags index) { return m_chestFlag[index]; }
     void AddChestFlag(ChestFlags index) { m_chestFlag[index] = true; }
     void AddGossip(){}
+
+    inline const static std::map<uint32, uint32> petFakeReal = {
+        {4449, 2486}
+    };
+    static const uint32 GetPetFakeReal(uint32 entry) { auto it = Player::petFakeReal.find(entry);  if (it != Player::petFakeReal.end()) return it->second; return entry; }
 };
 
 void AddItemsSetItem(Player* player, Item* item);

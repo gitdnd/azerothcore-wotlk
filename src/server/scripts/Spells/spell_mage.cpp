@@ -263,7 +263,7 @@ class spell_mage_pet_scaling : public AuraScript
         // xinef: mage pet inherits 33% of SP
         if (Unit* owner = GetUnitOwner()->GetOwner())
         {
-            int32 frost = owner->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_FROST);
+            int32 frost = owner->SpellBasePowerBonusDone(SPELL_SCHOOL_MASK_FROST);
             amount = CalculatePct(std::max<int32>(0, frost), 33);
 
             // xinef: Update appropriate player field
@@ -507,7 +507,7 @@ class spell_mage_fire_frost_ward : public spell_mage_incanters_absorbtion_base_A
             // +80.68% from sp bonus
             float bonus = 0.8068f;
 
-            bonus *= caster->SpellBaseDamageBonusDone(GetSpellInfo()->GetSchoolMask());
+            bonus *= caster->SpellBasePowerBonusDone(GetSpellInfo()->GetSchoolMask());
             bonus *= caster->CalculateLevelPenalty(GetSpellInfo());
 
             amount += int32(bonus);
@@ -597,7 +597,7 @@ class spell_mage_ice_barrier_aura : public spell_mage_incanters_absorbtion_base_
         // +80.68% from sp bonus
         float bonus = 0.8068f;
 
-        bonus *= caster->SpellBaseDamageBonusDone(spellInfo->GetSchoolMask());
+        bonus *= caster->SpellBasePowerBonusDone(spellInfo->GetSchoolMask());
 
         // Glyph of Ice Barrier: its weird having a SPELLMOD_ALL_EFFECTS here but its blizzards doing :)
         // Glyph of Ice Barrier is only applied at the spell damage bonus because it was already applied to the base value in CalculateSpellDamage
@@ -633,7 +633,7 @@ class spell_mage_ice_barrier : public SpellScript
         // +80.68% from sp bonus
         float bonus = 0.8068f;
 
-        bonus *= caster->SpellBaseDamageBonusDone(spellInfo->GetSchoolMask());
+        bonus *= caster->SpellBasePowerBonusDone(spellInfo->GetSchoolMask());
 
         // Glyph of Ice Barrier: its weird having a SPELLMOD_ALL_EFFECTS here but its blizzards doing :)
         // Glyph of Ice Barrier is only applied at the spell damage bonus because it was already applied to the base value in CalculateSpellDamage
@@ -763,7 +763,7 @@ class spell_mage_mana_shield : public spell_mage_incanters_absorbtion_base_AuraS
             // +80.53% from sp bonus
             float bonus = 0.8053f;
 
-            bonus *= caster->SpellBaseDamageBonusDone(GetSpellInfo()->GetSchoolMask());
+            bonus *= caster->SpellBasePowerBonusDone(GetSpellInfo()->GetSchoolMask());
             bonus *= caster->CalculateLevelPenalty(GetSpellInfo());
 
             amount += int32(bonus);

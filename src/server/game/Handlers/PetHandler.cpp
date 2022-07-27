@@ -611,7 +611,7 @@ void WorldSession::HandlePetNameQuery(WorldPacket& recvData)
 }
 
 void WorldSession::SendPetNameQuery(ObjectGuid petguid, uint32 petnumber)
-{
+{ 
     Creature* pet = ObjectAccessor::GetCreatureOrPetOrVehicle(*_player, petguid);
     if (!pet)
     {
@@ -623,17 +623,10 @@ void WorldSession::SendPetNameQuery(ObjectGuid petguid, uint32 petnumber)
         SendPacket(&data);
         return;
     }
-
     std::string name;
-    if (pet->GetEntry() == NPC_WATER_ELEMENTAL_PERM)
-    {
-        // Use localized creature name for the mage pet
-        LocaleConstant loc_idx = GetSessionDbLocaleIndex();
-        if (loc_idx != DEFAULT_LOCALE)
-            name = pet->GetNameForLocaleIdx(loc_idx);
-        else
-            name = pet->GetCreatureTemplate()->Name;
-    }
+
+    if (_player->GetPetGUID() != petguid)
+        name = pet->GetCreatureTemplate()->Name;
     else
         name = pet->GetName();
 

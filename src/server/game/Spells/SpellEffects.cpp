@@ -3442,7 +3442,7 @@ void Spell::EffectWeaponDmg(SpellEffIndex effIndex)
                 if (m_spellInfo->Id == 20467)
                 {
                     spell_bonus += int32(0.08f * m_caster->GetTotalAttackPowerValue(BASE_ATTACK));
-                    spell_bonus += int32(0.13f * m_caster->SpellBaseDamageBonusDone(m_spellInfo->GetSchoolMask()));
+                    spell_bonus += int32(0.13f * m_caster->SpellBasePowerBonusDone(m_spellInfo->GetSchoolMask()));
                 }
                 break;
             }

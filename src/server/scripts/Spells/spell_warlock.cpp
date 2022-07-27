@@ -303,8 +303,8 @@ class spell_warl_generic_scaling : public AuraScript
         // xinef: by default warlock pet inherits 57% of max(SP FIRE, SP SHADOW) as AP
         if (Unit* owner = GetUnitOwner()->GetOwner())
         {
-            int32 fire  = owner->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_FIRE);
-            int32 shadow = owner->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_SHADOW);
+            int32 fire  = owner->SpellBasePowerBonusDone(SPELL_SCHOOL_MASK_FIRE);
+            int32 shadow = owner->SpellBasePowerBonusDone(SPELL_SCHOOL_MASK_SHADOW);
             int32 maximum  = (fire > shadow) ? fire : shadow;
             amount = CalculatePct(std::max<int32>(0, maximum), 57);
         }
@@ -315,8 +315,8 @@ class spell_warl_generic_scaling : public AuraScript
         // xinef: by default warlock pet inherits 15% of max(SP FIRE, SP SHADOW) as SP
         if (Unit* owner = GetUnitOwner()->GetOwner())
         {
-            int32 fire  = owner->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_FIRE);
-            int32 shadow = owner->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_SHADOW);
+            int32 fire  = owner->SpellBasePowerBonusDone(SPELL_SCHOOL_MASK_FIRE);
+            int32 shadow = owner->SpellBasePowerBonusDone(SPELL_SCHOOL_MASK_SHADOW);
             int32 maximum  = (fire > shadow) ? fire : shadow;
             amount = CalculatePct(std::max<int32>(0, maximum), 15);
 
@@ -409,8 +409,8 @@ class spell_warl_infernal_scaling : public AuraScript
         // xinef: by default warlock pet inherits 57% of max(SP FIRE, SP SHADOW) as AP
         if (Unit* owner = GetUnitOwner()->GetOwner())
         {
-            int32 fire  = owner->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_FIRE);
-            int32 shadow = owner->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_SHADOW);
+            int32 fire  = owner->SpellBasePowerBonusDone(SPELL_SCHOOL_MASK_FIRE);
+            int32 shadow = owner->SpellBasePowerBonusDone(SPELL_SCHOOL_MASK_SHADOW);
             int32 maximum  = (fire > shadow) ? fire : shadow;
             amount = CalculatePct(std::max<int32>(0, maximum), 57);
         }
@@ -421,8 +421,8 @@ class spell_warl_infernal_scaling : public AuraScript
         // xinef: by default warlock pet inherits 15% of max(SP FIRE, SP SHADOW) as SP
         if (Unit* owner = GetUnitOwner()->GetOwner())
         {
-            int32 fire  = owner->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_FIRE);
-            int32 shadow = owner->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_SHADOW);
+            int32 fire  = owner->SpellBasePowerBonusDone(SPELL_SCHOOL_MASK_FIRE);
+            int32 shadow = owner->SpellBasePowerBonusDone(SPELL_SCHOOL_MASK_SHADOW);
             int32 maximum  = (fire > shadow) ? fire : shadow;
             amount = CalculatePct(std::max<int32>(0, maximum), 15);
 
@@ -1085,7 +1085,7 @@ class spell_warl_shadow_ward : public AuraScript
             // +80.68% from sp bonus
             float bonus = 0.8068f;
 
-            bonus *= caster->SpellBaseDamageBonusDone(GetSpellInfo()->GetSchoolMask());
+            bonus *= caster->SpellBasePowerBonusDone(GetSpellInfo()->GetSchoolMask());
             bonus *= caster->CalculateLevelPenalty(GetSpellInfo());
 
             amount += int32(bonus);
