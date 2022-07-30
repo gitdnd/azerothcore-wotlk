@@ -893,18 +893,9 @@ void AuraEffect::Update(uint32 diff, Unit* caster)
 {
     if (m_isPeriodic && (GetBase()->GetDuration() >= 0 || GetBase()->IsPassive() || GetBase()->IsPermanent()))
     {
-        uint32 totalTicks = GetTotalTicks();
-
         m_periodicTimer -= int32(diff);
         while (m_periodicTimer <= 0)
         {
-            if (!GetBase()->IsPermanent() && (m_tickNumber + 1) > totalTicks)
-            {
-                break;
-            }
-
-            ++m_tickNumber;
-
             // update before tick (aura can be removed in TriggerSpell or PeriodicTick calls)
             m_periodicTimer += m_amplitude;
             UpdatePeriodic(caster);

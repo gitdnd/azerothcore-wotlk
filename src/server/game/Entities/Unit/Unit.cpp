@@ -12023,6 +12023,54 @@ void Unit::DoOnSpellCastScripts(Spell* spell)
     }
 }
 
+void Unit::DoOnAuraStackScripts(Aura* aura, int16 amount)
+{
+    std::vector<AuraApplicationMap::iterator> passed = {};
+    AuraApplicationMap appliedAurasCopy = m_appliedAuras;
+    for (AuraApplicationMap::iterator it = appliedAurasCopy.begin(); it != appliedAurasCopy.end(); )
+    {
+        if (it->second)
+        {
+            bool succ = it->second->GetBase()->CallScriptOnAuraStack(aura, amount);
+            if (!succ)
+            {
+                appliedAurasCopy.erase(it);
+                int remaining = -1;
+                bool exit = false;
+                for (AuraApplicationMap::iterator it2 = appliedAurasCopy.begin(); it2 != appliedAurasCopy.end();)
+                {
+                    for (auto o : passed)
+                    {
+                        if (o == it2)
+                        {
+                            ++it2;
+                            remaining++;
+                        }
+                        else
+                        {
+                            passed.erase(passed.begin() + remaining + 1, passed.end());
+                            exit = true;
+                            break;
+                        }
+                    }
+                    if (exit)
+                        break;
+                }
+                if (remaining >= 0)
+                {
+                    it = passed[remaining];
+                    ++it;
+                }
+                else
+                    it = appliedAurasCopy.begin();
+                continue;
+            }
+        }
+        passed.push_back(it);
+        ++it;
+    }
+}
+
 int32 Unit::SpellBasePowerBonusDone(SpellSchoolMask schoolMask, int16 bonusSpellPower, bool noDerived) const
 {
     uint8 schools = 0;
@@ -15745,7 +15793,7 @@ uint32 Unit::GetCreatePowers(Powers power) const
         case POWER_MANA:
             return GetCreateMana();
         case POWER_RAGE:
-            return 1000;
+            return 10 * (GetStat(STAT_SPIRIT) + GetStat(STAT_STRENGTH));
         case POWER_FOCUS:
             return (GetTypeId() == TYPEID_PLAYER || !((Creature const*)this)->IsPet() || ((Pet const*)this)->getPetType() != HUNTER_PET ? 0 : 100);
         case POWER_ENERGY:
@@ -21935,4 +21983,23 @@ void Unit::AddSpellMod(SpellModifier* mod, bool apply)
         if (!mod->ownerAura)
             delete mod;
     }
+}
+
+void Unit::DoDamageYourself(Unit* target, uint32 damage, const SpellInfo* spellInfo, uint8 effect)
+{
+    DamageInfo dmgInfo(this, target, damage, spellInfo, spellInfo->GetSchoolMask(), SPELL_DIRECT_DAMAGE);
+    Unit::CalcAbsorbResist(dmgInfo);
+
+    uint32 absorb = dmgInfo.GetAbsorb();
+    uint32 resist = dmgInfo.GetResist();
+    damage = dmgInfo.GetDamage();
+
+    Unit::DealDamageMods(target, damage, &absorb);
+
+    int32 overkill = damage - target->GetHealth();
+    if (overkill < 0)
+        overkill = 0;
+
+    Unit::DealDamage(this, target, damage, nullptr, SPELL_DIRECT_DAMAGE, spellInfo->GetSchoolMask(), spellInfo, true);
+    ProcDamageAndSpell(target, PROC_FLAG_DONE_SPELL_MAGIC_DMG_CLASS_POS, damage ? PROC_FLAG_TAKEN_DAMAGE : 0, absorb ? PROC_EX_ABSORB : 0, damage, BASE_ATTACK, spellInfo, nullptr, effect, nullptr, &dmgInfo);
 }

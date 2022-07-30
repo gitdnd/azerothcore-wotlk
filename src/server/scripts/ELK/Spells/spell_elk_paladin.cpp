@@ -1,6 +1,71 @@
 #include "spell_elk_include.h"
 
 
+class spell_elk_crusader_strike_expert_aura : public AuraScript
+{
+    PrepareAuraScript(spell_elk_crusader_strike_expert_aura);
+
+    const uint8 comboLimit = 7;
+    uint8 trackedCombo = 0;
+    uint8 lastCombo = 0;
+    void SpellApply(AuraEffect const* aurEff, AuraEffectHandleModes mode)
+    {
+        Unit* target = GetTarget();
+        if (!target)
+            return;
+        target->SetStrikeAura(GetSpellInfo()->Id);
+        target->RemoveAura(COMBO_COUNT);
+    }
+    void SpellRemove(AuraEffect const* aurEff, AuraEffectHandleModes mode)
+    {
+        Unit* target = GetTarget();
+        if (!target)
+            return;
+        target->SetStrikeAura(0);
+        target->RemoveAura(COMBO_COUNT);
+    }
+    void ComboRemove(Aura* aura, bool added)
+    {
+        if (!added)
+        {
+            trackedCombo = 0;
+            lastCombo = 0;
+        }
+    } 
+    void ComboAura(Aura* aura, int16 amount)
+    {
+        if (aura->GetSpellInfo()->Id == COMBO_COUNT)
+        {
+            int8 comboChange = (amount - lastCombo);
+            if (-1 * comboChange > trackedCombo)
+            {
+                trackedCombo = 0;
+                lastCombo = 0;
+            }
+            else
+            {
+                lastCombo = amount;
+                if (comboChange < 0)
+                {
+                    return;
+                }
+                trackedCombo += comboChange;
+                if (trackedCombo >= comboLimit)
+                {
+                    GetCaster()->CastSpell(GetCaster(), 210007, true);
+                    trackedCombo -= comboLimit;
+                }
+            }
+        } 
+    }
+    void Register() override
+    {
+        AuraAddRemove += AuraAddRemoveFn(spell_elk_crusader_strike_expert_aura::ComboRemove);
+        OnEffectApply += AuraEffectApplyFn(spell_elk_crusader_strike_expert_aura::SpellApply, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+        OnEffectRemove += AuraEffectRemoveFn(spell_elk_crusader_strike_expert_aura::SpellRemove, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+        OnAuraStack += OnAuraStackFn(spell_elk_crusader_strike_expert_aura::ComboAura);
+    }
+};
 class spell_elk_retribution_aura : public AuraScript
 {
     PrepareAuraScript(spell_elk_retribution_aura);
@@ -49,7 +114,7 @@ class spell_elk_retribution_aura_2 : public AuraScript
     void OnAttack(Unit* const target, DamageInfo const dmgInfo)
     {  
         if (target && hits && GetCaster())
-            GetCaster()->DealDamage(GetCaster(), target, uint32(float(dmgInfo.GetDamage()) / 3.33f), nullptr, SPELL_DIRECT_DAMAGE, GetSpellInfo()->GetSchoolMask());
+            GetCaster()->DoDamageYourself(target, uint32(float(dmgInfo.GetDamage()) / 3.33f), GetSpellInfo(), EFFECT_0);
     }
     void AfterAtk()
     { 
@@ -105,23 +170,66 @@ class spell_elk_seal_of_righteousness_aura : public AuraScript
     PrepareAuraScript(spell_elk_seal_of_righteousness_aura);
     bool hit = false;
     void OnAttack(Unit* const target, DamageInfo const dmgInfo)
-    {
+    { 
+        if (!(dmgInfo.GetSpellInfo()) || hit)
+            return;
+        hit = true;
+        GetCaster()->DoDamageYourself(target, 7 + uint32(float(GetCaster()->SpellBasePowerBonusDone(GetSpellInfo()->GetSchoolMask(), GetAura()->GetSpellPowerBonus())) / 7.f), GetSpellInfo(), EFFECT_0);
+        GetAura()->SetCharges(GetAura()->GetCharges() - 1);
+        for (auto aura : GetCaster()->GetAppliedAuras())
+        {
+            if (aura.second->GetBase()->IsPermanent())
+                continue;
+            if (!(aura.second->IsPositive()))
+            {
+                aura.second->GetBase()->SetDuration(int32(float(aura.second->GetBase()->GetDuration()) * 0.93));
+            }
+        }
         if (dmgInfo.GetSpellInfo()->Id == 210011)
             GetAura()->SetCharges(7);
         else
-            for (auto aura : GetCaster()->GetAppliedAuras())
-            {
-                if (aura.second->GetBase()->IsPermanent())
-                    continue;
-                if (!(aura.second->IsPositive()))
-                {
-                    aura.second->GetBase()->SetDuration(int32(float(aura.second->GetBase()->GetDuration()) * 0.93));
-                }
-            }
-    } 
+        {
+            if (!(GetAura()->GetCharges()))
+                GetAura()->Remove();
+        }
+    }
+    void After()
+    {
+        hit = false;
+    }
     void Register() override
     {
-        OnAttackHit += OnAttackHitFn(spell_elk_seal_of_righteousness_aura::OnAttack); 
+        OnAttackHit += OnAttackHitFn(spell_elk_seal_of_righteousness_aura::OnAttack);
+        AfterAttack += AfterAttackFn(spell_elk_seal_of_righteousness_aura::After);
+    }
+};
+class spell_elk_seal_of_righteousness_aura_basic : public AuraScript
+{
+    PrepareAuraScript(spell_elk_seal_of_righteousness_aura_basic);
+    bool hit = false; 
+    void OnAttack(Unit* const target, DamageInfo const dmgInfo)
+    {
+        if (!(dmgInfo.GetSpellInfo()) || hit)
+            return;
+        hit = true;
+        GetCaster()->DoDamageYourself(target, 7 + uint32(float(GetCaster()->SpellBasePowerBonusDone(GetSpellInfo()->GetSchoolMask(), GetAura()->GetSpellPowerBonus())) / 7.f), GetSpellInfo(), EFFECT_0);
+        GetAura()->SetCharges(GetAura()->GetCharges() - 1);
+        if (dmgInfo.GetSpellInfo()->Id == 210011)
+            GetAura()->SetCharges(7);
+        else
+        {
+            if (!(GetAura()->GetCharges()))
+                GetAura()->Remove();
+        }
+    }
+    void After()
+    {
+        hit = false;
+    }
+    void Register() override
+    {
+        OnAttackHit += OnAttackHitFn(spell_elk_seal_of_righteousness_aura_basic::OnAttack);
+        AfterAttack += AfterAttackFn(spell_elk_seal_of_righteousness_aura_basic::After);
     }
 };
 
@@ -188,7 +296,7 @@ class spell_elk_hammer_of_wrath : public SpellScript
         Unit* target = GetHitUnit();
         if (!target)
             return;
-        SetHitDamage(float(GetHitDamage()) * (1.0f + 2 * float(target->GetHealth()) / float(target->GetMaxHealth())) + caster->ConsumePercentOffense(100.0f));
+        SetHitDamage(float(GetHitDamage() + caster->ConsumePercentOffense(100.0f)) * (1.0f + 2 * float(target->GetHealth()) / float(target->GetMaxHealth())));
         float value = (1.f + (float)caster->SpellBasePowerBonusDone(GetSpellInfo()->GetSchoolMask(), 0, true));
         for (auto aura : caster->GetAppliedAuras())
         {
@@ -210,6 +318,26 @@ class spell_elk_hammer_of_wrath : public SpellScript
         OnHit += SpellHitFn(spell_elk_hammer_of_wrath::Hit);
     }
 };
+class spell_elk_hammer_of_wrath_basic : public SpellScript
+{
+    PrepareSpellScript(spell_elk_hammer_of_wrath_basic);
+
+    void Hit()
+    {
+        Unit* caster = GetCaster();
+        if (!caster)
+            return;
+        Unit* target = GetHitUnit();
+        if (!target)
+            return;
+        SetHitDamage(float(GetHitDamage() + caster->ConsumePercentOffense(100.0f)) * (1.0f + 2 * float(target->GetHealth()) / float(target->GetMaxHealth())));
+    }
+
+    void Register() override
+    {
+        OnHit += SpellHitFn(spell_elk_hammer_of_wrath_basic::Hit);
+    }
+};
 class spell_elk_divine_storm : public ELKSpellScript
 {
     PrepareSpellScript(spell_elk_divine_storm);
@@ -227,6 +355,7 @@ class spell_elk_divine_storm : public ELKSpellScript
             if (curAtk->m_spellInfo->Id == ATTACK)
             {
                 spell->skip = true;
+                GetCaster()->AddSpellCooldown(spell->m_spellInfo->Id, 0, 100, false);
                 QueSpell(caster);
                 return;
             }
@@ -239,6 +368,7 @@ class spell_elk_divine_storm : public ELKSpellScript
                 if (curAtk->m_spellInfo->Id == ATTACK_HIT && curAtk->GetSpellTimer() > 0)
                 {
                     spell->skip = true;
+                    GetCaster()->AddSpellCooldown(spell->m_spellInfo->Id, 0, 1, false);
                     QueSpell(caster);
                     return;
                 }
@@ -251,7 +381,7 @@ class spell_elk_divine_storm : public ELKSpellScript
                 cd += GetCaster()->GetAttackTime(BASE_ATTACK);
             if (GetCaster()->CanUseAttackType(OFF_ATTACK))
                 cd += GetCaster()->GetAttackTime(OFF_ATTACK);
-            if (aura->GetStackAmount() >= 6)
+            if (aura->GetStackAmount() > 6)
             {
                 cd *= 6;
                 combo = 6;
@@ -268,7 +398,10 @@ class spell_elk_divine_storm : public ELKSpellScript
             AttackBegin();
         }
         else
+        {
             spell->skip = true;
+            GetCaster()->AddSpellCooldown(spell->m_spellInfo->Id, 0, 100, false);
+        }
     }
     void SpellHit()
     {
@@ -285,19 +418,21 @@ class spell_elk_divine_storm : public ELKSpellScript
 
         DamageInfo dmgInfo(damageInfo);
         dmgInfo.SetSpellInfo(GetSpellInfo());
-        GetCaster()->DoOnAttackHitScripts(victim, dmgInfo);
         GetCaster()->ProcDamageAndSpell(damageInfo.target, damageInfo.procAttacker, damageInfo.procVictim, damageInfo.procEx, damageInfo.damage,
             damageInfo.attackType, nullptr, nullptr, -1, nullptr, &dmgInfo);
+        GetCaster()->DoOnAttackHitScripts(victim, dmgInfo);
+
 
     }
     void SpellFinish()
     {
         AfterAttack();
+        GetCaster()->CastSpell(GetCaster(), 210029, false);
     }
     void Register() override
     {
-        BeforeCastTime += SpellCastFn(spell_elk_divine_storm::SpellQue);
-        AfterCast += SpellCastFn(spell_elk_divine_storm::SpellFinish);
+        BeforeSpellLoad += SpellCastFn(spell_elk_divine_storm::SpellQue);
+        AfterFullChannel += SpellCastFn(spell_elk_divine_storm::SpellFinish);
         AfterHit += SpellHitFn(spell_elk_divine_storm::SpellHit);
     }
 };
@@ -319,15 +454,10 @@ class spell_elk_blessing_of_might : public SpellScript
         aura->Remove();
     }
     void AfterApply()
-    {
-        if (ticks)
-        {
-            CustomSpellValues values;
-            values.AddSpellMod(SPELLVALUE_BASE_POINT0, ticks);
-            GetCaster()->CastCustomSpell(210006, values, GetHitUnit(), TRIGGERED_FULL_MASK);
-        }
-        else
-            GetCaster()->CastSpell(GetHitUnit(), 210006, true);
+    { 
+        CustomSpellValues values;
+        values.AddSpellMod(SPELLVALUE_BASE_POINT0, ticks + GetCaster()->ConsumePercentOffense(30.f));
+        GetCaster()->CastCustomSpell(210006, values, GetHitUnit(), TRIGGERED_FULL_MASK); 
 
     } 
     void Register() override
@@ -335,7 +465,34 @@ class spell_elk_blessing_of_might : public SpellScript
         BeforeHit += BeforeSpellHitFn(spell_elk_blessing_of_might::Apply);
         AfterHit += SpellHitFn(spell_elk_blessing_of_might::AfterApply);
     }
-}; 
+};
+class spell_elk_blessing_of_might_basic : public SpellScript
+{
+    PrepareSpellScript(spell_elk_blessing_of_might_basic);
+     
+    void Apply(SpellMissInfo missInfo)
+    {
+        Unit* target = GetHitUnit();
+        if (!target)
+            return;
+        auto aura = target->GetAura(210013);
+        if (!aura)
+            return; 
+        aura->Remove();
+    }
+    void AfterApply()
+    { 
+        CustomSpellValues values;
+        values.AddSpellMod(SPELLVALUE_BASE_POINT0, GetCaster()->ConsumePercentOffense(30.f));
+        GetCaster()->CastCustomSpell(210006, values, GetHitUnit(), TRIGGERED_FULL_MASK); 
+
+    }
+    void Register() override
+    {
+        BeforeHit += BeforeSpellHitFn(spell_elk_blessing_of_might_basic::Apply);
+        AfterHit += SpellHitFn(spell_elk_blessing_of_might_basic::AfterApply);
+    }
+};
 class spell_elk_blessing_of_might_aura : public AuraScript
 {
     PrepareAuraScript(spell_elk_blessing_of_might_aura);
@@ -368,10 +525,14 @@ class spell_elk_justice_aura : public AuraScript
 {
     PrepareAuraScript(spell_elk_justice_aura);
 
-
+    void OnApply(AuraEffect const* aurEff, AuraEffectHandleModes mode)
+    { 
+        GetAura()->SetStackAmount(GetAura()->GetStackAmount() + 6);
+    }
     void DamageProc(AuraEffect const* aurEff, ProcEventInfo& eventInfo)
     {
-        if(eventInfo.GetSpellInfo() && (eventInfo.GetSpellInfo()->GetSchoolMask() & GetAura()->GetSpellInfo()->GetSchoolMask()))
+        
+        if(eventInfo.GetDamageInfo() && (eventInfo.GetDamageInfo()->GetSchoolMask() & GetAura()->GetSpellInfo()->GetSchoolMask()) && eventInfo.GetDamageInfo()->GetDamageType() != DOT &&  eventInfo.GetDamageInfo()->GetDamage() > 0)
             GetAura()->SetStackAmount(GetAura()->GetStackAmount() + 1);
     }
     void SpellCast(Spell* spell)
@@ -382,7 +543,8 @@ class spell_elk_justice_aura : public AuraScript
 
     void Register() override
     {
-        OnEffectProc += AuraEffectProcFn(spell_elk_justice_aura::DamageProc, EFFECT_1, SPELL_AURA_MOD_RESISTANCE);
+        OnEffectApply += AuraEffectApplyFn(spell_elk_justice_aura::OnApply, EFFECT_1, SPELL_AURA_PERIODIC_DAMAGE, AURA_EFFECT_HANDLE_REAL);
+        OnEffectProc += AuraEffectProcFn(spell_elk_justice_aura::DamageProc, EFFECT_2, SPELL_AURA_DUMMY);
         BeforeSpellCast += BeforeSpellCastFn(spell_elk_justice_aura::SpellCast);
     }
 };
@@ -390,30 +552,95 @@ class spell_elk_avenging_wrath_aura : public AuraScript
 {
     PrepareAuraScript(spell_elk_avenging_wrath_aura);
 
-    bool airAttacked = false;
 
-    void OnAttack(Spell* spell)
-    {
-        if (spell->m_spellInfo->Id != ATTACK || airAttacked || !(GetCaster()->IsFalling()))
-            return;
-        airAttacked = true;
-        GetAura()->GetEffect(EFFECT_2)->SetEnabled(false);
-        GetCaster()->CastSpell(GetCaster(), 100014, true);
-    }
     void MovePacket()
     {
         if (GetCaster()->IsFalling())
-            return;
-        if (!airAttacked)
-            return;
-        airAttacked = false;
-        GetAura()->GetEffect(EFFECT_2)->SetEnabled(true);
+        {
+            if (!(GetCaster()->HasAura(210027)))
+            {
+                Aura* aura = GetCaster()->AddAura(210027, GetCaster());
+                if (aura)
+                {
+                    aura->GetEffect(EFFECT_0)->SetPeriodic(false);
+                }
+            }
+        }
+        else if (Aura* aura = GetCaster()->GetAura(210027); aura)
+            aura->Remove();
     }
-
+    void OnAttack(Spell* spell)
+    {
+        if (spell->m_spellInfo->Id != ATTACK || !(GetCaster()->IsFalling()))
+            return;
+        if (Aura* aura = GetCaster()->GetAura(210027))
+        {
+            aura->GetEffect(EFFECT_0)->SetPeriodic(true);
+        }
+        else
+            GetCaster()->AddAura(210027, GetCaster());
+        spell->skip = true;
+        GetCaster()->AddSpellCooldown(spell->m_spellInfo->Id, 0, 100, false);
+    }
+    void AddDoubleJumps(AuraEffect const* aurEff, AuraEffectHandleModes mode)
+    {
+        auto player = GetCaster()->ToPlayer();
+        if (!player)
+            return;
+        player->ModDoubleJumpMax(3);
+    }
+    void RemoveDoubleJumps(AuraEffect const* aurEff, AuraEffectHandleModes mode)
+    {
+        auto player = GetCaster()->ToPlayer();
+        if (Aura* aura = player->GetAura(210027); aura)
+            aura->Remove();
+        if (!player)
+            return;
+        player->ModDoubleJumpMax(-3);
+    }
     void Register() override
     {
-        OnSpellCast += OnSpellCastFn(spell_elk_avenging_wrath_aura::OnAttack);
         OnMovementPacket += OnMovementPacketFn(spell_elk_avenging_wrath_aura::MovePacket);
+        OnEffectApply += AuraEffectApplyFn(spell_elk_avenging_wrath_aura::AddDoubleJumps, EFFECT_0, SPELL_AURA_MOD_DAMAGE_PERCENT_DONE, AURA_EFFECT_HANDLE_REAL);
+        OnEffectRemove += AuraEffectRemoveFn(spell_elk_avenging_wrath_aura::RemoveDoubleJumps, EFFECT_0, SPELL_AURA_MOD_DAMAGE_PERCENT_DONE, AURA_EFFECT_HANDLE_REAL);
+        BeforeSpellCast += BeforeSpellCastFn(spell_elk_avenging_wrath_aura::OnAttack);
+    }
+};
+
+class spell_elk_avenging_wrath_falling_aura : public AuraScript
+{
+    PrepareAuraScript(spell_elk_avenging_wrath_falling_aura);
+    uint16 ticks = 0;
+    bool falling = false;
+    void Removed(AuraEffect const* aurEff, AuraEffectHandleModes mode)
+    {
+        if (!falling || GetCaster()->IsFalling())
+            return;
+        CustomSpellValues values;
+        values.AddSpellMod(SPELLVALUE_BASE_POINT0, (ticks / 10) + 1);
+        GetCaster()->CastCustomSpell(210007, values, GetCaster(), TRIGGERED_FULL_MASK);
+    }
+    void MovePacket()
+    {
+        if (!(GetCaster()->IsFalling()))
+        {
+            return;
+        }
+        if (GetAura()->GetEffect(EFFECT_0)->IsPeriodic() && !falling)
+        {
+            falling = true;
+            return;
+        }
+    }
+    void Tick(AuraEffect const* aurEff)
+    {
+        ticks++;
+    }
+    void Register() override
+    {
+        OnEffectRemove += AuraEffectRemoveFn(spell_elk_avenging_wrath_falling_aura::Removed, EFFECT_2, SPELL_AURA_PERIODIC_DUMMY, AURA_EFFECT_HANDLE_REAL);
+        OnMovementPacket += OnMovementPacketFn(spell_elk_avenging_wrath_falling_aura::MovePacket);
+        OnEffectPeriodic += AuraEffectPeriodicFn(spell_elk_avenging_wrath_falling_aura::Tick, EFFECT_2, SPELL_AURA_PERIODIC_DUMMY);
     }
 };
 
@@ -435,27 +662,27 @@ class spell_elk_inquisite_aura : public AuraScript
                 aura->Remove();
         }
     }
-    void Calc(AuraEffect const* aurEff, AuraEffectHandleModes mode)
-    {
-        aurEff->GetSpellModifier()->SetSpellSchool(GetSpellInfo()->GetSchoolMask());
-    }
     void Register() override
     {
         OnSpellCast += OnSpellCastFn(spell_elk_inquisite_aura::RemoveCharge);
-        OnEffectApply += AuraEffectApplyFn(spell_elk_inquisite_aura::Calc, EFFECT_0, SPELL_AURA_MOD_DAMAGE_DONE, AURA_EFFECT_HANDLE_REAL);
     }
 };
 void AddSC_elk_paladin_scripts()
 {
+    RegisterSpellScript(spell_elk_crusader_strike_expert_aura);
     RegisterSpellScript(spell_elk_retribution_aura);
     RegisterSpellScript(spell_elk_retribution_aura_2);
     RegisterSpellScript(spell_elk_holy_power_aura);
+    RegisterSpellScript(spell_elk_seal_of_righteousness_aura_basic);
     RegisterSpellScript(spell_elk_seal_of_righteousness_aura);
     RegisterSpellScript(spell_elk_judgement_aura);
+    RegisterSpellScript(spell_elk_hammer_of_wrath_basic);
     RegisterSpellScript(spell_elk_hammer_of_wrath);
     RegisterSpellScript(spell_elk_divine_storm);
+    RegisterSpellAndAuraScriptPair(spell_elk_blessing_of_might_basic, spell_elk_blessing_of_might_aura);
     RegisterSpellAndAuraScriptPair(spell_elk_blessing_of_might, spell_elk_blessing_of_might_aura);
     RegisterSpellAndAuraScriptPair(spell_elk_justice, spell_elk_justice_aura);
     RegisterSpellScript(spell_elk_avenging_wrath_aura);
+    RegisterSpellScript(spell_elk_avenging_wrath_falling_aura);
     RegisterSpellScript(spell_elk_inquisite_aura);
 }

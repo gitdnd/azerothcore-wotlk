@@ -3799,7 +3799,11 @@ void Spell::_cast(bool skipCheck)
     }
 
     m_caster->DoBeforeSpellCastScripts(this);
-
+    if (skip)
+    {
+        cancel();
+        return;
+    }
     // cancel at lost explicit target during cast
     if (m_targets.GetObjectTargetGUID() && !m_targets.GetObjectTarget())
     {
@@ -4105,6 +4109,13 @@ void Spell::_cast(bool skipCheck)
         {
             playerCaster->CastSpell(playerCaster, playerCaster->GetQuedSpell(), false);
             playerCaster->SetQuedSpell(0);
+        }
+        if (Unit* target = m_targets.GetUnitTarget())
+        {
+            if (uint32 virtueSpell = playerCaster->GetSpellData(m_spellInfo->Id).virtueSpell; virtueSpell != 0)
+            {
+                playerCaster->CastSpell(m_targets.GetUnitTarget(), virtueSpell, true);
+            }
         }
     }
     m_caster->SetLastSpellUsed(m_spellInfo);

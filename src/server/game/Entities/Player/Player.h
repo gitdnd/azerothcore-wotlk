@@ -2798,7 +2798,23 @@ private:
     std::map<ChestFlags, bool> m_chestFlag;
 
     uint32 quedSpell = 0;
+
+    struct SpellData
+    {
+        uint8 development = 1;
+        uint32 virtueSpell = 0;
+    };
+    std::map<uint32, SpellData> m_spellData;
+
+    uint8 doubleJumps = 0;
+    uint8 doubleJumpsMax = 1;
 public:
+    uint8 CanDoubleJump() { return doubleJumps < doubleJumpsMax; }
+    void AddDoubleJump() { doubleJumps++; }
+    void ModDoubleJumpMax(uint8 amount) { doubleJumpsMax += amount; }
+
+    SpellData& GetSpellData(uint32 key) { return m_spellData[key]; }
+
     void SetQuedSpell(uint32 spell) { quedSpell = spell; }
     uint32 GetQuedSpell() { return quedSpell; }
     bool GetQuestStageFlag(QuestStageFlags index) const { auto it = m_questStageFlag.find(index);  if (it != m_questStageFlag.end()) return it->second; return false; }

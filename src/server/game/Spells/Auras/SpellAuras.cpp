@@ -1029,6 +1029,7 @@ void Aura::SetStackAmount(uint8 stackAmount)
         if (!(*apptItr)->GetRemoveMode())
             HandleAuraSpecificMods(*apptItr, caster, true, true);
 
+    GetCaster()->DoOnAuraStackScripts(this, m_stackAmount);
     SetNeedClientUpdateForTargets();
 }
 
@@ -2831,6 +2832,21 @@ bool Aura::CallScriptOnSpellCast(Spell* spell)
         std::list<AuraScript::OnSpellCastHandler>::iterator hookItrEnd = (*scritr)->OnSpellCast.end(), hookItr = (*scritr)->OnSpellCast.begin();
         for (; hookItr != hookItrEnd; ++hookItr)
             hookItr->Call(*scritr, spell);
+
+        (*scritr)->_FinishScriptCall();
+    }
+    if (IsRemoved())
+        return false;
+    return true;
+}
+bool Aura::CallScriptOnAuraStack(Aura* aura, int16 amount)
+{
+    for (std::list<AuraScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
+    {
+        (*scritr)->_PrepareScriptCall(AURA_SCRIPT_ON_AURA_STACK);
+        std::list<AuraScript::OnAuraStackHandler>::iterator hookItrEnd = (*scritr)->OnAuraStack.end(), hookItr = (*scritr)->OnAuraStack.begin();
+        for (; hookItr != hookItrEnd; ++hookItr)
+            hookItr->Call(*scritr, aura, amount);
 
         (*scritr)->_FinishScriptCall();
     }

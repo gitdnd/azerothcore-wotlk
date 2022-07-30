@@ -1007,6 +1007,16 @@ void AuraScript::OnSpellCastHandler::Call(AuraScript* auraScript, Spell* spell)
     (auraScript->*_OnSpellCastHandlerScript)(spell);
 }
 
+AuraScript::OnAuraStackHandler::OnAuraStackHandler(OnAuraStackFnType OnAuraStackHandlerScript)
+{
+	_OnAuraStackHandlerScript = OnAuraStackHandlerScript;
+}
+
+void AuraScript::OnAuraStackHandler::Call(AuraScript* auraScript, Aura* aura, int16 amount)
+{
+	(auraScript->*_OnAuraStackHandlerScript)(aura, amount);
+}
+
 
 
 

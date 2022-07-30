@@ -13296,6 +13296,7 @@ void Player::HandleFall(MovementInfo const& movementInfo)
         RemoveAura(100016);
     }
     m_falling = false;
+    doubleJumps = 0;
 
     //Players with low fall distance, Feather Fall or physical immunity (charges used) are ignored
     // 14.57 can be calculated by resolving damageperc formula below to 0

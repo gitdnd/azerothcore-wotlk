@@ -170,6 +170,15 @@ void Unit::ApplySpellPowerBonus(int32 amount, bool apply)
 {
     apply = _ModifyUInt32(apply, m_baseSpellPower, amount);
 
+    Aura* spellCostAura = GetAura(100043);
+    if (spellCostAura)
+        if(apply)
+            spellCostAura->GetEffect(EFFECT_0)->SetAmount(spellCostAura->GetEffect(EFFECT_0)->GetAmount() + (-1 * amount));
+        else
+            spellCostAura->GetEffect(EFFECT_0)->SetAmount(spellCostAura->GetEffect(EFFECT_0)->GetAmount() + (amount));
+    spellCostAura->GetEffect(EFFECT_0)->SetCanBeRecalculated(true);
+    spellCostAura->GetEffect(EFFECT_0)->RecalculateAmount();
+
     for (int i = SPELL_SCHOOL_HOLY; i < MAX_SPELL_SCHOOL; ++i)
         ApplyModInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_POS + i, amount, apply);
 }

@@ -530,6 +530,7 @@ enum AuraScriptHookType
     AURA_SCRIPT_AURA_ADDREMOVE, 
     AURA_SCRIPT_BEFORE_SPELL_CAST,
 	AURA_SCRIPT_ON_SPELL_CAST,
+    AURA_SCRIPT_ON_AURA_STACK,
 };
 /*
 #define HOOK_AURA_EFFECT_START HOOK_AURA_EFFECT_APPLY
@@ -561,7 +562,8 @@ public:
         typedef void(CLASSNAME::*AfterAttackFnType)(); \
         typedef void(CLASSNAME::*AuraAddRemoveFnType)(Aura* aura, bool added); \
         typedef void(CLASSNAME::*BeforeSpellCastFnType)(Spell* spell); \
-        typedef void(CLASSNAME::*OnSpellCastFnType)(Spell* spell);
+        typedef void(CLASSNAME::*OnSpellCastFnType)(Spell* spell); \
+        typedef void(CLASSNAME::*OnAuraStackFnType)(Aura* aura, int16 amount);
 
     AURASCRIPT_FUNCTION_TYPE_DEFINES(AuraScript)
 
@@ -746,6 +748,15 @@ public:
         OnSpellCastFnType _OnSpellCastHandlerScript;
     };
 
+    class OnAuraStackHandler
+    {
+    public:
+        OnAuraStackHandler(OnAuraStackFnType onMoevementPacketScript);
+        void Call(AuraScript* auraScript, Aura* aura, int16 amount);
+    private:
+        OnAuraStackFnType _OnAuraStackHandlerScript;
+    };
+
 #define AURASCRIPT_FUNCTION_CAST_DEFINES(CLASSNAME) \
         class CheckAreaTargetFunction : public AuraScript::CheckAreaTargetHandler { public: CheckAreaTargetFunction(AuraCheckAreaTargetFnType _pHandlerScript) : AuraScript::CheckAreaTargetHandler((AuraScript::AuraCheckAreaTargetFnType)_pHandlerScript) {} }; \
         class AuraDispelFunction : public AuraScript::AuraDispelHandler { public: AuraDispelFunction(AuraDispelFnType _pHandlerScript) : AuraScript::AuraDispelHandler((AuraScript::AuraDispelFnType)_pHandlerScript) {} }; \
@@ -768,6 +779,7 @@ public:
         class AuraAddRemoveFunction : public AuraScript::AuraAddRemoveHandler { public: AuraAddRemoveFunction(AuraAddRemoveFnType auraAddRemoveScript) : AuraScript::AuraAddRemoveHandler((AuraScript::AuraAddRemoveFnType)auraAddRemoveScript) {} }; \
         class BeforeSpellCastFunction : public AuraScript::BeforeSpellCastHandler { public: BeforeSpellCastFunction(BeforeSpellCastFnType BeforeSpellCastScript) : AuraScript::BeforeSpellCastHandler((AuraScript::BeforeSpellCastFnType)BeforeSpellCastScript) {} }; \
         class OnSpellCastFunction : public AuraScript::OnSpellCastHandler { public: OnSpellCastFunction(OnSpellCastFnType OnSpellCastScript) : AuraScript::OnSpellCastHandler((AuraScript::OnSpellCastFnType)OnSpellCastScript) {} }; \
+        class OnAuraStackFunction : public AuraScript::OnAuraStackHandler { public: OnAuraStackFunction(OnAuraStackFnType OnAuraStackScript) : AuraScript::OnAuraStackHandler((AuraScript::OnAuraStackFnType)OnAuraStackScript) {} }; \
 
 
 #define PrepareAuraScript(CLASSNAME) AURASCRIPT_FUNCTION_TYPE_DEFINES(CLASSNAME) AURASCRIPT_FUNCTION_CAST_DEFINES(CLASSNAME)
@@ -974,6 +986,12 @@ public:
 	// where function is: void function(Spell* spell);
 	HookList<OnSpellCastHandler> OnSpellCast;
 #define OnSpellCastFn(F) OnSpellCastFunction(&F)
+
+    // executed on aura stack change
+    // example: OnAuraStack += OnAuraStackFn(class::function);
+    // where function is: void function(Aura* aura, int16 amount);
+    HookList<OnAuraStackHandler> OnAuraStack;
+#define OnAuraStackFn(F) OnAuraStackFunction(&F)
 
     // AuraScript interface - hook/effect execution manipulators
 

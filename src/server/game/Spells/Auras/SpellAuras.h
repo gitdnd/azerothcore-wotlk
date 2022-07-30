@@ -241,7 +241,8 @@ public:
     bool CallScriptAuraAddRemove(Aura* aura, bool added);
     bool CallScriptBeforeSpellCast(Spell* spell);
 	bool CallScriptOnSpellCast(Spell* spell);
-    
+    bool CallScriptOnAuraStack(Aura* aura, int16 amount);
+
     AuraScript* GetScriptByName(std::string const& scriptName) const;
 
     std::list<AuraScript*> m_loadedScripts;
