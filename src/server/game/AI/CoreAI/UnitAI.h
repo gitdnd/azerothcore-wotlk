@@ -377,12 +377,15 @@ public:
     virtual void sQuestComplete(Player* /*player*/, Quest const* /*quest*/) {}
     virtual void sQuestReward(Player* /*player*/, Quest const* /*quest*/, uint32 /*opt*/) {}
     virtual void sOnGameEvent(bool /*start*/, uint16 /*eventId*/) {}
-
+    
     virtual std::string GetDebugInfo() const;
 
 private:
     ThreatMgr& GetThreatMgr();
     void SortByDistance(std::list<Unit*>& list, bool ascending = true);
+    
+    virtual void sOnMutate() {}
+    
 };
 
 class PlayerAI : public UnitAI

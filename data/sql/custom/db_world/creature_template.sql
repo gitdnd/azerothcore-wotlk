@@ -208,11 +208,13 @@ UPDATE creature_template SET gossip_menu_id=200190 WHERE entry=16787;
 UPDATE creature_template SET gossip_menu_id=200191 WHERE entry=16494;
 
 UPDATE creature_template SET ScriptName='lazy_peon' WHERE entry=10556;
-UPDATE creature_template SET ScriptName='wretched', name = "Wretched" WHERE entry=15644;
 UPDATE creature_template SET minlevel = 6, maxlevel = 8 WHERE (entry = 15271);
 UPDATE creature_template SET ScriptName='mana_wyrm' WHERE entry=15274;
-UPDATE creature_template SET minlevel = 16, faction = 1604, speed_run = 0.5, BaseAttackTime = 5000, RangeAttackTime = 5000, mingold = 1366, maxgold = 1366, HealthModifier = 1.3, ManaModifier = 2, ExperienceModifier = 2, ScriptName = 'felendren',  npcflag = 1 WHERE (entry = 15367);
 UPDATE creature_template SET ScriptName='tainted_arcane_wraith', minlevel = 17, maxlevel = 17 WHERE (entry = 15298);
+UPDATE creature_template SET minlevel = 16, faction = 1604, speed_run = 0.5, BaseAttackTime = 5000, RangeAttackTime = 5000, mingold = 1366, maxgold = 1366, HealthModifier = 1.3, ManaModifier = 2, ExperienceModifier = 2, ScriptName = 'felendren',  npcflag = 1 WHERE (entry = 15367);
+UPDATE creature_template SET minlevel = 20, maxlevel = 20, speed_run = 0.3, BaseAttackTime = 4000, RangeAttackTime = 4000, ScriptName = 'amani_berserker' WHERE (entry = 15643);
+UPDATE creature_template SET ScriptName='wretched', name = "Wretched" WHERE (entry=15644);
+
 
 REPLACE INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`, `KillCredit1`, `KillCredit2`, `modelid1`, `modelid2`, `modelid3`, `modelid4`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `speed_swim`, `speed_flight`, `detection_range`, `scale`, `rank`, `dmgschool`, `DamageModifier`, `BaseAttackTime`, `RangeAttackTime`, `BaseVariance`, `RangeVariance`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `ExperienceModifier`, `RacialLeader`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `spell_school_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) VALUES
 (200001, 0, 0, 0, 0, 0, 41386, 0, 0, 0, 'Solanian\'s Scrying Orb', '', '', 0, 10, 10, 0, 35, 1, 1, 1, 1, 1, 20, 1, 0, 0, 1, 2000, 2000, 1, 1, 1, 394118, 2048, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 1, 0.000187, 1, 1, 1, 0, 0, 1, 0, 0, 262144, 'solanians_orb', 12340), 

@@ -15,9 +15,11 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #include "MotionMaster.h"
 #include "ConfusedMovementGenerator.h"
 #include "Creature.h"
+#include "CreatureAI.h"
 #include "CreatureAISelector.h"
 #include "EscortMovementGenerator.h"
 #include "FleeingMovementGenerator.h"
@@ -134,7 +136,7 @@ void MotionMaster::UpdateMotion(uint32 diff)
         else if (needInitTop())
             InitTop();
         else if (_cleanFlag & MMCF_RESET)
-            top()->Reset(_owner);
+            DoReset(top());
 
         _cleanFlag &= ~MMCF_RESET;
     }
@@ -157,7 +159,7 @@ void MotionMaster::DirectClean(bool reset)
     if (needInitTop())
         InitTop();
     else if (reset)
-        top()->Reset(_owner);
+        DoReset(top());
 }
 
 void MotionMaster::DelayedClean()
@@ -187,7 +189,7 @@ void MotionMaster::DirectExpire(bool reset)
     else if (needInitTop())
         InitTop();
     else if (reset)
-        top()->Reset(_owner);
+        DoReset(top());
 }
 
 void MotionMaster::DelayedExpire()
@@ -203,8 +205,16 @@ void MotionMaster::DelayedExpire()
         --_top;
 }
 
+void MotionMaster::DoReset(_Ty move)
+{
+    move->Reset(_owner);
+    if (Creature* creature = _owner->ToCreature(); creature && creature->AI())
+        creature->AI()->sOnMutate();
+}
+
 void MotionMaster::DirectExpireSlot(MovementSlot slot, bool reset)
 {
+
     if (size() > 1)
     {
         MovementGenerator* curr = Impl[slot];
@@ -225,7 +235,7 @@ void MotionMaster::DirectExpireSlot(MovementSlot slot, bool reset)
     else if (needInitTop())
         InitTop();
     else if (reset)
-        top()->Reset(_owner);
+        DoReset(top());;
 }
 
 void MotionMaster::MoveIdle()
@@ -727,6 +737,7 @@ void MotionMaster::MoveDistract(uint32 timer)
 
 void MotionMaster::Mutate(MovementGenerator* m, MovementSlot slot)
 {
+
     while (MovementGenerator* curr = Impl[slot])
     {
         bool delayed = (_top == slot && (_cleanFlag & MMCF_UPDATE));
@@ -810,7 +821,7 @@ void MotionMaster::ReinitializeMovement()
     for (int i = 0; i <= _top; ++i)
     {
         if (Impl[i])
-            Impl[i]->Reset(_owner);
+            DoReset(Impl[i]);
     }
 }
 

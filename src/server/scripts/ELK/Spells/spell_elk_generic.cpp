@@ -246,6 +246,111 @@ class spell_elk_critical_attack_hit : public ELKSpellScript
     }
 };
 
+class spell_elk_spin_attack_hit : public ELKSpellScript
+{
+    PrepareSpellScript(spell_elk_spin_attack_hit);
+
+    bool WasInAir = false;
+    std::map<MapDummy, std::optional<std::any>> spellMap;
+    uint32 strike = 0;
+    Unit* caster;
+    uint8 targetsHit = 0;
+    std::vector<Unit*> targetsHitVec;
+
+    void SpellBegin()
+    {
+        Spell* spell = GetSpell();
+        caster = GetCaster();
+        strike = caster->GetStrikeAura();
+        spellMap = spell->GetTriggerDummy();
+        auto& inAir = spellMap[MapDummy::WasInAir];
+        if (inAir.has_value())
+        {
+            if (std::any_cast<bool>(inAir.value()) == true)
+            {
+                WasInAir = true;
+            }
+            else
+            {
+                WasInAir = false;
+            }
+        }
+        else
+            WasInAir = false;
+        AttackBegin();
+    }
+    void SpellHit()
+    {
+        Unit* victim = GetHitUnit();
+
+        CalcDamageInfo damageInfo;
+        GetCaster()->CalculateMeleeDamage(victim, 0, &damageInfo);
+        damageInfo.hitOutCome = MELEE_HIT_CRIT;
+        damageInfo.HitInfo |= HITINFO_NO_ANIMATION;
+        damageInfo.damage *= 2;
+
+        Spell* spell = GetSpell();
+        caster->ModifyPower(POWER_MANA, caster->GetStat(STAT_SPIRIT));
+        if (WasInAir)
+        {
+            CustomSpellValues values;
+            values.AddSpellMod(SPELLVALUE_AURA_DURATION, 2000);
+            caster->CastCustomSpell(ATTACK_SLOW_DEBUFF, values, caster, TRIGGERED_FULL_MASK);
+        }
+        else
+        {
+            caster->CastSpell(GetHitUnit(), ATTACK_SLOW_DEBUFF, true);
+        }
+
+        targetsHit++;
+        switch (strike)
+        {
+        default:
+            break;
+
+        }
+        Unit::DealDamageMods(victim, damageInfo.damage, &damageInfo.absorb);
+        GetCaster()->PlayDistanceSound(129);
+
+        GetCaster()->DealMeleeDamage(&damageInfo, true);
+
+        DamageInfo dmgInfo(damageInfo);
+        dmgInfo.SetSpellInfo(GetSpellInfo());
+        GetCaster()->ProcDamageAndSpell(damageInfo.target, damageInfo.procAttacker, damageInfo.procVictim, damageInfo.procEx, damageInfo.damage,
+            damageInfo.attackType, nullptr, nullptr, -1, nullptr, &dmgInfo);
+        GetCaster()->DoOnAttackHitScripts(victim, dmgInfo);
+    }
+    void SpellFinish()
+    {
+        if (!(caster))
+            return;
+
+        AfterAttack();
+
+
+        if (targetsHit)
+        {
+            auto& optComboLength = spellMap[MapDummy::ComboLength];
+            if (optComboLength.has_value())
+                GetCaster()->SetAuraStack(COMBO_COUNT, GetCaster(), std::any_cast<uint8>(optComboLength.value()) + 1);
+            else
+                caster->AddAura(COMBO_COUNT, caster);
+            caster->ModCritTempo(uint16(caster->GetFloatValue(PLAYER_CRIT_PERCENTAGE) / (caster->GetFloatValue(static_cast<uint16>(UNIT_FIELD_BASEATTACKTIME)) / 1000)));
+        }
+
+        switch (strike)
+        {
+        default:
+            break;
+        }
+    }
+    void Register() override
+    {
+        BeforeCast += SpellCastFn(spell_elk_spin_attack_hit::SpellBegin);
+        AfterCast += SpellCastFn(spell_elk_spin_attack_hit::SpellFinish);
+        AfterHit += SpellHitFn(spell_elk_spin_attack_hit::SpellHit);
+    }
+};
 class spell_elk_deflect_aura : public AuraScript
 {
     PrepareAuraScript(spell_elk_deflect_aura);
@@ -574,13 +679,235 @@ class spell_elk_spell_power_mana_cost_aura : public AuraScript
         OnEffectApply += AuraEffectApplyFn(spell_elk_spell_power_mana_cost_aura::Apply, EFFECT_0, SPELL_AURA_MOD_POWER_COST_SCHOOL_PCT, AURA_EFFECT_HANDLE_REAL);
     }
 };
+
+class spell_elk_generic_finale : public ELKSpellScript
+{
+    PrepareSpellScript(spell_elk_generic_finale);
+    Unit* caster;
+    Spell* spell;
+
+    uint8 comboLength = 0;
+
+    void SpellClick()
+    {
+        spell = GetSpell();
+        caster = GetCaster();
+
+        Spell* curAtk = caster->GetCurrentSpell(CURRENT_CHANNELED_SPELL);
+        if (curAtk)
+        {
+            if (curAtk->m_spellInfo->Id == ATTACK)
+            {
+                if (curAtk->GetSpellTimer() < 50)
+                {
+                    spell->skip = true;
+                    GetCaster()->AddSpellCooldown(spell->m_spellInfo->Id, 0, 100, false);
+                    QueSpell(caster);
+                    return;
+                }
+                else
+                {
+                    spell->skip = true;
+                    GetCaster()->AddSpellCooldown(spell->m_spellInfo->Id, 0, 100, false);
+                    return;
+                }
+            }
+        }
+        else
+        {
+            curAtk = caster->GetCurrentSpell(CURRENT_GENERIC_SPELL);
+            if (curAtk)
+            {
+                if (curAtk->m_spellInfo->Id == ATTACK_HIT && curAtk->GetSpellTimer() > 0)
+                {
+                    spell->skip = true;
+                    GetCaster()->AddSpellCooldown(spell->m_spellInfo->Id, 0, 1, false);
+                    QueSpell(caster);
+                    return;
+                }
+            }
+        }
+
+        uint16 cd = 0;
+        if (caster->CanUseAttackType(BASE_ATTACK))
+            cd += caster->GetAttackTime(BASE_ATTACK);
+        if (caster->CanUseAttackType(OFF_ATTACK))
+            cd += caster->GetAttackTime(OFF_ATTACK);
+        spell->SetRuneCooldown(cd);
+        spell->SetRuneCost(1);
+
+        if (auto aura = caster->GetAura(COMBO_COUNT))
+            comboLength = aura->GetStackAmount();
+    }
+    void SpellBegin()
+    {
+    }
+    virtual void AttackUnique()
+    {
+
+    }
+    void AttackHit()
+    {
+        uint32 hitSpell = 0;
+        switch (GetSpell()->m_spellInfo->Id)
+        {
+        case CRUSHING_WAVE:
+            hitSpell = CRUSHING_WAVE_HIT;
+            break;
+        }
+        if (!hitSpell)
+            return;
+        caster->CastSpell(caster, hitSpell, false);
+        AttackUnique();
+
+        auto curAtk = caster->GetCurrentSpell(CURRENT_GENERIC_SPELL);
+        if (curAtk)
+        {
+            if (curAtk->m_spellInfo->Id == hitSpell)
+            {
+                curAtk->GetTriggerDummy()[MapDummy::ComboLength] = comboLength;
+                return;
+            }
+        }
+    }
+    virtual void Register()
+    {
+        BeforeSpellLoad += SpellCastFn(spell_elk_generic_finale::SpellClick);
+        BeforeCast += SpellCastFn(spell_elk_generic_finale::SpellBegin);
+        AfterFullChannel += SpellCastFn(spell_elk_generic_finale::AttackHit);
+    }
+
+};
+
+class spell_elk_generic_finale_hit : public ELKSpellScript
+{
+    PrepareSpellScript(spell_elk_generic_finale_hit);
+
+    bool WasInAir = false;
+    std::map<MapDummy, std::optional<std::any>> spellMap;
+    uint32 strike = 0;
+    Unit* caster;
+    uint8 targetsHit = 0;
+    std::vector<Unit*> targetsHitVec;
+    uint8 combo = 0;
+     
+    void SpellBegin()
+    {
+        Spell* spell = GetSpell();
+        caster = GetCaster();
+
+        if (Aura* aura = GetCaster()->GetAura(COMBO_COUNT))
+        {
+            uint16 cd = 0;
+            if (GetCaster()->CanUseAttackType(BASE_ATTACK))
+                cd += GetCaster()->GetAttackTime(BASE_ATTACK);
+            if (GetCaster()->CanUseAttackType(OFF_ATTACK))
+                cd += GetCaster()->GetAttackTime(OFF_ATTACK);
+            if (aura->GetStackAmount() > 6)
+            {
+                cd *= 6;
+                combo = 6;
+                aura->SetStackAmount(aura->GetStackAmount() - 6);
+            }
+            else
+            {
+                cd *= aura->GetStackAmount();
+                combo = aura->GetStackAmount();
+                aura->Remove();
+            }
+            spell->SetRuneCooldown(cd);
+            spell->SetRuneCost(1);
+            AttackBegin();
+        }
+        else
+        {
+            spell->skip = true;
+            GetCaster()->AddSpellCooldown(spell->m_spellInfo->Id, 0, 100, false);
+        }
+    }
+    void SpellHit()
+    {
+        Unit* victim = GetHitUnit();
+
+        CalcDamageInfo damageInfo;
+        GetCaster()->CalculateMeleeDamage(victim, 0, &damageInfo);
+        damageInfo.hitOutCome = MELEE_HIT_CRIT;
+        damageInfo.HitInfo |= HITINFO_NO_ANIMATION;
+
+        Spell* spell = GetSpell();
+        caster->ModifyPower(POWER_MANA, caster->GetStat(STAT_SPIRIT));
+        if (WasInAir)
+        {
+            CustomSpellValues values;
+            values.AddSpellMod(SPELLVALUE_AURA_DURATION, 2000);
+            caster->CastCustomSpell(ATTACK_SLOW_DEBUFF, values, caster, TRIGGERED_FULL_MASK);
+        }
+        else
+        {
+            caster->CastSpell(GetHitUnit(), ATTACK_SLOW_DEBUFF, true);
+        }
+
+        targetsHit++;
+        switch (strike)
+        {
+        default:
+            break;
+
+        }
+        damageInfo.damage *= combo;
+        Unit::DealDamageMods(victim, damageInfo.damage, &damageInfo.absorb);
+        GetCaster()->PlayDistanceSound(129);
+
+        GetCaster()->DealMeleeDamage(&damageInfo, true);
+
+        DamageInfo dmgInfo(damageInfo);
+        dmgInfo.SetSpellInfo(GetSpellInfo());
+        GetCaster()->ProcDamageAndSpell(damageInfo.target, damageInfo.procAttacker, damageInfo.procVictim, damageInfo.procEx, damageInfo.damage,
+            damageInfo.attackType, nullptr, nullptr, -1, nullptr, &dmgInfo);
+        GetCaster()->DoOnAttackHitScripts(victim, dmgInfo);
+    }
+    void SpellFinish()
+    {
+        if (!(caster))
+            return;
+
+        AfterAttack();
+
+
+        if (targetsHit)
+        {
+            auto& optComboLength = spellMap[MapDummy::ComboLength];
+            if (optComboLength.has_value())
+                GetCaster()->SetAuraStack(COMBO_COUNT, GetCaster(), std::any_cast<uint8>(optComboLength.value()) + 1);
+            else
+                caster->AddAura(COMBO_COUNT, caster);
+            caster->ModCritTempo(uint16(caster->GetFloatValue(PLAYER_CRIT_PERCENTAGE) / (caster->GetFloatValue(static_cast<uint16>(UNIT_FIELD_BASEATTACKTIME)) / 1000)));
+        }
+
+        switch (strike)
+        {
+        default:
+            break;
+        }
+    }
+    void Register() override
+    {
+        BeforeCast += SpellCastFn(spell_elk_generic_finale_hit::SpellBegin);
+        AfterCast += SpellCastFn(spell_elk_generic_finale_hit::SpellFinish);
+        AfterHit += SpellHitFn(spell_elk_generic_finale_hit::SpellHit);
+    }
+};
+
+
 void AddSC_elk_spell_scripts()
 {
     RegisterSpellScript(spell_elk_strike_aura);
     RegisterSpellScript(spell_elk_attack);
     RegisterSpellScript(spell_elk_critical_attack);
+    RegisterSpellScript(spell_elk_spin_attack);
     RegisterSpellScript(spell_elk_attack_hit);
     RegisterSpellScript(spell_elk_critical_attack_hit);
+    RegisterSpellScript(spell_elk_spin_attack_hit);
     RegisterSpellAndAuraScriptPair(spell_elk_deflect, spell_elk_deflect_aura);
     RegisterSpellScript(spell_elk_double_jump);
     RegisterSpellScript(spell_elk_rush_aura);
@@ -589,5 +916,7 @@ void AddSC_elk_spell_scripts()
     RegisterSpellScript(spell_elk_dash_aura);
     RegisterSpellScript(spell_elk_tempo_dash_aura);
     RegisterSpellScript(spell_elk_spell_power_mana_cost_aura);
+    RegisterSpellScript(spell_elk_generic_finale);
+    RegisterSpellScript(spell_elk_generic_finale_hit);
 
 }

@@ -24,9 +24,14 @@ enum Events : uint16
     DEF_1,
     DEF_2,
     DEF_3,
+    SPL_1,
+    SPL_2,
+    SPL_3,
+    SPL_4,
     CHECK_HEALTH,
     REGULAR_CHECK,
     RETURN_CHECK,
+    DYNAMIC_MOVEMENT_1,
 };
 
 class ELKCreatureScript : public CreatureScript
@@ -45,10 +50,10 @@ struct ELKAI : public ScriptedAI
     uint8 comboing = 0;
     std::vector<WorldLocation> positions{me->GetWorldLocation()};
 
-    uint8 reinforcementCall = RAND(1, 2);
+    uint8 reinforcementCall = rand() % 2 + 1;
 
-    uint8 chanceAtk = RAND(2, 3);
-    uint8 chanceDef = RAND(0, 1);
+    uint8 chanceAtk = rand() % 2 + 2;
+    uint8 chanceDef = rand() % 2;
     uint8 chanceSpell = 0;
     uint8 chanceBuff = 0;
 
@@ -58,6 +63,9 @@ struct ELKAI : public ScriptedAI
     uint8 optionBuff = 0;
     uint8 mode = 0;
 
+    uint8 lastCategory = 0;
+    uint8 lastChoice = 0;
+
     std::map<uint32, uint16> baseCooldowns;
     std::map<uint32, uint16> baseCost;
 
@@ -65,14 +73,30 @@ struct ELKAI : public ScriptedAI
 
     void Reset() override
     {
+        ResetExtra();
         events.Reset();
         comboing = 0;
     }
+
+    virtual void ResetExtra() {};
+
     void DelayAttack()
     {
         me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
     }
-    bool EasyCast(int spell)
+    bool EasyAttack(uint32 spell, uint16 event, uint16 delay)
+    {
+        SpellCastResult ret = me->CastSpell(me, spell, false);
+        if (ret == SPELL_CAST_OK)
+        {
+            comboing++;
+            events.ScheduleEvent(event, delay);
+            return true;
+        }
+        comboing = 0;
+        return false;
+    }
+    bool EasyCast(uint32 spell)
     {
         
         SpellCastResult ret = me->CastSpell(me, spell, false);
@@ -83,7 +107,20 @@ struct ELKAI : public ScriptedAI
         }
         return false;
     }
-    bool EasyCastTarget(int spell)
+    bool EasyCastLocation(uint32 spell, Position point)
+    {
+        auto target = me->GetVictim();
+        if (!target || me->GetSpellCooldown(spell))
+            return false;
+        SpellCastResult ret = me->CastSpell(point.GetPositionX(), point.GetPositionY(), point.GetPositionZ(), spell, false);
+        if (ret == SPELL_CAST_OK)
+        {
+            me->AddSpellCooldown(spell, 0, baseCooldowns[spell]);
+            return true;
+        }
+        return false;
+    }
+    bool EasyCastTarget(uint32 spell)
     {
         auto target = me->GetVictim();
         if (!target || me->GetSpellCooldown(spell))
@@ -96,10 +133,10 @@ struct ELKAI : public ScriptedAI
         }
         return false;
     }
-    void EasyQueCombo(int attack)
+    void EasyQueCombo(uint32 attack)
     { 
         uint32 atkTime = me->GetAttackTime(BASE_ATTACK);
-        events.ScheduleEvent(attack, me->getAttackTimer(BASE_ATTACK));
+        events.ScheduleEvent(attack, 0);
         me->setAttackTimer(BASE_ATTACK, atkTime);
         comboing = 1;
     }
@@ -170,11 +207,16 @@ struct ELKAI : public ScriptedAI
         {
         case 1:
         {
-            uint8 rnd = RAND(1, (int)optionAtk);
+            uint8 rnd = rand() % optionAtk;
             for (uint8 i = 0; i < optionAtk; i++)
             {
+                uint8 choice = (i + rnd) % (optionAtk);
+                if (action == lastCategory && lastChoice == choice)
+                    continue;
+                lastCategory = action;
+                lastChoice = choice;
                 bool exit = false;
-                RandomAtk((i + rnd) % (optionAtk), exit);
+                RandomAtk(choice, exit);
                 if (exit)
                 {
                     break;
@@ -184,11 +226,16 @@ struct ELKAI : public ScriptedAI
         }
         case 2:
         {
-            uint8 rnd = RAND(1, (int)optionDef);
+            uint8 rnd = rand() % optionDef;
             for (uint8 i = 0; i < optionDef; i++)
             {
+                uint8 choice = (i + rnd) % (optionAtk);
+                if (action == lastCategory && lastChoice == choice)
+                    continue;
+                lastCategory = action;
+                lastChoice = choice;
                 bool exit = false;
-                RandomDef((i + rnd) % (optionDef), exit);
+                RandomDef(choice, exit);
                 if (exit)
                 {
                     break;
@@ -198,11 +245,16 @@ struct ELKAI : public ScriptedAI
         }
         case 3:
         { 
-            uint8 rnd = RAND(1, (int)optionSpell);
+            uint8 rnd = rand() % optionSpell;
             for (uint8 i = 0; i < optionSpell; i++)
             {
+                uint8 choice = (i + rnd) % (optionAtk);
+                if (action == lastCategory && lastChoice == choice)
+                    continue;
+                lastCategory = action;
+                lastChoice = choice;
                 bool exit = false;
-                RandomSpell((i + rnd) % (optionSpell), exit);
+                RandomSpell(choice, exit);
                 if (exit)
                 {
                     break;
@@ -212,11 +264,16 @@ struct ELKAI : public ScriptedAI
         }
         case 4:
         {
-            uint8 rnd = RAND(1, (int)optionBuff);
+            uint8 rnd = rand() % optionBuff;
             for (uint8 i = 0; i < optionBuff; i++)
             {
+                uint8 choice = (i + rnd) % (optionAtk);
+                if (action == lastCategory && lastChoice == choice)
+                    continue;
+                lastCategory = action;
+                lastChoice = choice;
                 bool exit = false;
-                RandomBuff((i + rnd) % (optionBuff), exit);
+                RandomBuff(choice, exit);
                 if (exit)
                 {
                     break;

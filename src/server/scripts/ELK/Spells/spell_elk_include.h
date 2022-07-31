@@ -47,6 +47,8 @@ enum OutsideSpells
     DEFLECTUNARMED =            100037,
     DEFLECTSHEILDBLOCK =        100038,
     DEFLECT2HL =                100039,
+    SPIN_ATTACK_HIT =           100044,
+    SPIN_ATTACK =               100045, 
 };
 enum SpellsC // Creature Spells.
 {
@@ -79,6 +81,14 @@ enum SpellsC // Creature Spells.
     FEAR =                      150027,
     ARCANE_MISSILES =           150028,
     ARCANE_TORRENT =            150029,
+    SHALLOW_LEAP =              150030,
+    TALL_LEAP =                 150031,
+    SLIDE_LEAP =                150034,
+    CRUSHING_WAVE_HIT =         150035,
+    CRUSHING_WAVE =             150036,
+    SHALLOW_LEAP_500 =          150037,
+    GIGA_THUNDER_CLAP =         150038,
+    GIGA_THUNDER_CLAP_HIT =     150039,
 };
 enum SpellsStrike : uint32
 {
@@ -626,6 +636,100 @@ class spell_elk_critical_attack : public ELKSpellScript
         BeforeSpellLoad += SpellCastFn(spell_elk_critical_attack::SpellClick);
         BeforeCast += SpellCastFn(spell_elk_critical_attack::SpellBegin);
         AfterFullChannel += SpellCastFn(spell_elk_critical_attack::AttackHit);
+    }
+
+};
+
+
+class spell_elk_spin_attack : public ELKSpellScript
+{
+    PrepareSpellScript(spell_elk_spin_attack);
+    Unit* caster;
+    Spell* spell;
+
+    uint8 comboLength = 0;
+
+
+
+    void SpellClick()
+    {
+        spell = GetSpell();
+        caster = GetCaster();
+
+        Spell* curAtk = caster->GetCurrentSpell(CURRENT_CHANNELED_SPELL);
+        if (curAtk)
+        {
+            if (curAtk->m_spellInfo->Id == ATTACK)
+            {
+                if (curAtk->GetSpellTimer() < 50)
+                {
+                    spell->skip = true;
+                    GetCaster()->AddSpellCooldown(spell->m_spellInfo->Id, 0, 100, false);
+                    QueSpell(caster);
+                    return;
+                }
+                else
+                {
+                    spell->skip = true;
+                    GetCaster()->AddSpellCooldown(spell->m_spellInfo->Id, 0, 100, false);
+                    return;
+                }
+            }
+        }
+        else
+        {
+            curAtk = caster->GetCurrentSpell(CURRENT_GENERIC_SPELL);
+            if (curAtk)
+            {
+                if (curAtk->m_spellInfo->Id == ATTACK_HIT && curAtk->GetSpellTimer() > 0)
+                {
+                    spell->skip = true;
+                    GetCaster()->AddSpellCooldown(spell->m_spellInfo->Id, 0, 1, false);
+                    QueSpell(caster);
+                    return;
+                }
+            }
+        }
+
+        uint16 cd = 0;
+        if (caster->CanUseAttackType(BASE_ATTACK))
+            cd += caster->GetAttackTime(BASE_ATTACK);
+        if (caster->CanUseAttackType(OFF_ATTACK))
+            cd += caster->GetAttackTime(OFF_ATTACK);
+        spell->SetRuneCooldown(cd);
+        spell->SetRuneCost(1);
+
+        if (auto aura = caster->GetAura(COMBO_COUNT))
+            comboLength = aura->GetStackAmount();
+    }
+    void SpellBegin()
+    {
+    }
+    virtual void AttackUnique()
+    {
+
+    }
+    void AttackHit()
+    {
+        uint32 hitSpell = SPIN_ATTACK_HIT;
+        caster->CastSpell(caster, hitSpell, false);
+        AttackUnique();
+
+        auto curAtk = caster->GetCurrentSpell(CURRENT_GENERIC_SPELL);
+        if (curAtk)
+        {
+            if (curAtk->m_spellInfo->Id == hitSpell)
+            {
+                curAtk->GetTriggerDummy()[MapDummy::ComboLength] = comboLength;
+                return;
+            }
+        }
+    }
+    virtual void Register()
+    {
+        BeforeSpellLoad += SpellCastFn(spell_elk_spin_attack::SpellClick);
+        BeforeCast += SpellCastFn(spell_elk_spin_attack::SpellBegin);
+        AfterFullChannel += SpellCastFn(spell_elk_spin_attack::AttackHit);
     }
 
 };

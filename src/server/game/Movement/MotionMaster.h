@@ -259,5 +259,7 @@ private:
     Unit* _owner;
     bool _needInit[MAX_MOTION_SLOT];
     uint8 _cleanFlag;
+
+    void DoReset(_Ty move);
 };
 #endif

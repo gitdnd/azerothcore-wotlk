@@ -71,6 +71,8 @@ public:
     } 
     struct mana_wyrmAI : public ELKAI
     {
+        uint8 dynamicMovement = 0;
+        uint8 movementAmount = 0;
         mana_wyrmAI(Creature* creature) : ELKAI(creature)
         {
             reinforcementCall = 1;
@@ -78,14 +80,43 @@ public:
             chanceDef = 1;
             chanceSpell = 1;
 
-            optionAtk = 2;
+            optionAtk = 5;
             optionDef = 1;
-            optionSpell = 1;
+            optionSpell = 2;
             baseCooldowns[SpellsC::ARCANE_TORRENT] = 10000;
         };
         void EnterCombatCustom(Unit* /*who*/) override
         {
             events.ScheduleEvent(REGULAR_CHECK, 1000);
+        }
+        void MoveBack()
+        {
+            Position pos = me->GetPosition();
+            float angle = me->GetVictim()->GetAbsoluteAngle(me);
+
+            me->MovePositionToFirstCollision(pos, 3, angle + 3.14);
+
+            Movement::MoveSplineInit init(me);
+            init.MoveTo(pos.m_positionX, pos.m_positionY, pos.m_positionZ);
+            init.Launch();
+            init.SetOrientationInversed();
+
+            movementAmount += 1;
+        }
+        void MoveSide()
+        {
+
+            Position pos = me->GetVictim()->GetPosition();
+            float angle = me->GetVictim()->GetAngle(me);
+
+            me->MovePositionToFirstCollision(pos, 2, angle + 1.67);
+
+            Movement::MoveSplineInit init(me);
+            init.MoveTo(pos.m_positionX, pos.m_positionY, pos.m_positionZ);
+            init.Launch();
+            me->SetFacingToObject(me->GetVictim());
+
+            movementAmount += 1;
         }
         void UpdateAI(uint32 diff) override
         { 
@@ -99,12 +130,58 @@ public:
             auto target = me->GetVictim();
             if (me->isMoving())
             {
-                if (me->GetDistance(target) > 1 and me->GetDistance(target) <= 5 and rand() % 5 == 0)
-                    EasyCastTarget(SpellsC::ARCANE_TORRENT);
-                return;
+                if (dynamicMovement > 0)
+                {
+                    switch (dynamicMovement)
+                    {
+                    case 1:
+                    {
+                        MoveBack();
+                        if (movementAmount > 20)
+                        {
+                            dynamicMovement = 2;
+                            movementAmount = 0;
+                        }
+                        break;
+                    }
+                    case 2:
+                    {
+                        MoveSide();
+                        if (movementAmount > 20)
+                        {
+                            dynamicMovement = 0;
+                            movementAmount = 0;
+                            events.ScheduleEvent(ATK_1, 0);
+                        }
+                        break;
+                    }
+                    }
+                }
+                else
+                {
+                    if (me->GetDistance(target) > 1 && me->GetDistance(target) <= 5 && rand() % 5 == 0)
+                        EasyCastTarget(SpellsC::ARCANE_TORRENT);
+                    return;
+                }
             }
+            else
+                if (dynamicMovement)
+                {
+                    dynamicMovement = 0;
+                    movementAmount = 0;
+                }
+
             switch (events.ExecuteEvent())
             {
+            case DYNAMIC_MOVEMENT_1:
+            {
+                dynamicMovement = 1;
+
+                MoveBack();
+
+                return;
+                break;
+            }
             case ATK_1:
             {
                 switch (comboing)
@@ -112,13 +189,13 @@ public:
                 case 1:
                     DelayAttack();
                     EasyCast(ATTACK);
-                    events.ScheduleEvent(ATK_1, 750);
+                    events.ScheduleEvent(ATK_1, 700);
                     comboing = 2;
                     break;
                 case 2:
                     DelayAttack();
                     EasyCast(ATTACK);
-                    events.ScheduleEvent(ATK_1, 750);
+                    events.ScheduleEvent(ATK_1, 700);
                     comboing = 3;
                     break;
                 case 3:
@@ -206,6 +283,13 @@ public:
                 }
                 break;
             }
+            case 2:
+            case 3:
+            case 4:
+            {
+                events.ScheduleEvent(DYNAMIC_MOVEMENT_1, 0);
+                break;
+            }
             }
         }
         void RandomDef(uint8 def, bool& exit) override
@@ -263,7 +347,7 @@ public:
             auto target = me->GetVictim();
             if (me->isMoving())
             {
-                if (me->GetDistance(target) > 1 and me->GetDistance(target) <= 5 and rand() % 5 == 0) 
+                if (me->GetDistance(target) > 1 && me->GetDistance(target) <= 5 && rand() % 5 == 0) 
                     EasyCastTarget(SpellsC::SLOW);
                 return;
             }
@@ -276,19 +360,19 @@ public:
                 case 1:
                     DelayAttack();
                     EasyCast(ATTACK);
-                    events.ScheduleEvent(ATK_1, 750);
+                    events.ScheduleEvent(ATK_1, 700);
                     comboing = 2;
                     break;
                 case 2:
                     DelayAttack();
                     EasyCast(ATTACK);
-                    events.ScheduleEvent(ATK_1, 750);
+                    events.ScheduleEvent(ATK_1, 700);
                     comboing = 3;
                     break;
                 case 3:
                     DelayAttack();
                     EasyCast(ATTACK);
-                    events.ScheduleEvent(ATK_1, 750);
+                    events.ScheduleEvent(ATK_1, 700);
                     comboing = 4;
                     break;
                 case 4:
@@ -402,7 +486,7 @@ public:
             auto target = me->GetVictim();
             if (me->isMoving())
             {
-                if (me->GetDistance(target) > 2 and me->GetDistance(target) <= 5 and rand() % 10 == 0)
+                if (me->GetDistance(target) > 2 && me->GetDistance(target) <= 5 && rand() % 10 == 0)
                     me->CastSpell(target, SpellsC::ARCANE_TORRENT, false);
                 else if (me->GetDistance(target) > 5)
                     me->CastSpell(target, SpellsC::ARCANE_BOLT, false);
@@ -411,7 +495,7 @@ public:
             switch (events.ExecuteEvent())
             {
             case CHECK_HEALTH:
-                if (!comboing and me->HealthBelowPct(25))
+                if (!comboing && me->HealthBelowPct(25))
                 {
                     me->CastSpell(me, SpellsC::FRENZY, false);
                     mode = 0;
@@ -426,13 +510,13 @@ public:
                 case 1:
                     DelayAttack();
                     EasyCast(ATTACK);
-                    events.ScheduleEvent(ATK_1, 750);
+                    events.ScheduleEvent(ATK_1, 700);
                     comboing = 2;
                     break;
                 case 2:
                     DelayAttack();
                     EasyCast(ATTACK);
-                    events.ScheduleEvent(ATK_1, 750);
+                    events.ScheduleEvent(ATK_1, 700);
                     comboing = 3;
                     break;
                 case 3:
@@ -456,7 +540,7 @@ public:
                 case 2:
                     DelayAttack();
                     EasyCast(ATTACK);
-                    events.ScheduleEvent(ATK_2, 250);
+                    events.ScheduleEvent(ATK_2, 700);
                     comboing = 3;
                     break;
                 case 3:
@@ -477,7 +561,7 @@ public:
                 {
                     DelayAttack();
                     EasyCast(ATTACK);
-                    events.ScheduleEvent(ATK_1, 750);
+                    events.ScheduleEvent(ATK_1, 700);
                 }
                 break;
             }
@@ -621,8 +705,8 @@ public:
         void BuildGossip_TALK_7(Player*& player)
         {
             player->RemoveStageQuestFlag(QuestStageFlags::FELENDREN_PUT_DOWN);
-            AddGossipItemFor(player, 0, "<Talk, Put Down> I've come to terms with it, I should kill you.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_PUT_DOWN);
-            AddGossipItemFor(player, 0, "<Talk, Embrace> Right, are you sure you're not missing something? Feel anything?", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_EMBRACE);
+            AddGossipItemFor(player, 0, "<Put Down> I've come to terms with it, I should kill you.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_PUT_DOWN);
+            AddGossipItemFor(player, 0, "<Embrace> Right, are you sure you're not missing something? Feel anything?", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_EMBRACE);
             AddGossipItemFor(player, 0, "<Leave> See you later.", GOSSIP_SENDER_MAIN, FELENDREN_LEAVE_DIALOGUE);
             SendGossipMenuFor(player, FELENDREN_TALK_7, me);
         }
@@ -644,12 +728,12 @@ public:
             if (player->GetQuestStageFlag(QuestStageFlags::FELENDREN_PUT_DOWN))
             {
                 AddGossipItemFor(player, 0, "<Attack> You're dead.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_PUT_DOWN_ATTACK);
-                AddGossipItemFor(player, 0, "<Talk, Return> Never mind, I'm being hasty. What else can I do?", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_6);
+                AddGossipItemFor(player, 0, "<Return> Never mind, I'm being hasty. What else can I do?", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_6);
                 SendGossipMenuFor(player, FELENDREN_PUT_DOWN_RESET, me); 
             }
             else if (!player->GetQuestStageFlag(QuestStageFlags::FELENDREN_MET))
             {
-                AddGossipItemFor(player, GOSSIP_ICON_CHAT, "<Talk> What are you doing here you pale skinned, wretched rat?", GOSSIP_SENDER_MAIN, FELENDREN_INTRO_DIALOGUE);
+                AddGossipItemFor(player, GOSSIP_ICON_CHAT, "What are you doing here you pale skinned, wretched rat?", GOSSIP_SENDER_MAIN, FELENDREN_INTRO_DIALOGUE);
                 AddGossipItemFor(player, GOSSIP_ICON_CHAT, "<Attack> I'm going to shatter your ribs and throw you off this peak you disgrace.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_ASSAULTED);
                 SendGossipMenuFor(player, FELENDREN_INTRO, me);
                 player->AddQuestStageFlag(QuestStageFlags::FELENDREN_MET);
@@ -660,7 +744,7 @@ public:
             }
             else
             {
-                AddGossipItemFor(player, GOSSIP_ICON_CHAT, "<Talk> Why were you here again, bastard?", GOSSIP_SENDER_MAIN, FELENDREN_INTRO_DIALOGUE);
+                AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Why were you here again, bastard?", GOSSIP_SENDER_MAIN, FELENDREN_INTRO_DIALOGUE);
                 AddGossipItemFor(player, GOSSIP_ICON_CHAT, "<Attack> I finished up my preparation, time to die..", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_ASSAULTED);
                 SendGossipMenuFor(player, FELENDREN_INTRO_MET, me);
             }
@@ -677,46 +761,46 @@ public:
             }
             case FELENDREN_INTRO_DIALOGUE:
             {
-                AddGossipItemFor(player, 0, "<Talk> What happens to be your problem?", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_1);
-                AddGossipItemFor(player, 0, "<Talk> Speak quickly or you'll be a skinned rat soon.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_1);
+                AddGossipItemFor(player, 0, "What happens to be your problem?", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_1);
+                AddGossipItemFor(player, 0, "Speak quickly or you'll be a skinned rat soon.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_1);
                 AddGossipItemFor(player, GOSSIP_ICON_CHAT, "<Attack> Never mind, you're just another pathetic waste of Mana.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_ASSAULTED);
                 SendGossipMenuFor(player, FELENDREN_TALK_1, me);
                 break;
             }
             case FELENDREN_DIALOGUE_1:
             {
-                AddGossipItemFor(player, 0, "<Talk> Do you realize you've been here causing trouble for weeks?", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_2);
-                AddGossipItemFor(player, 0, "<Talk> You spent a month trying to relieve yourself with magic like some sort of Fel-tainted Pig?", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_2);
+                AddGossipItemFor(player, 0, "Do you realize you've been here causing trouble for weeks?", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_2);
+                AddGossipItemFor(player, 0, "You spent a month trying to relieve yourself with magic like some sort of Fel-tainted Pig?", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_2);
                 SendGossipMenuFor(player, FELENDREN_TALK_2, me);
                 break;
             }
             case FELENDREN_DIALOGUE_2:
             {
-                AddGossipItemFor(player, 0, "<Talk> Why and how did you release all of these Arcane Wraiths? They have cost us a few lives and a lot of time.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_3);
-                AddGossipItemFor(player, 0, "<Talk> As all wretched, you fail to face the consequences. Your elementals are wreaking havoc in this once tranquil school.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_3);
+                AddGossipItemFor(player, 0, "Why and how did you release all of these Arcane Wraiths? They have cost us a few lives and a lot of time.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_3);
+                AddGossipItemFor(player, 0, "As all wretched, you fail to face the consequences. Your elementals are wreaking havoc in this once tranquil school.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_3);
                 SendGossipMenuFor(player, FELENDREN_TALK_3, me);
                 break;
             }
             case FELENDREN_DIALOGUE_3:
             {
-                AddGossipItemFor(player, 0, "<Talk> It was you. This entire beautiful school has been abandoned since you started whatever it is you're doing.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_4);
-                AddGossipItemFor(player, 0, "<Talk> You've intervolved every inch of this place with your disgusting sorcerry.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_4);
+                AddGossipItemFor(player, 0, "It was you. This entire beautiful school has been abandoned since you started whatever it is you're doing.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_4);
+                AddGossipItemFor(player, 0, "You've intervolved every inch of this place with your disgusting sorcerry.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_4);
                 SendGossipMenuFor(player, FELENDREN_TALK_4, me);
                 break;
             }
             case FELENDREN_DIALOGUE_4:
             {
-                AddGossipItemFor(player, 0, "<Talk> Lanthan sent me here to kill you to end the corruption of this honorable place.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_5);
-                AddGossipItemFor(player, 0, "<Talk> Lanthan was right, I should have beheaded you as soon as I got here.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_5);
+                AddGossipItemFor(player, 0, "Lanthan sent me here to kill you to end the corruption of this honorable place.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_5);
+                AddGossipItemFor(player, 0, "Lanthan was right, I should have beheaded you as soon as I got here.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_5);
                 SendGossipMenuFor(player, FELENDREN_TALK_5, me);
                 break;
             }
             case FELENDREN_DIALOGUE_5:
             {
-                AddGossipItemFor(player, 0, "<Talk, Put Down> I believe it's best for us all if I ended your life right now.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_PUT_DOWN);
-                AddGossipItemFor(player, 0, "<Talk, Embrace> Try touching the darkness, feel the burning and sharp energy.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_EMBRACE);
-                AddGossipItemFor(player, 0, "<Talk> What do you suggest I do then? I'm at a complete loss as to how to help you.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_6);
-                AddGossipItemFor(player, 0, "<Talk> Now what?", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_6);
+                AddGossipItemFor(player, 0, "<Put Down> I believe it's best for us all if I ended your life right now.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_PUT_DOWN);
+                AddGossipItemFor(player, 0, "<Embrace> Try touching the darkness, feel the burning and sharp energy.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_EMBRACE);
+                AddGossipItemFor(player, 0, "What do you suggest I do then? I'm at a complete loss as to how to help you.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_6);
+                AddGossipItemFor(player, 0, "Now what?", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_6);
                 SendGossipMenuFor(player, FELENDREN_TALK_6, me);
                 break;
             }
@@ -725,7 +809,7 @@ public:
                 AddGossipItemFor(player, 0, "<Attack> I'm sorry Felendren.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_PUT_DOWN_ATTACK);
                 AddGossipItemFor(player, 0, "<Attack> Your life should end, Felendren, you're a menace and a dangerous idiot.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_PUT_DOWN_ATTACK);
                 AddGossipItemFor(player, 0, "<Attack> Burn in the Nether where your soul belongs, bastard.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_PUT_DOWN_ATTACK);
-                AddGossipItemFor(player, 0, "<Talk, Return> Never mind, I ought to reconsider this. Sunwell damn you, what should I do?", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_6);
+                AddGossipItemFor(player, 0, "<Return> Never mind, I ought to reconsider this. Sunwell damn you, what should I do?", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_6);
                 SendGossipMenuFor(player, FELENDREN_PUT_DOWN, me);
                 break;
             }
@@ -751,17 +835,17 @@ public:
             }
             case FELENDREN_DIALOGUE_EMBRACE:
             {
-                AddGossipItemFor(player, 0, "<Talk, Embrace> Some sort of corrosive, burning pulsation. Don't tell me you don't see it.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_EMBRACE_1);
-                AddGossipItemFor(player, 0, "<Talk, Embrace> You fool, even I can feel it.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_EMBRACE_1); 
-                AddGossipItemFor(player, 0, "<Talk, Return> Never mind this rubbish, what was I supposed to do again?", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_6);
+                AddGossipItemFor(player, 0, "<Embrace> Some sort of corrosive, burning pulsation. Don't tell me you don't see it.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_EMBRACE_1);
+                AddGossipItemFor(player, 0, "<Embrace> You fool, even I can feel it.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_EMBRACE_1); 
+                AddGossipItemFor(player, 0, "<Return> Never mind this rubbish, what was I supposed to do again?", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_6);
                 SendGossipMenuFor(player, FELENDREN_EMBRACE_1, me);
                 break;
             }
             case FELENDREN_DIALOGUE_EMBRACE_1:
             {
-                AddGossipItemFor(player, 0, "<Talk, Embrace> If you absorb it, you might be able to resolve this ugly mess.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_EMBRACE_2);
-                AddGossipItemFor(player, 0, "<Talk, Embrace> Immedeatly drink this energy or I'll burn your remaining hairs off, runt.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_EMBRACE_2);
-                AddGossipItemFor(player, 0, "<Talk, Return> Screw this, what else can I do?", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_6);
+                AddGossipItemFor(player, 0, "<Embrace> If you absorb it, you might be able to resolve this ugly mess.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_EMBRACE_2);
+                AddGossipItemFor(player, 0, "<Embrace> Immedeatly drink this energy or I'll burn your remaining hairs off, runt.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_EMBRACE_2);
+                AddGossipItemFor(player, 0, "<Return> Screw this, what else can I do?", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_6);
                 SendGossipMenuFor(player, FELENDREN_EMBRACE_2, me);
                 break;
             }
@@ -769,7 +853,7 @@ public:
             {
                 AddGossipItemFor(player, 0, "<Choice, Embrace> It is worth it, Felendren. Whatever power or punishment waits for you beyond here is yours to embelish your honor with.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_EMBRACE_3);
                 AddGossipItemFor(player, 0, "<Choice, Embrace> Be done with it already.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_EMBRACE_3);
-                AddGossipItemFor(player, 0, "<Talk, Return> You're right, it's not worth the risk. What else?", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_6);
+                AddGossipItemFor(player, 0, "<Return> You're right, it's not worth the risk. What else?", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_6);
                 SendGossipMenuFor(player, FELENDREN_EMBRACE_3, me);
                 break;
             }
@@ -923,6 +1007,412 @@ public:
 
 };
 
+class amani_berserker : public ELKCreatureScript
+{
+public:
+    amani_berserker() : ELKCreatureScript("amani_berserker") {}
+    CreatureAI* GetAI(Creature* creature) const override
+    {
+        return new amani_berserkerAI(creature);
+    }
+    struct amani_berserkerAI : public ELKAI
+    {
+        uint8 dynamicMovement = 0;
+        uint8 movementAmount = 0;
+        bool threw = false;
+        amani_berserkerAI(Creature* creature) : ELKAI(creature)
+        {
+            reinforcementCall = 0;
+            chanceAtk = 5;
+            chanceDef = 3;
+            chanceSpell = 3;
+
+            optionAtk = 5;
+            optionDef = 1;
+            optionSpell = 2;
+
+            me->SetFloatValue(PLAYER_CRIT_PERCENTAGE, 100);
+            me->ApplySpellPowerBonus(300, true);
+        };
+        void EnterCombatCustom(Unit* /*who*/) override
+        {
+            events.ScheduleEvent(REGULAR_CHECK, 300);
+        }
+        void MoveBack()
+        {
+            Position pos = me->GetPosition();
+            float angle = me->GetVictim()->GetAbsoluteAngle(me);
+
+            me->MovePositionToFirstCollision(pos, 3, angle + 3.14);
+
+            Movement::MoveSplineInit init(me);
+            init.MoveTo(pos.m_positionX, pos.m_positionY, pos.m_positionZ);
+            init.Launch();
+            init.SetOrientationInversed();
+
+            movementAmount += 1;
+        } 
+        void ResetExtra() override
+        {
+            chanceDef = 1;
+
+            lives = 10;
+            spellHits = 0;
+            damagedAmount = 0;
+        }
+        void UpdateAI(uint32 diff) override
+        {
+            if (!UpdateVictim())
+                return;
+            events.Update(diff);
+            if (me->HasUnitState(UNIT_STATE_CASTING))
+            {
+                return;
+            }
+            auto target = me->GetVictim();
+            if (me->isMoving() && !comboing)
+            {
+                if (isLeaping)
+                    return;
+                if (dynamicMovement > 0)
+                {
+                    switch (dynamicMovement)
+                    {
+                    case 1:
+                    {
+                        MoveBack();
+                        if (movementAmount > 5)
+                        {
+                            me->RemoveAura(56354);
+                            dynamicMovement = 0;
+                            movementAmount = 0;
+                        }
+                        break;
+                    }
+                    }
+                }
+                else
+                {
+                    if (threw)
+                    {
+                        threw = false;
+                        EasyCastTarget(SpellsC::SHALLOW_LEAP_500);
+                    }
+                    else if (me->GetDistance(target) > 3 && me->GetDistance(target) <= 7 && rand() % 5 == 0 && EasyCastTarget(SpellsC::THROW))
+                    {
+                        threw = true;
+                        
+                        me->AddSpellCooldown(SpellsC::THROW, 0, 15000);
+                    }
+                    return;
+                }
+            }
+            else
+                if (dynamicMovement)
+                {
+                    me->RemoveAura(56354);
+                    dynamicMovement = 0;
+                    movementAmount = 0;
+                }
+            if (isLeaping)
+                isLeaping = 0;
+            if(threw)
+                threw = false;
+
+            if (!comboing && rand() % 10 == 0)
+                if (Aura* aura = me->GetAura(COMBO_COUNT); aura && aura->GetStackAmount() > 4)
+                    me->CastSpell(me, CRUSHING_WAVE, false);
+
+            switch (events.ExecuteEvent())
+            {
+            case ATK_1:
+            {
+                switch (comboing)
+                {
+                case 1:
+                    EasyAttack(ATTACK, ATK_1, 700);
+                    break;
+                case 2:
+                    EasyAttack(SPIN_ATTACK, ATK_1, 300);
+                    break;
+                case 3:
+                    EasyAttack(ATTACK, ATK_1, 1000);
+                    break;
+                case 4:
+                    EasyAttack(ATTACK, ATK_1, 700);
+                    break;
+                case 5:
+                    EasyAttack(SPIN_ATTACK, ATK_1, 300);
+                    break;
+                case 6:
+                    EasyCast(ATTACK);
+                    comboing = 0;
+                    break;
+                }
+                break;
+            }
+            case ATK_2:
+            {
+                switch (comboing)
+                {
+                case 1:
+                    EasyAttack(CRITICAL_ATTACK, ATK_2, 700);
+                    break;
+                case 2:
+                    EasyAttack(ATTACK, ATK_2, 1000);
+                    break;
+                case 3:
+                    EasyAttack(CRITICAL_ATTACK, ATK_2, 700);
+                    break;
+                case 4:
+                    EasyAttack(ATTACK, ATK_2, 1000);
+                    break;
+                case 5:
+                    EasyCast(CRITICAL_ATTACK);
+                    comboing = 0;
+                    break;
+                }
+                break;
+            }
+            case ATK_3:
+            {
+                switch (comboing)
+                {
+                case 1:
+                    EasyAttack(CRITICAL_ATTACK, ATK_3, 700);
+                    break;
+                case 2:
+                    EasyAttack(SPIN_ATTACK, ATK_3, 300);
+                    break;
+                case 3:
+                    EasyAttack(SPIN_ATTACK, ATK_3, 300);
+                    break;
+                case 4:
+                    EasyAttack(SPIN_ATTACK, ATK_3, 300);
+                    break;
+                case 5:
+                    EasyCast(SPIN_ATTACK);
+                    comboing = 0;
+                    break;
+                }
+                break;
+            }
+            case ATK_4:
+            {
+                switch (comboing)
+                {
+                case 1:
+                    EasyAttack(CRITICAL_ATTACK, ATK_4, 700);
+                    break;
+                case 2:
+                    EasyAttack(SPIN_ATTACK, ATK_4, 300);
+                    break;
+                case 3:
+                    EasyAttack(SPIN_ATTACK, ATK_4, 700);
+                    break;
+                case 4:
+                    EasyAttack(SPIN_ATTACK, ATK_4, 300);
+                    break;
+                case 5:
+                    EasyCast(SPIN_ATTACK);
+                    comboing = 0;
+                    break;
+                }
+                break;
+            }
+            case SPL_1:
+            {
+                switch (comboing)
+                {
+                case 1:
+                    EasyCastTarget(SpellsC::THROW);
+                    events.ScheduleEvent(SPL_1, 200); 
+                    comboing++;
+                    break;
+                case 2:
+                    EasyCastTarget(SpellsC::THROW);
+                    comboing = 0;
+                    break;
+                }
+            }
+            case REGULAR_CHECK:
+                events.ScheduleEvent(REGULAR_CHECK, 300);
+                if (comboing)
+                    break;
+                if (me->GetDistance(target) < 3)
+                {
+                    RandomAction();
+                }
+                break;
+            default:
+                return;
+            }
+        }
+        uint32 spellHits = 0;
+        void SpellHit(Unit* caster, SpellInfo const* spell) override
+        {
+            if (caster == me)
+                return;
+            spellHits++;
+            if (rand() % spellHits > 10)
+            {
+                me->CastSpell(me, 150032, true);
+                spellHits = 0;
+            }
+        }
+        uint8 lives = 10;
+        uint16 damagedAmount = 0;
+        void DamageTaken(Unit* doneby, uint32& damage, DamageEffectType, SpellSchoolMask) override
+        {
+            if (damage >= me->GetHealth() && lives > rand() % 10)
+            {
+                isLeaping = 0;
+                damage = 0;
+                me->SetHealth(300);
+                lives--;
+                chanceDef = 0;
+            }
+
+            if (me->HasAura(25))
+                return;
+            damagedAmount += damage;
+            if (damagedAmount > 30)
+                damagedAmount -= 30;
+            else
+                damagedAmount = 0;
+            if (damagedAmount > 300)
+            {
+                damagedAmount = 0;
+                doneby->CastSpell(me, 150033, true);
+            }
+
+        }
+        void RandomAtk(uint8 atk, bool& exit) override
+        {
+            switch (atk)
+            {
+            case 0:
+            {
+                if (me->GetAvailableRunes() >= 6)
+                {
+                    exit = true;
+                    EasyQueCombo(ATK_1);
+                }
+                break;
+            }
+            case 1:
+            {
+                if (me->GetAvailableRunes() >= 5 && me->GetCritTempo() > 300)
+                {
+                    exit = true;
+                    EasyQueCombo(ATK_2);
+                }
+                break;
+            }
+            case 2:
+            {
+                if (me->GetAvailableRunes() >= 5 && me->GetCritTempo() > 100)
+                {
+                    exit = true;
+                    EasyQueCombo(ATK_3);
+                }
+                break;
+            }
+            case 3:
+            {
+                if (me->GetAvailableRunes() >= 5 && me->GetCritTempo() > 100)
+                {
+                    exit = true;
+                    EasyQueCombo(ATK_4);
+                }
+                break;
+            }
+            case 4:
+            {
+                exit = true;
+                me->AddAura(56354, me);
+                dynamicMovement = 1;
+                MoveBack();
+                break;
+            }
+            }
+        }
+        void RandomDef(uint8 def, bool& exit) override
+        {
+            if (me->GetAvailableRunes() && EasyCastTarget(SPELL_DEFLECT))
+            {
+                exit = true;
+            }
+        }
+        void RandomSpell(uint8 spell, bool& exit) override
+        {
+            switch (spell)
+            {
+            case 0:
+            {
+                if (EasyCastTarget(SpellsC::THROW))
+                {
+                    events.ScheduleEvent(SPL_1, 200);
+                    exit = true; 
+                    break;
+                }
+            }
+            case 1:
+            {
+                isLeaping = 1;
+                Position pos = me->GetPosition();
+                float angle = me->GetVictim()->GetAbsoluteAngle(me);
+
+                me->MovePositionToFirstCollision(pos, 5, 3.14);
+
+                if (EasyCastLocation(SpellsC::SHALLOW_LEAP, pos))
+                {
+                    exit = true;
+                    break;
+                }
+            }
+            case 2:
+            {
+                EasyCast(SpellsC::GIGA_THUNDER_CLAP);
+            }
+            }
+        }
+        uint8 isLeaping = 0;
+        void sOnMutate() override
+        {
+            if (!me->GetVictim())
+                return;
+            switch (isLeaping)
+            {
+            case 1:
+                if (rand() % 2 == 0)
+                {
+                    Position pos = me->GetPosition();
+                    float angle = me->GetVictim()->GetAbsoluteAngle(me);
+
+                    me->MovePositionToFirstCollision(pos, 2, angle + 1.67);
+                    if (EasyCastLocation(SpellsC::SLIDE_LEAP, pos))
+                    {
+                        isLeaping++;
+
+                    }
+                    else
+                        isLeaping = 0;
+                }
+                else
+                    isLeaping = 0;
+                break;
+            case 2:
+                isLeaping = 0;
+
+                EasyCastLocation(SpellsC::TALL_LEAP, me->GetPosition());
+                break;
+            }
+        }
+    };
+};
+
+
 void AddSC_elk_eversong_woods_mobs()
 {
     new mana_wyrm();
@@ -932,4 +1422,11 @@ void AddSC_elk_eversong_woods_mobs()
 
     new solanians_orb();
     new scourge_scroll();
+
+    new amani_berserker();
 }
+
+
+
+
+
