@@ -92,9 +92,9 @@ public:
         void MoveBack()
         {
             Position pos = me->GetPosition();
-            float angle = me->GetVictim()->GetAbsoluteAngle(me);
+            float angle = me->GetVictim()->GetRelativeAngle(me);
 
-            me->MovePositionToFirstCollision(pos, 3, angle + 3.14);
+            me->MovePositionToFirstCollision(pos, 3, angle + 1.67);
 
             Movement::MoveSplineInit init(me);
             init.MoveTo(pos.m_positionX, pos.m_positionY, pos.m_positionZ);
@@ -1029,7 +1029,7 @@ public:
 
             optionAtk = 5;
             optionDef = 1;
-            optionSpell = 2;
+            optionSpell = 3;
 
             me->SetFloatValue(PLAYER_CRIT_PERCENTAGE, 100);
             me->ApplySpellPowerBonus(300, true);
@@ -1041,14 +1041,14 @@ public:
         void MoveBack()
         {
             Position pos = me->GetPosition();
-            float angle = me->GetVictim()->GetAbsoluteAngle(me);
+            float angle = me->GetVictim()->GetRelativeAngle(me);
 
             me->MovePositionToFirstCollision(pos, 3, angle + 3.14);
 
             Movement::MoveSplineInit init(me);
             init.MoveTo(pos.m_positionX, pos.m_positionY, pos.m_positionZ);
             init.Launch();
-            init.SetOrientationInversed();
+
 
             movementAmount += 1;
         } 
@@ -1059,17 +1059,33 @@ public:
             lives = 10;
             spellHits = 0;
             damagedAmount = 0;
+            ResetCC();
+        }
+        void ResetCC()
+        {
+            isLeaping = 0;
+            threw = false;
+            dynamicMovement = 0;
+            movementAmount = 0;
         }
         void UpdateAI(uint32 diff) override
         {
             if (!UpdateVictim())
                 return;
             events.Update(diff);
+            if (!me->CanFreeMove())
+            {
+                events.Reset();
+                ResetCC();
+                events.ScheduleEvent(REGULAR_CHECK, 300);
+                comboing = 0;
+                return;
+            }
+
             if (me->HasUnitState(UNIT_STATE_CASTING))
             {
                 return;
             }
-            auto target = me->GetVictim();
             if (me->isMoving() && !comboing)
             {
                 if (isLeaping)
@@ -1087,8 +1103,15 @@ public:
                             dynamicMovement = 0;
                             movementAmount = 0;
                         }
+                        return;
                         break;
                     }
+                    default:
+                        me->RemoveAura(56354);
+                        dynamicMovement = 0;
+                        movementAmount = 0;
+                        return;
+                        break;
                     }
                 }
                 else
@@ -1096,9 +1119,26 @@ public:
                     if (threw)
                     {
                         threw = false;
-                        EasyCastTarget(SpellsC::SHALLOW_LEAP_500);
+
+                        Position pos = me->GetFirstCollisionPosition(me->GetDistance(me->GetVictim()) - me->GetVictim()->GetCollisionWidth(), me->GetRelativeAngle(me->GetVictim()));
+                        if (!Acore::IsValidMapCoord(pos.m_positionX, pos.m_positionY, pos.m_positionZ) || pos.m_positionZ <= INVALID_HEIGHT)
+                            return;
+
+                        float speedXY, speedZ;
+                        float dist = me->GetExactDist2d(pos.m_positionX, pos.m_positionY);
+
+                        speedZ = 5;
+                        speedXY = dist * 10.0f / speedZ;
+
+
+                        // crash fix?
+                        if (speedXY < 1.0f)
+                            speedXY = 1.0f;
+
+                        me->GetMotionMaster()->MoveJump(pos.m_positionX, pos.m_positionY, pos.m_positionZ, speedXY, speedZ, 0, me->GetVictim());
+                        // EasyCastTarget(SpellsC::SHALLOW_LEAP_500);
                     }
-                    else if (me->GetDistance(target) > 3 && me->GetDistance(target) <= 7 && rand() % 5 == 0 && EasyCastTarget(SpellsC::THROW))
+                    else if (me->GetDistance(me->GetVictim()) > 3 && me->GetDistance(me->GetVictim()) <= 7 && rand() % 5 == 0 && EasyCastTarget(SpellsC::THROW))
                     {
                         threw = true;
                         
@@ -1119,10 +1159,14 @@ public:
             if(threw)
                 threw = false;
 
-            if (!comboing && rand() % 10 == 0)
+            if (!comboing)
                 if (Aura* aura = me->GetAura(COMBO_COUNT); aura && aura->GetStackAmount() > 4)
                     me->CastSpell(me, CRUSHING_WAVE, false);
 
+            DoEvents();
+        }
+        void DoEvents()
+        {
             switch (events.ExecuteEvent())
             {
             case ATK_1:
@@ -1225,9 +1269,13 @@ public:
                 switch (comboing)
                 {
                 case 1:
-                    EasyCastTarget(SpellsC::THROW);
-                    events.ScheduleEvent(SPL_1, 200); 
-                    comboing++;
+                    if (EasyCastTarget(SpellsC::THROW))
+                    {
+                        events.ScheduleEvent(SPL_1, 200);
+                        comboing++;
+                    }
+                    else
+                        comboing = 0;
                     break;
                 case 2:
                     EasyCastTarget(SpellsC::THROW);
@@ -1238,8 +1286,12 @@ public:
             case REGULAR_CHECK:
                 events.ScheduleEvent(REGULAR_CHECK, 300);
                 if (comboing)
+                {
+                    DoEvents();
                     break;
-                if (me->GetDistance(target) < 3)
+                }
+                DoEvents();
+                if (me->GetDistance(me->GetVictim()) < 3)
                 {
                     RandomAction();
                 }
@@ -1273,7 +1325,7 @@ public:
                 chanceDef = 0;
             }
 
-            if (me->HasAura(25))
+            if (me->HasAura(150033))
                 return;
             damagedAmount += damage;
             if (damagedAmount > 30)
@@ -1293,7 +1345,7 @@ public:
             {
             case 0:
             {
-                if (me->GetAvailableRunes() >= 6)
+                if (me->GetAvailableRunes() >= 6 && me->GetDistance(me->GetVictim()) < me->GetCombatReach())
                 {
                     exit = true;
                     EasyQueCombo(ATK_1);
@@ -1302,7 +1354,7 @@ public:
             }
             case 1:
             {
-                if (me->GetAvailableRunes() >= 5 && me->GetCritTempo() > 300)
+                if (me->GetAvailableRunes() >= 5 && me->GetCritTempo() > 300 && me->GetDistance(me->GetVictim()) < me->GetCombatReach())
                 {
                     exit = true;
                     EasyQueCombo(ATK_2);
@@ -1311,7 +1363,7 @@ public:
             }
             case 2:
             {
-                if (me->GetAvailableRunes() >= 5 && me->GetCritTempo() > 100)
+                if (me->GetAvailableRunes() >= 5 && me->GetCritTempo() > 100 && me->GetDistance(me->GetVictim()) < me->GetCombatReach())
                 {
                     exit = true;
                     EasyQueCombo(ATK_3);
@@ -1320,7 +1372,7 @@ public:
             }
             case 3:
             {
-                if (me->GetAvailableRunes() >= 5 && me->GetCritTempo() > 100)
+                if (me->GetAvailableRunes() >= 5 && me->GetCritTempo() > 100 && me->GetDistance(me->GetVictim()) < me->GetCombatReach())
                 {
                     exit = true;
                     EasyQueCombo(ATK_4);
@@ -1353,6 +1405,7 @@ public:
                 if (EasyCastTarget(SpellsC::THROW))
                 {
                     events.ScheduleEvent(SPL_1, 200);
+                    comboing = 1;
                     exit = true; 
                     break;
                 }
@@ -1361,9 +1414,10 @@ public:
             {
                 isLeaping = 1;
                 Position pos = me->GetPosition();
-                float angle = me->GetVictim()->GetAbsoluteAngle(me);
+                float angle = me->GetVictim()->GetRelativeAngle(me);
 
                 me->MovePositionToFirstCollision(pos, 5, 3.14);
+
 
                 if (EasyCastLocation(SpellsC::SHALLOW_LEAP, pos))
                 {
@@ -1373,22 +1427,27 @@ public:
             }
             case 2:
             {
-                EasyCast(SpellsC::GIGA_THUNDER_CLAP);
+                if (me->GetDistance(me->GetVictim()) < 3)
+                    EasyCast(SpellsC::GIGA_THUNDER_CLAP);
             }
             }
         }
         uint8 isLeaping = 0;
         void sOnMutate() override
         {
-            if (!me->GetVictim())
+            if (!me->GetVictim() || !me->CanFreeMove())
+            {
+                if (isLeaping)
+                    isLeaping == 0;
                 return;
+            }
             switch (isLeaping)
             {
             case 1:
                 if (rand() % 2 == 0)
                 {
                     Position pos = me->GetPosition();
-                    float angle = me->GetVictim()->GetAbsoluteAngle(me);
+                    float angle = me->GetVictim()->GetRelativeAngle(me);
 
                     me->MovePositionToFirstCollision(pos, 2, angle + 1.67);
                     if (EasyCastLocation(SpellsC::SLIDE_LEAP, pos))
@@ -1413,6 +1472,372 @@ public:
 };
 
 
+class amani_shadowpriest : public ELKCreatureScript
+{
+public:
+    amani_shadowpriest() : ELKCreatureScript("amani_shadowpriest") {}
+    CreatureAI* GetAI(Creature* creature) const override
+    {
+        return new amani_shadowpriestAI(creature);
+    }
+    struct amani_shadowpriestAI : public ELKAI
+    {
+        uint8 dynamicMovement = 0;
+        uint8 movementAmount = 0;
+        amani_shadowpriestAI(Creature* creature) : ELKAI(creature)
+        {
+            reinforcementCall = 0;
+            chanceAtk = 5;
+            chanceDef = 3;
+            chanceSpell = 10;
+
+            optionAtk = 3;
+            optionDef = 2;
+            optionSpell = 7;
+
+            me->SetFloatValue(PLAYER_CRIT_PERCENTAGE, 100);
+            me->ApplySpellPowerBonus(250, true);
+        };
+        void EnterCombatCustom(Unit* /*who*/) override
+        {
+            events.ScheduleEvent(REGULAR_CHECK, 300);
+        }
+        void RunBack()
+        {
+            Position pos = me->GetPosition();
+            float angle = me->GetVictim()->GetRelativeAngle(me);
+
+            me->MovePositionToFirstCollision(pos, 8, angle + 3.14);
+
+            Movement::MoveSplineInit init(me);
+            init.MoveTo(pos.m_positionX, pos.m_positionY, pos.m_positionZ);
+            init.Launch();
+
+            movementAmount += 1;
+        }
+        void RunSide()
+        {
+            Position pos = me->GetPosition();
+            float angle = me->GetVictim()->GetRelativeAngle(me);
+
+            me->MovePositionToFirstCollision(pos, 8, angle + 1.67);
+
+            Movement::MoveSplineInit init(me);
+            init.MoveTo(pos.m_positionX, pos.m_positionY, pos.m_positionZ);
+            init.Launch();
+
+            movementAmount += 1;
+        }
+        void ResetExtra() override
+        {
+            chanceDef = 3;
+
+            lives = 6;
+            spellHits = 0;
+            damagedAmount = 0;
+            ResetCC();
+        }
+        void ResetCC()
+        {
+            isLeaping = 0;
+            dynamicMovement = 0;
+            movementAmount = 0;
+        }
+        void UpdateAI(uint32 diff) override
+        {
+            if (!UpdateVictim())
+                return;
+            events.Update(diff);
+            if (!me->CanFreeMove())
+            {
+                events.Reset();
+                ResetCC();
+                events.ScheduleEvent(REGULAR_CHECK, 300);
+                comboing = 0;
+                return;
+            }
+
+            if (me->HasUnitState(UNIT_STATE_CASTING))
+            {
+                return;
+            }
+            auto target = me->GetVictim();
+            if (me->isMoving() && !comboing)
+            {
+                if (isLeaping)
+                    return;
+                if (dynamicMovement > 0)
+                {
+                    switch (dynamicMovement)
+                    {
+                    case 1:
+                    {
+                        RunBack();
+                        if (movementAmount > 15)
+                        {
+                            me->RemoveAura(56354);
+                            dynamicMovement = 0;
+                            movementAmount = 0;
+                        }
+                        return;
+                        break;
+                    }
+                    case 2:
+                    {
+                        RunSide();
+                        if (movementAmount > 15)
+                        {
+                            me->RemoveAura(56354);
+                            dynamicMovement = 0;
+                            movementAmount = 0;
+                        }
+                        return;
+                        break;
+                    }
+                    default:
+                        me->RemoveAura(56354);
+                        dynamicMovement = 0;
+                        movementAmount = 0;
+                        return;
+                        break;
+                    }
+                }
+                else
+                {
+                    return;
+                }
+            }
+            else
+                if (dynamicMovement)
+                {
+                    me->RemoveAura(56354);
+                    dynamicMovement = 0;
+                    movementAmount = 0;
+                }
+            if (isLeaping)
+                isLeaping = 0; 
+
+            if (!comboing)
+                if (Aura* aura = me->GetAura(COMBO_COUNT); aura && aura->GetStackAmount() > 4)
+                    me->CastSpell(me, CRUSHING_WAVE, false);
+
+            switch (events.ExecuteEvent())
+            {
+            case ATK_1:
+            {
+                switch (comboing)
+                {
+                case 1:
+                    EasyAttack(ATTACK, ATK_1, 700);
+                    break;
+                case 2:
+                    EasyAttack(SPIN_ATTACK, ATK_1, 300);
+                    break;
+                case 3:
+                    EasyAttack(ATTACK, ATK_1, 1000);
+                    break;
+                case 4:
+                    EasyCast(SPIN_ATTACK);
+                    comboing = 0;
+                    break;
+                }
+                break;
+            }
+            case ATK_2:
+            {
+                switch (comboing)
+                {
+                case 1:
+                    EasyAttack(CRITICAL_ATTACK, ATK_2, 700);
+                    break;
+                case 2:
+                    EasyAttack(ATTACK, ATK_2, 1000);
+                    break;
+                case 3:
+                    EasyAttack(CRITICAL_ATTACK, ATK_2, 700);
+                    break;
+                case 4:
+                    EasyAttack(ATTACK, ATK_2, 1000);
+                    break;
+                case 5:
+                    EasyCast(CRITICAL_ATTACK);
+                    comboing = 0;
+                    break;
+                }
+                break;
+            }
+            case REGULAR_CHECK:
+                events.ScheduleEvent(REGULAR_CHECK, 300);
+                if (comboing)
+                    break;
+                if (me->GetDistance(target) < 3)
+                {
+                    RandomAction();
+                }
+                break;
+            default:
+                return;
+            }
+        }
+        uint32 spellHits = 0;
+        void SpellHit(Unit* caster, SpellInfo const* spell) override
+        {
+            if (caster == me)
+                return;
+            spellHits++;
+            if (rand() % spellHits > 10)
+            {
+                me->CastSpell(me, 150032, true);
+                spellHits = 0;
+            }
+        }
+        uint8 lives = 6;
+        uint16 damagedAmount = 0;
+        void DamageTaken(Unit* doneby, uint32& damage, DamageEffectType, SpellSchoolMask) override
+        {
+            if (damage >= me->GetHealth() && lives > rand() % 10)
+            {
+                isLeaping = 0;
+                damage = 0;
+                me->SetHealth(200);
+                lives--;
+                chanceDef = 0;
+            }
+
+            if (me->HasAura(150033))
+                return;
+            damagedAmount += damage;
+            if (damagedAmount > 30)
+                damagedAmount -= 30;
+            else
+                damagedAmount = 0;
+            if (damagedAmount > 300)
+            {
+                damagedAmount = 0;
+                doneby->CastSpell(me, 150033, true);
+            }
+
+        }
+        void RandomAtk(uint8 atk, bool& exit) override
+        {
+            switch (atk)
+            {
+            case 0:
+            {
+                if (me->GetAvailableRunes() >= 6 && me->GetDistance(me->GetVictim()) < me->GetCombatReach())
+                {
+                    exit = true;
+                    EasyQueCombo(ATK_1);
+                }
+                break;
+            }
+            case 1:
+            {
+                if (me->GetAvailableRunes() >= 5 && me->GetCritTempo() > 300 && me->GetDistance(me->GetVictim()) < me->GetCombatReach())
+                {
+                    exit = true;
+                    EasyQueCombo(ATK_2);
+                }
+                break;
+            }
+            case 2:
+            {
+                exit = true;
+                me->AddAura(56354, me);
+                dynamicMovement = 1;
+                RunBack();
+                break;
+            }
+            case 3:
+            {
+                exit = true;
+                me->AddAura(56354, me);
+                dynamicMovement = 2;
+                RunSide();
+                break;
+            }
+            }
+        }
+        void RandomDef(uint8 def, bool& exit) override
+        {
+            if (me->GetAvailableRunes() && EasyCastTarget(SPELL_DEFLECT))
+            {
+                exit = true;
+            }
+        }
+        void RandomSpell(uint8 spell, bool& exit) override
+        {
+            switch (spell)
+            {
+            case 0:
+            {
+                if (EasyCastTarget(SpellsC::THROW))
+                {
+                    events.ScheduleEvent(SPL_1, 200);
+                    comboing = 1;
+                    exit = true;
+                    break;
+                }
+            }
+            case 1:
+            {
+                isLeaping = 1;
+                Position pos = me->GetPosition();
+                float angle = me->GetVictim()->GetRelativeAngle(me);
+
+                me->MovePositionToFirstCollision(pos, 5, 3.14);
+
+                if (EasyCastLocation(SpellsC::SHALLOW_LEAP, pos))
+                {
+                    exit = true;
+                    break;
+                }
+            }
+            case 2:
+            {
+                if (me->GetDistance(me->GetVictim()) < 3)
+                    EasyCast(SpellsC::GIGA_THUNDER_CLAP);
+            }
+            }
+        }
+        uint8 isLeaping = 0;
+        void sOnMutate() override
+        {
+            if (!me->GetVictim() || !me->CanFreeMove())
+            {
+                if (isLeaping)
+                    isLeaping == 0;
+                return;
+            }
+            switch (isLeaping)
+            {
+            case 1:
+                if (rand() % 2 == 0)
+                {
+                    Position pos = me->GetPosition();
+                    float angle = me->GetVictim()->GetRelativeAngle(me);
+
+                    me->MovePositionToFirstCollision(pos, 2, angle + 1.67);
+                    if (EasyCastLocation(SpellsC::SLIDE_LEAP, pos))
+                    {
+                        isLeaping++;
+
+                    }
+                    else
+                        isLeaping = 0;
+                }
+                else
+                    isLeaping = 0;
+                break;
+            case 2:
+                isLeaping = 0;
+
+                EasyCastLocation(SpellsC::TALL_LEAP, me->GetPosition());
+                break;
+            }
+        }
+    };
+};
 void AddSC_elk_eversong_woods_mobs()
 {
     new mana_wyrm();
@@ -1424,6 +1849,24 @@ void AddSC_elk_eversong_woods_mobs()
     new scourge_scroll();
 
     new amani_berserker();
+    new amani_shadowpriest();
+    /*
+    new amani_axe_thrower(); // jumps and throws axes in 3s. hes an imp basically. doesnt even deflect, dies fast
+    new spearcrafter_otembe(); // gets +10 deflect chance after being hit every few attacks, lots of dmg, throws spears and bladestorms in place, after using lives system starts summoning serpent wards
+
+    new shadowpine_ripper(); // small fodder guy that just attacks then equips a weapon, either a sword, or axes and becomes like berserker. if he kills you he casts cannibalize on you.
+    new shadowpine_witch(); // summons spiders, zombie mummies, revives allies: KEY, drains mana, uses lightning that reduces armor, shrinks you. if you get to low HP he just casts finger of death for 100% his curr mana and laughs.
+    new shadowpine_oracle(); // spirit links allies splitting damage, restores their mana to full after a 10s cast, gives shields that blow up after 5s and thunderclap, stuns them but makes them immune while channeling if and only if theres multiple enemies (which there always is). if completed, heals to full.
+    new shadowpine_headhunter(); // replacement for axe thrower, throws spears at a location you are constantly forcing you to move in 5s.
+    new shadowpine_shadowcaster(); // better shadow priest, the same but more spells.
+    new shadowpine_catlord(); // big; leaves flamestrikes for 30s, jumps a lot, summons cat when hit a lot while deflecting. deflects when not doing anything. will get away to cast a 5s cast time regen spell that if interrupted disarms and silences them for 10s.
+    new shadowpine_hexxer(); // berserk AI mixing in all of the spells previously used besides catlord. also shrinks you
+    new kelgash(); //
+
+    new amanshi_berserker() // amani berserkers have a 3% chance to turn into one of these on death.
+    new amanshi_warbringer() // 2 of them outside the instance somewhere
+    // replace savages, lookouts and scouts with all the custom guys I've made. make elder lynxes wander outside
+    */
 }
 
 

@@ -76,6 +76,9 @@ struct ELKAI : public ScriptedAI
         ResetExtra();
         events.Reset();
         comboing = 0;
+
+        lastCategory = 0;
+        lastChoice = 0;
     }
 
     virtual void ResetExtra() {};

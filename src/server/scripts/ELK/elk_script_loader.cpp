@@ -20,6 +20,8 @@ void AddELKAIScripts();
 void AddSC_elk_spell_scripts();
 void AddSC_elk_paladin_scripts();
 
+void AddSC_elk_creature_100_scripts();
+
 // The name of this function should match:
 // void Add${NameOfDirectory}Scripts()
 void AddELKScripts()
@@ -27,4 +29,6 @@ void AddELKScripts()
     AddELKAIScripts();
     AddSC_elk_spell_scripts();
     AddSC_elk_paladin_scripts();
+
+    AddSC_elk_creature_100_scripts();
 }

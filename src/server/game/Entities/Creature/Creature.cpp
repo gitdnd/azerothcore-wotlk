@@ -819,6 +819,21 @@ void Creature::Update(uint32 diff)
                     m_AI_locked = true;
                     i_AI->UpdateAI(diff);
                     m_AI_locked = false;
+
+                    for (uint8 i = 0; i < MAX_RUNES; ++i)
+                    {
+                        if (uint32 cd = GetRuneCooldown(i))
+                        {
+                            SetRuneCooldown(i, (cd < -1 * diff) ? 0 : cd + diff);
+                            if (IsInCombat() && cd >= diff)
+                                SetGracePeriod(i, (-1 * diff - cd) + 1);
+                        }
+                        else if (uint32 grace = GetGracePeriod(i))
+                        {
+                            if (grace < RUNE_GRACE_PERIOD)
+                                SetGracePeriod(i, std::min<uint32>(grace - diff, RUNE_GRACE_PERIOD));
+                        }
+                    }
                 }
 
                 // creature can be dead after UpdateAI call
@@ -831,20 +846,6 @@ void Creature::Update(uint32 diff)
                 {
                     if (!IsInEvadeMode())
                     { 
-                        for (uint8 i = 0; i < MAX_RUNES; ++i)
-                        { 
-                            if (int32 cd = GetRuneCooldown(i))
-                            {
-                                SetRuneCooldown(i, (cd < -1 * m_regenTimer) ? cd + m_regenTimer : 0); 
-                                if (IsInCombat() && cd >= m_regenTimer)
-                                    SetGracePeriod(i, -1 * m_regenTimer - cd + 1);  
-                            } 
-                            else if (uint32 grace = GetGracePeriod(i))
-                            {
-                                if (grace < RUNE_GRACE_PERIOD)
-                                    SetGracePeriod(i, std::min<uint32>(grace - m_regenTimer, RUNE_GRACE_PERIOD));
-                            }
-                        }
 
                         // regenerate health if not in combat or if polymorphed)
                         if (!IsInCombat() || IsPolymorphed())

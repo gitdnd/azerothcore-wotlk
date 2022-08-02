@@ -212,7 +212,8 @@ UPDATE creature_template SET minlevel = 6, maxlevel = 8 WHERE (entry = 15271);
 UPDATE creature_template SET ScriptName='mana_wyrm' WHERE entry=15274;
 UPDATE creature_template SET ScriptName='tainted_arcane_wraith', minlevel = 17, maxlevel = 17 WHERE (entry = 15298);
 UPDATE creature_template SET minlevel = 16, faction = 1604, speed_run = 0.5, BaseAttackTime = 5000, RangeAttackTime = 5000, mingold = 1366, maxgold = 1366, HealthModifier = 1.3, ManaModifier = 2, ExperienceModifier = 2, ScriptName = 'felendren',  npcflag = 1 WHERE (entry = 15367);
-UPDATE creature_template SET minlevel = 20, maxlevel = 20, speed_run = 0.3, BaseAttackTime = 4000, RangeAttackTime = 4000, ScriptName = 'amani_berserker' WHERE (entry = 15643);
+UPDATE creature_template SET minlevel = 18, maxlevel = 21, speed_run = 0.7, BaseAttackTime = 1600, RangeAttackTime = 6000, ScriptName = 'amani_shadowpriest' WHERE (entry = 15642);
+UPDATE creature_template SET minlevel = 18, maxlevel = 21, speed_run = 0.3, BaseAttackTime = 200, RangeAttackTime = 6000, ScriptName = 'amani_berserker' WHERE (entry = 15643);
 UPDATE creature_template SET ScriptName='wretched', name = "Wretched" WHERE (entry=15644);
 
 

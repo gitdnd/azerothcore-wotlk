@@ -760,6 +760,12 @@ class spell_elk_generic_finale : public ELKSpellScript
         caster->CastSpell(caster, hitSpell, false);
         AttackUnique();
 
+        caster->SetAuraStack(COMBO_COUNT, caster, std::min(comboLength, uint8(6)));
+        if (comboLength > 6)
+            comboLength -= 6;
+        else
+            comboLength = 0;
+
         auto curAtk = caster->GetCurrentSpell(CURRENT_GENERIC_SPELL);
         if (curAtk)
         {
@@ -815,8 +821,6 @@ class spell_elk_generic_finale_hit : public ELKSpellScript
                 combo = aura->GetStackAmount();
                 aura->Remove();
             }
-            spell->SetRuneCooldown(cd);
-            spell->SetRuneCost(1);
             AttackBegin();
         }
         else

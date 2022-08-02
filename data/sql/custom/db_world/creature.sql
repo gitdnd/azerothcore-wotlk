@@ -28,3 +28,4 @@ WHERE (`guid` = "55051");
 
 REPLACE INTO `creature` (`guid`, `id1`, `id2`, `id3`, `map`, `zoneId`, `areaId`, `spawnMask`, `phaseMask`, `equipment_id`, `position_x`, `position_y`, `position_z`, `orientation`, `spawntimesecs`, `wander_distance`, `currentwaypoint`, `curhealth`, `curmana`, `MovementType`, `npcflag`, `unit_flags`, `dynamicflags`, `ScriptName`, `VerifiedBuild`, `elk`) VALUES
 (4000001, 200001, 0, 0, 0, 0, 0, 1, 1, 0, 7940.39, -3908.39, 42.1643, 1.73084, 300, 0, 0, 1, 250, 0, 0, 0, 0, '', 0, 0);
+ 

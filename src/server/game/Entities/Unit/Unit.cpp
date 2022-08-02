@@ -356,7 +356,6 @@ Unit::Unit(bool isWorldObject) : WorldObject(isWorldObject),
     m_weight = 0;
 
     m_runes = nullptr;
-    m_runeCount = 0;
 
     m_valuesCount = PLAYER_END; // REMEMBER TO OPTIMIZE THIS LATER CUZ I SURE WONT RIGHT NOW LMAO
 

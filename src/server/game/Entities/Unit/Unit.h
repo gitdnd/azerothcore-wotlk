@@ -2758,7 +2758,6 @@ protected:
     bool _instantCast;
 
     Runes* m_runes;
-    uint16 m_runeCount;
 
     struct lifeSteal
     {
