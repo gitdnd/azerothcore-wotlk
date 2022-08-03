@@ -154,15 +154,26 @@ class spell_elk_black_space_aura : public AuraScript
 
     struct WaveTargets
     {
-        WaveTargets(Position pos, uint8 ticks, Unit* target) : pos(pos), ticks(ticks), target(target) {};
+        WaveTargets() {};
         Position pos;
-        uint8 ticks;
-        Unit* target;
+        uint8 ticks = 0;
+        float normX;
+        float normY;
+        float normZ;
+        float normO;
     };
     std::vector< WaveTargets> targets;
-    void OnAdd(Unit* unit)
+    void OnAdd(Unit* target)
     {
-        targets.push_back(WaveTargets(GetOwner()->GetPosition(), 0, unit));
+        WaveTargets wt;
+        wt.pos = GetOwner()->GetPosition();
+        wt.pos.m_positionZ += GetUnitOwner()->GetCollisionHeight();
+        Position pos2 = target->GetPosition();
+        float dist = wt.pos.GetExactDist(pos2);
+        wt.normX = (wt.pos.m_positionX - pos2.m_positionX) / dist;
+        wt.normY = (wt.pos.m_positionY - pos2.m_positionY) / dist;
+        wt.normZ = (wt.pos.m_positionZ - (pos2.m_positionZ + target->GetCollisionHeight() / 2)) / dist;
+        targets.push_back(wt);
     }
     void Periodic(AuraEffect const* aurEff)
     {
@@ -170,27 +181,12 @@ class spell_elk_black_space_aura : public AuraScript
         {
             target->ticks++;
             Position pos2 = target->pos;
-            GetUnitOwner()->MovePositionToFirstCollision(pos2, 1, 0);
-            float dist = target->pos.GetExactDist(pos2);
-            if (dist < 0.8 || dist > 1.2)
-            {
-                target = targets.erase(target);
-            }
-            else
-            {
-                target->pos = pos2;
-                GetUnitOwner()->CastSpell(pos2.m_positionX, pos2.m_positionY, pos2.m_positionZ, 150049, true);
-                ++target;
-            }
-        }
-        for (std::vector<WaveTargets>::iterator target = targets.begin(); target != targets.end(); )
-        {
-            target->ticks++;
-            Position pos2 = target->pos;
+            pos2.m_positionX -= target->normX * target->ticks;
+            pos2.m_positionY -= target->normY * target->ticks;
+            pos2.m_positionZ -= target->normZ * target->ticks;
 
-            GetUnitOwner()->MovePositionToFirstCollision(pos2, 1, 0);
-            float dist = target->pos.GetExactDist(pos2);
-            if (dist < 0.8 || dist > 1.2)
+
+            if (!GetUnitOwner()->GetMap()->isInLineOfSight(target->pos.m_positionX, target->pos.m_positionY, target->pos.m_positionZ, pos2.m_positionX, pos2.m_positionY, pos2.m_positionZ, GetUnitOwner()->GetPhaseMask(), LINEOFSIGHT_ALL_CHECKS, VMAP::ModelIgnoreFlags::Nothing))
             {
                 target = targets.erase(target);
             }
@@ -257,7 +253,8 @@ class spell_elk_way_to_hellfire_aura : public AuraScript
         float dist = wt.pos.GetExactDist(pos2);
         wt.normX = (wt.pos.m_positionX - pos2.m_positionX) / dist;
         wt.normY = (wt.pos.m_positionY - pos2.m_positionY) / dist;
-        wt.normZ = (wt.pos.m_positionZ - (pos2.m_positionZ + target->GetCollisionHeight()/2)) / dist;
+        wt.normZ = (wt.pos.m_positionZ - (pos2.m_positionZ + target->GetCollisionHeight() / 2)) / dist;
+        targets.push_back(wt);
     }
     void Periodic(AuraEffect const* aurEff)
     {
