@@ -73,6 +73,7 @@ public:
     {
         uint8 dynamicMovement = 0;
         uint8 movementAmount = 0;
+        uint8 maxMovement = 0;
         mana_wyrmAI(Creature* creature) : ELKAI(creature)
         {
             reinforcementCall = 1;
@@ -94,12 +95,13 @@ public:
             Position pos = me->GetPosition();
             float angle = me->GetVictim()->GetRelativeAngle(me);
 
-            me->MovePositionToFirstCollision(pos, 3, angle + 1.67);
+            angle += (float(movementAmount) * 0.7 + 1.67) * (maxMovement % 2 == 0 ? 1 : -1);
+
+            me->MovePositionToFirstCollision(pos, 5, angle);
 
             Movement::MoveSplineInit init(me);
             init.MoveTo(pos.m_positionX, pos.m_positionY, pos.m_positionZ);
             init.Launch();
-            init.SetOrientationInversed();
 
             movementAmount += 1;
         }
@@ -109,7 +111,26 @@ public:
             Position pos = me->GetVictim()->GetPosition();
             float angle = me->GetVictim()->GetAngle(me);
 
-            me->MovePositionToFirstCollision(pos, 2, angle + 1.67);
+            angle += (float(movementAmount) * 0.37 + 3.14) * (maxMovement % 2 == 0 ? 1 : -1);
+
+            me->MovePositionToFirstCollision(pos, 4, angle);
+
+            Movement::MoveSplineInit init(me);
+            init.MoveTo(pos.m_positionX, pos.m_positionY, pos.m_positionZ);
+            init.Launch();
+            me->SetFacingToObject(me->GetVictim());
+
+            movementAmount += 1;
+        }
+        void MoveFront()
+        {
+
+            Position pos = me->GetVictim()->GetPosition();
+            float angle = me->GetOrientation();
+
+            angle += (float(movementAmount) * 0.12) * (maxMovement % 2 == 0 ? 1 : -1);
+
+            me->MovePositionToFirstCollision(pos, 4, angle);
 
             Movement::MoveSplineInit init(me);
             init.MoveTo(pos.m_positionX, pos.m_positionY, pos.m_positionZ);
@@ -137,8 +158,9 @@ public:
                     case 1:
                     {
                         MoveBack();
-                        if (movementAmount > 20)
+                        if (movementAmount > maxMovement)
                         {
+                            maxMovement = rand() % 9;
                             dynamicMovement = 2;
                             movementAmount = 0;
                         }
@@ -147,7 +169,7 @@ public:
                     case 2:
                     {
                         MoveSide();
-                        if (movementAmount > 20)
+                        if (movementAmount > maxMovement)
                         {
                             dynamicMovement = 0;
                             movementAmount = 0;
@@ -155,7 +177,18 @@ public:
                         }
                         break;
                     }
+                    case 3:
+                    {
+                        MoveFront();
+                        if (movementAmount > maxMovement)
+                        {
+                            dynamicMovement = 0;
+                            movementAmount = 0;
+                        }
+                        break;
                     }
+                    }
+                    return;
                 }
                 else
                 {
@@ -176,7 +209,7 @@ public:
             case DYNAMIC_MOVEMENT_1:
             {
                 dynamicMovement = 1;
-
+                maxMovement = rand() % 9;
                 MoveBack();
 
                 return;
@@ -202,6 +235,11 @@ public:
                     DelayAttack();
                     if (rand() % 2 == 0)
                         EasyCast(ATTACK);
+                    else
+                    {
+                        dynamicMovement = 2;
+                        maxMovement = rand() % 9;
+                    }
                     comboing = 0;
                     break;
                 }
@@ -227,6 +265,9 @@ public:
                     DelayAttack();
                     EasyCast(ATTACK);
                     comboing = 0;
+
+                    dynamicMovement = 3;
+                    maxMovement = rand() % 9;
                     break;
                 }
                 break;
@@ -1027,9 +1068,9 @@ public:
             chanceDef = 3;
             chanceSpell = 3;
 
-            optionAtk = 5;
-            optionDef = 1;
-            optionSpell = 3;
+            optionAtk = 3;
+            optionDef = 2;
+            optionSpell = 4;
 
             me->SetFloatValue(PLAYER_CRIT_PERCENTAGE, 100);
             me->ApplySpellPowerBonus(300, true);
@@ -1046,7 +1087,10 @@ public:
             me->MovePositionToFirstCollision(pos, 3, angle + 3.14);
 
             Movement::MoveSplineInit init(me);
+
+
             init.MoveTo(pos.m_positionX, pos.m_positionY, pos.m_positionZ);
+
             init.Launch();
 
 
@@ -1120,23 +1164,9 @@ public:
                     {
                         threw = false;
 
-                        Position pos = me->GetFirstCollisionPosition(me->GetDistance(me->GetVictim()) - me->GetVictim()->GetCollisionWidth(), me->GetRelativeAngle(me->GetVictim()));
-                        if (!Acore::IsValidMapCoord(pos.m_positionX, pos.m_positionY, pos.m_positionZ) || pos.m_positionZ <= INVALID_HEIGHT)
-                            return;
+                        Position pos = me->GetFirstCollisionPosition(me->GetDistance(me->GetVictim()), me->GetRelativeAngle(me->GetVictim()));
 
-                        float speedXY, speedZ;
-                        float dist = me->GetExactDist2d(pos.m_positionX, pos.m_positionY);
-
-                        speedZ = 5;
-                        speedXY = dist * 10.0f / speedZ;
-
-
-                        // crash fix?
-                        if (speedXY < 1.0f)
-                            speedXY = 1.0f;
-
-                        me->GetMotionMaster()->MoveJump(pos.m_positionX, pos.m_positionY, pos.m_positionZ, speedXY, speedZ, 0, me->GetVictim());
-                        // EasyCastTarget(SpellsC::SHALLOW_LEAP_500);
+                        JumpTowards(pos, 1.f, 5.f, me->GetVictim());
                     }
                     else if (me->GetDistance(me->GetVictim()) > 3 && me->GetDistance(me->GetVictim()) <= 7 && rand() % 5 == 0 && EasyCastTarget(SpellsC::THROW))
                     {
@@ -1213,52 +1243,6 @@ public:
                     break;
                 case 5:
                     EasyCast(CRITICAL_ATTACK);
-                    comboing = 0;
-                    break;
-                }
-                break;
-            }
-            case ATK_3:
-            {
-                switch (comboing)
-                {
-                case 1:
-                    EasyAttack(CRITICAL_ATTACK, ATK_3, 700);
-                    break;
-                case 2:
-                    EasyAttack(SPIN_ATTACK, ATK_3, 300);
-                    break;
-                case 3:
-                    EasyAttack(SPIN_ATTACK, ATK_3, 300);
-                    break;
-                case 4:
-                    EasyAttack(SPIN_ATTACK, ATK_3, 300);
-                    break;
-                case 5:
-                    EasyCast(SPIN_ATTACK);
-                    comboing = 0;
-                    break;
-                }
-                break;
-            }
-            case ATK_4:
-            {
-                switch (comboing)
-                {
-                case 1:
-                    EasyAttack(CRITICAL_ATTACK, ATK_4, 700);
-                    break;
-                case 2:
-                    EasyAttack(SPIN_ATTACK, ATK_4, 300);
-                    break;
-                case 3:
-                    EasyAttack(SPIN_ATTACK, ATK_4, 700);
-                    break;
-                case 4:
-                    EasyAttack(SPIN_ATTACK, ATK_4, 300);
-                    break;
-                case 5:
-                    EasyCast(SPIN_ATTACK);
                     comboing = 0;
                     break;
                 }
@@ -1413,17 +1397,13 @@ public:
             case 1:
             {
                 isLeaping = 1;
-                Position pos = me->GetPosition();
-                float angle = me->GetVictim()->GetRelativeAngle(me);
 
-                me->MovePositionToFirstCollision(pos, 5, 3.14);
+                Position pos = me->GetFirstCollisionPosition(5, 3.14);
 
+                JumpTowards(pos, 1.f, 5.f, me->GetVictim());
 
-                if (EasyCastLocation(SpellsC::SHALLOW_LEAP, pos))
-                {
-                    exit = true;
-                    break;
-                }
+                exit = true;
+                break;
             }
             case 2:
             {
@@ -1446,17 +1426,12 @@ public:
             case 1:
                 if (rand() % 2 == 0)
                 {
-                    Position pos = me->GetPosition();
-                    float angle = me->GetVictim()->GetRelativeAngle(me);
+                    Position pos = me->GetFirstCollisionPosition(2, me->GetVictim()->GetRelativeAngle(me) + 1.67);
 
-                    me->MovePositionToFirstCollision(pos, 2, angle + 1.67);
-                    if (EasyCastLocation(SpellsC::SLIDE_LEAP, pos))
-                    {
-                        isLeaping++;
+                    JumpTowards(pos, 1.f, 5.f, me->GetVictim());
 
-                    }
-                    else
-                        isLeaping = 0;
+                    isLeaping++;
+
                 }
                 else
                     isLeaping = 0;
@@ -1464,9 +1439,26 @@ public:
             case 2:
                 isLeaping = 0;
 
-                EasyCastLocation(SpellsC::TALL_LEAP, me->GetPosition());
+                Position pos = me->GetFirstCollisionPosition(me->GetDistance(me->GetVictim()), me->GetRelativeAngle(me->GetVictim()));
+
+                JumpTowards(pos, 1.f, 8.f, me->GetVictim());
+
                 break;
             }
+        }
+        void JumpTowards(const Position& pos, float speedXYmult, float speedZ, Unit* unit = nullptr)
+        {
+            if (!Acore::IsValidMapCoord(pos.m_positionX, pos.m_positionY, pos.m_positionZ) || pos.m_positionZ <= INVALID_HEIGHT)
+                return;
+
+            float dist = me->GetExactDist2d(pos.m_positionX, pos.m_positionY);
+
+            float speedXY = (dist * 10.0f / speedZ) * speedXYmult;
+
+            if (speedXY < 1.0f)
+                speedXY = 1.0f;
+
+            me->GetMotionMaster()->MoveJumpOriented(pos.m_positionX, pos.m_positionY, pos.m_positionZ, speedXY, speedZ, me->GetVictim());
         }
     };
 };
@@ -1484,55 +1476,47 @@ public:
     {
         uint8 dynamicMovement = 0;
         uint8 movementAmount = 0;
+        bool threw = false;
         amani_shadowpriestAI(Creature* creature) : ELKAI(creature)
         {
             reinforcementCall = 0;
             chanceAtk = 5;
             chanceDef = 3;
-            chanceSpell = 10;
+            chanceSpell = 3;
 
             optionAtk = 3;
             optionDef = 2;
-            optionSpell = 7;
+            optionSpell = 4;
 
             me->SetFloatValue(PLAYER_CRIT_PERCENTAGE, 100);
-            me->ApplySpellPowerBonus(250, true);
+            me->ApplySpellPowerBonus(300, true);
         };
         void EnterCombatCustom(Unit* /*who*/) override
         {
             events.ScheduleEvent(REGULAR_CHECK, 300);
         }
-        void RunBack()
+        void MoveBack()
         {
             Position pos = me->GetPosition();
             float angle = me->GetVictim()->GetRelativeAngle(me);
 
-            me->MovePositionToFirstCollision(pos, 8, angle + 3.14);
+            me->MovePositionToFirstCollision(pos, 3, angle + 3.14);
 
             Movement::MoveSplineInit init(me);
+
+
             init.MoveTo(pos.m_positionX, pos.m_positionY, pos.m_positionZ);
+
             init.Launch();
 
-            movementAmount += 1;
-        }
-        void RunSide()
-        {
-            Position pos = me->GetPosition();
-            float angle = me->GetVictim()->GetRelativeAngle(me);
-
-            me->MovePositionToFirstCollision(pos, 8, angle + 1.67);
-
-            Movement::MoveSplineInit init(me);
-            init.MoveTo(pos.m_positionX, pos.m_positionY, pos.m_positionZ);
-            init.Launch();
 
             movementAmount += 1;
         }
         void ResetExtra() override
         {
-            chanceDef = 3;
+            chanceDef = 1;
 
-            lives = 6;
+            lives = 10;
             spellHits = 0;
             damagedAmount = 0;
             ResetCC();
@@ -1540,6 +1524,7 @@ public:
         void ResetCC()
         {
             isLeaping = 0;
+            threw = false;
             dynamicMovement = 0;
             movementAmount = 0;
         }
@@ -1561,7 +1546,6 @@ public:
             {
                 return;
             }
-            auto target = me->GetVictim();
             if (me->isMoving() && !comboing)
             {
                 if (isLeaping)
@@ -1572,20 +1556,8 @@ public:
                     {
                     case 1:
                     {
-                        RunBack();
-                        if (movementAmount > 15)
-                        {
-                            me->RemoveAura(56354);
-                            dynamicMovement = 0;
-                            movementAmount = 0;
-                        }
-                        return;
-                        break;
-                    }
-                    case 2:
-                    {
-                        RunSide();
-                        if (movementAmount > 15)
+                        MoveBack();
+                        if (movementAmount > 5)
                         {
                             me->RemoveAura(56354);
                             dynamicMovement = 0;
@@ -1604,6 +1576,20 @@ public:
                 }
                 else
                 {
+                    if (threw)
+                    {
+                        threw = false;
+
+                        Position pos = me->GetFirstCollisionPosition(me->GetDistance(me->GetVictim()), me->GetRelativeAngle(me->GetVictim()));
+
+                        JumpTowards(pos, 1.f, 5.f, me->GetVictim());
+                    }
+                    else if (me->GetDistance(me->GetVictim()) > 3 && me->GetDistance(me->GetVictim()) <= 7 && rand() % 5 == 0 && EasyCastTarget(SpellsC::THROW))
+                    {
+                        threw = true;
+
+                        me->AddSpellCooldown(SpellsC::THROW, 0, 15000);
+                    }
                     return;
                 }
             }
@@ -1615,12 +1601,18 @@ public:
                     movementAmount = 0;
                 }
             if (isLeaping)
-                isLeaping = 0; 
+                isLeaping = 0;
+            if (threw)
+                threw = false;
 
             if (!comboing)
                 if (Aura* aura = me->GetAura(COMBO_COUNT); aura && aura->GetStackAmount() > 4)
                     me->CastSpell(me, CRUSHING_WAVE, false);
 
+            DoEvents();
+        }
+        void DoEvents()
+        {
             switch (events.ExecuteEvent())
             {
             case ATK_1:
@@ -1637,7 +1629,13 @@ public:
                     EasyAttack(ATTACK, ATK_1, 1000);
                     break;
                 case 4:
-                    EasyCast(SPIN_ATTACK);
+                    EasyAttack(ATTACK, ATK_1, 700);
+                    break;
+                case 5:
+                    EasyAttack(SPIN_ATTACK, ATK_1, 300);
+                    break;
+                case 6:
+                    EasyCast(ATTACK);
                     comboing = 0;
                     break;
                 }
@@ -1666,11 +1664,34 @@ public:
                 }
                 break;
             }
+            case SPL_1:
+            {
+                switch (comboing)
+                {
+                case 1:
+                    if (EasyCastTarget(SpellsC::THROW))
+                    {
+                        events.ScheduleEvent(SPL_1, 200);
+                        comboing++;
+                    }
+                    else
+                        comboing = 0;
+                    break;
+                case 2:
+                    EasyCastTarget(SpellsC::THROW);
+                    comboing = 0;
+                    break;
+                }
+            }
             case REGULAR_CHECK:
                 events.ScheduleEvent(REGULAR_CHECK, 300);
                 if (comboing)
+                {
+                    DoEvents();
                     break;
-                if (me->GetDistance(target) < 3)
+                }
+                DoEvents();
+                if (me->GetDistance(me->GetVictim()) < 3)
                 {
                     RandomAction();
                 }
@@ -1691,7 +1712,7 @@ public:
                 spellHits = 0;
             }
         }
-        uint8 lives = 6;
+        uint8 lives = 10;
         uint16 damagedAmount = 0;
         void DamageTaken(Unit* doneby, uint32& damage, DamageEffectType, SpellSchoolMask) override
         {
@@ -1699,7 +1720,7 @@ public:
             {
                 isLeaping = 0;
                 damage = 0;
-                me->SetHealth(200);
+                me->SetHealth(300);
                 lives--;
                 chanceDef = 0;
             }
@@ -1742,18 +1763,28 @@ public:
             }
             case 2:
             {
-                exit = true;
-                me->AddAura(56354, me);
-                dynamicMovement = 1;
-                RunBack();
+                if (me->GetAvailableRunes() >= 5 && me->GetCritTempo() > 100 && me->GetDistance(me->GetVictim()) < me->GetCombatReach())
+                {
+                    exit = true;
+                    EasyQueCombo(ATK_3);
+                }
                 break;
             }
             case 3:
             {
+                if (me->GetAvailableRunes() >= 5 && me->GetCritTempo() > 100 && me->GetDistance(me->GetVictim()) < me->GetCombatReach())
+                {
+                    exit = true;
+                    EasyQueCombo(ATK_4);
+                }
+                break;
+            }
+            case 4:
+            {
                 exit = true;
                 me->AddAura(56354, me);
-                dynamicMovement = 2;
-                RunSide();
+                dynamicMovement = 1;
+                MoveBack();
                 break;
             }
             }
@@ -1782,16 +1813,13 @@ public:
             case 1:
             {
                 isLeaping = 1;
-                Position pos = me->GetPosition();
-                float angle = me->GetVictim()->GetRelativeAngle(me);
 
-                me->MovePositionToFirstCollision(pos, 5, 3.14);
+                Position pos = me->GetFirstCollisionPosition(5, 3.14);
 
-                if (EasyCastLocation(SpellsC::SHALLOW_LEAP, pos))
-                {
-                    exit = true;
-                    break;
-                }
+                JumpTowards(pos, 1.f, 5.f, me->GetVictim());
+
+                exit = true;
+                break;
             }
             case 2:
             {
@@ -1814,17 +1842,12 @@ public:
             case 1:
                 if (rand() % 2 == 0)
                 {
-                    Position pos = me->GetPosition();
-                    float angle = me->GetVictim()->GetRelativeAngle(me);
+                    Position pos = me->GetFirstCollisionPosition(2, me->GetVictim()->GetRelativeAngle(me) + 1.67);
 
-                    me->MovePositionToFirstCollision(pos, 2, angle + 1.67);
-                    if (EasyCastLocation(SpellsC::SLIDE_LEAP, pos))
-                    {
-                        isLeaping++;
+                    JumpTowards(pos, 1.f, 5.f, me->GetVictim());
 
-                    }
-                    else
-                        isLeaping = 0;
+                    isLeaping++;
+
                 }
                 else
                     isLeaping = 0;
@@ -1832,12 +1855,30 @@ public:
             case 2:
                 isLeaping = 0;
 
-                EasyCastLocation(SpellsC::TALL_LEAP, me->GetPosition());
+                Position pos = me->GetFirstCollisionPosition(me->GetDistance(me->GetVictim()), me->GetRelativeAngle(me->GetVictim()));
+
+                JumpTowards(pos, 1.f, 8.f, me->GetVictim());
+
                 break;
             }
         }
+        void JumpTowards(const Position& pos, float speedXYmult, float speedZ, Unit* unit = nullptr)
+        {
+            if (!Acore::IsValidMapCoord(pos.m_positionX, pos.m_positionY, pos.m_positionZ) || pos.m_positionZ <= INVALID_HEIGHT)
+                return;
+
+            float dist = me->GetExactDist2d(pos.m_positionX, pos.m_positionY);
+
+            float speedXY = (dist * 10.0f / speedZ) * speedXYmult;
+
+            if (speedXY < 1.0f)
+                speedXY = 1.0f;
+
+            me->GetMotionMaster()->MoveJumpOriented(pos.m_positionX, pos.m_positionY, pos.m_positionZ, speedXY, speedZ, me->GetVictim());
+        }
     };
 };
+
 void AddSC_elk_eversong_woods_mobs()
 {
     new mana_wyrm();
@@ -1848,7 +1889,7 @@ void AddSC_elk_eversong_woods_mobs()
     new solanians_orb();
     new scourge_scroll();
 
-    new amani_berserker();
+    new amani_shadowpriest();
     new amani_shadowpriest();
     /*
     new amani_axe_thrower(); // jumps and throws axes in 3s. hes an imp basically. doesnt even deflect, dies fast

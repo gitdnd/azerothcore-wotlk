@@ -225,6 +225,7 @@ public:
     void MoveJump(Position const& pos, float speedXY, float speedZ, uint32 id = 0)
     { MoveJump(pos.m_positionX, pos.m_positionY, pos.m_positionZ, speedXY, speedZ, id); };
     void MoveJump(float x, float y, float z, float speedXY, float speedZ, uint32 id = 0, Unit const* target = nullptr);
+    void MoveJumpOriented(float x, float y, float z, float speedXY, float speedZ, Unit const* target = nullptr);
     void MoveFall(uint32 id = 0, bool addFlagForNPC = false);
 
     void MoveSeekAssistance(float x, float y, float z);

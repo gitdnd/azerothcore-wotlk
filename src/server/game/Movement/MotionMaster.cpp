@@ -552,6 +552,30 @@ void MotionMaster::MoveJump(float x, float y, float z, float speedXY, float spee
     Mutate(new EffectMovementGenerator(id), MOTION_SLOT_CONTROLLED);
 }
 
+
+void MotionMaster::MoveJumpOriented(float x, float y, float z, float speedXY, float speedZ, Unit const* target)
+{
+	LOG_DEBUG("movement.motionmaster", "Unit ({}) jump to point (X: {} Y: {} Z: {})", _owner->GetGUID().ToString(), x, y, z);
+
+	if (speedXY <= 0.1f)
+		return;
+
+	float moveTimeHalf = speedZ / Movement::gravity;
+	float max_height = -Movement::computeFallElevation(moveTimeHalf, false, -speedZ);
+
+	Movement::MoveSplineInit init(_owner);
+	init.MoveTo(x, y, z);
+	init.SetParabolic(max_height, 0);
+	init.SetVelocity(speedXY);
+    if (target)
+    {
+        _owner->SetOrientation(_owner->GetRelativeAngle(target));
+        init.SetOrientationFixed(true);
+    }
+	init.Launch();
+	Mutate(new EffectMovementGenerator(0), MOTION_SLOT_CONTROLLED);
+}
+
 void MotionMaster::MoveFall(uint32 id /*=0*/, bool addFlagForNPC)
 {
     // Xinef: do not allow to move with UNIT_FLAG_DISABLE_MOVE

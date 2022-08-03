@@ -88,6 +88,8 @@ namespace Movement
         void _Finalize();
         void _Interrupt() { splineflags.done = true; }
 
+		FacingInfo& GetFacing() { return facing; }
+
     public:
         void Initialize(const MoveSplineInitArgs&);
         [[nodiscard]] bool Initialized() const { return !spline.empty(); }
