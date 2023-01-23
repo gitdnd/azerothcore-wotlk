@@ -6517,7 +6517,7 @@ void Player::_ApplyWeaponDamage(uint8 slot, ItemTemplate const* proto, ScalingSt
         ssv = ScalingStatValue ? sScalingStatValuesStore.LookupEntry(ssd_level) : nullptr;
     }
 
-    uint8 attType = Player::GetAttackBySlot(slot);
+    WeaponAttackType attType = Player::GetAttackBySlot(slot);
     if (!IsInFeralForm() && apply && !CanUseAttackType(attType))
     {
         return;

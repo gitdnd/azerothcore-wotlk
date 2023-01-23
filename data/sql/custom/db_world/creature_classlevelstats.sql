@@ -1,2 +1,2 @@
 UPDATE `creature_classlevelstats`
-SET `basehp0` = `level` * 45, `basehp1` = `level` * 45, `basehp2` = `level` * 45, `basemana` = `level` * 25, `basearmor` = `level` * 30, `attackpower` = `level` * 5, `rangedattackpower` = `level` * 3, `damage_base` = `level` * 1, `damage_exp1` = `level` * 1, `damage_exp2` = `level` * 1;
+SET `basehp0` = `level` * 45, `basehp1` = `level` * 45, `basehp2` = `level` * 45, `basemana` = `level` * 25, `basearmor` = `level` * 30, `attackpower` = `level` * 5, `rangedattackpower` = `level` * 3, `damage_base` = `level` * 1, `damage_exp1` = `level` * 1, `damage_exp2` = `level` * 1; 

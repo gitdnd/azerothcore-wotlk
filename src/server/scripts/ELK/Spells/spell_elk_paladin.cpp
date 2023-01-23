@@ -406,17 +406,17 @@ class spell_elk_divine_storm : public ELKSpellScript
         Unit* victim = GetHitUnit();
 
         CalcDamageInfo damageInfo;
-        damageInfo.damageSchoolMask = GetSpellInfo()->GetSchoolMask();
-        GetCaster()->CalculateMeleeDamage(victim, 0, &damageInfo); 
+        damageInfo.damages[0].damageSchoolMask = GetSpellInfo()->GetSchoolMask();
+        GetCaster()->CalculateMeleeDamage(victim, &damageInfo); 
         damageInfo.HitInfo |= HITINFO_NO_ANIMATION; 
-        damageInfo.damage *= combo;
-        Unit::DealDamageMods(victim, damageInfo.damage, &damageInfo.absorb); 
+        damageInfo.damages[0].damage *= combo;
+        Unit::DealDamageMods(victim, damageInfo.damages[0].damage, &damageInfo.damages[0].absorb);
 
         GetCaster()->DealMeleeDamage(&damageInfo, true);
 
         DamageInfo dmgInfo(damageInfo);
         dmgInfo.SetSpellInfo(GetSpellInfo());
-        GetCaster()->ProcDamageAndSpell(damageInfo.target, damageInfo.procAttacker, damageInfo.procVictim, damageInfo.procEx, damageInfo.damage,
+        GetCaster()->ProcDamageAndSpell(GetCaster(), damageInfo.target, damageInfo.procAttacker, damageInfo.procVictim, damageInfo.procEx, damageInfo.damages[0].damage,
             damageInfo.attackType, nullptr, nullptr, -1, nullptr, &dmgInfo);
         GetCaster()->DoOnAttackHitScripts(victim, dmgInfo);
 

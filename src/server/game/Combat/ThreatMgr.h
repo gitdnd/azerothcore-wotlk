@@ -174,8 +174,8 @@ public:
     HostileReference* getReferenceByTarget(Unit const* victim) const;
     HostileReference* getReferenceByTarget(ObjectGuid const& guid) const;
 
-    [[nodiscard]] StorageType const& getThreatList() const { return iThreatList; }
-    int getThreatListSize() { return iThreatList.size(); }
+    [[nodiscard]] StorageType const& GetThreatList() const { return iThreatList; }
+    int GetThreatListSize() { return iThreatList.size(); }
 
 protected:
     void remove(HostileReference* hostileRef)

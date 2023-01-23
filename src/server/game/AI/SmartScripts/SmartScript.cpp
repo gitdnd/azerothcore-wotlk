@@ -3227,7 +3227,7 @@ void SmartScript::GetTargets(ObjectVector& targets, SmartScriptHolder const& e, 
                 for (ThreatContainer::StorageType::const_iterator i = threatList.begin(); i != threatList.end(); ++i)
                     if (Unit* temp = ObjectAccessor::GetUnit(*me, (*i)->getUnitGuid()))
                         // Xinef: added distance check
-                        if (e.target.threatList.maxDist == 0 || me->IsWithinCombatRange(temp, (float)e.target.threatList.maxDist))
+                        if (e.target.threatList.maxDist == 0 || me->IsWithinMeleeRange(temp, (float)e.target.threatList.maxDist))
                             targets.push_back(temp);
             }
             break;

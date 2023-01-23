@@ -3132,3 +3132,4 @@ replace into `creature_template`(entry, modelid1, name, subname, IconName, facti
 replace into `creature_model_info` VALUES ('151565', '0', '0', '0', '0');
 replace into `creature_template`(entry, modelid1, name, subname, IconName, faction) VALUES ('151566', '151566', "SPELLS\\ZulAman_FireDoor_Unit.M2", '', '', 35);
 replace into `creature_model_info` VALUES ('151566', '0', '0', '0', '0');
+ 

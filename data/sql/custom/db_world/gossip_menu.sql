@@ -200,4 +200,4 @@ REPLACE INTO `gossip_menu` (`MenuID`, `TextID`) VALUES
 	(200189, 200189),
 	(200190, 200190),
 	(200191, 200191);
-	 
+	  

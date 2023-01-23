@@ -8,4 +8,4 @@ REPLACE INTO `creature_template_resistance` (`CreatureID`, `School`, `Resistance
 (15274, 6, 40, 0),
 
 (15298, 6, 60, 0),
-(15298, 3, -100, 0);
+(15298, 3, -100, 0); 

@@ -1480,7 +1480,7 @@ public:
             if (!me->GetVictim() || !me->CanFreeMove())
             {
                 if (isLeaping)
-                    isLeaping == 0;
+                    isLeaping = 0;
                 return;
             }
             switch (isLeaping)
@@ -1896,7 +1896,7 @@ public:
             if (!me->GetVictim() || !me->CanFreeMove())
             {
                 if (isLeaping)
-                    isLeaping == 0;
+                    isLeaping = 0;
                 return;
             }
             switch (isLeaping)

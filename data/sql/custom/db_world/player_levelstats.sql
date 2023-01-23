@@ -1,2 +1,2 @@
-UPDATE `player_levelstats`
-SET `str` = `level` * 2, `agi` = `level` * 2, `sta` = `level` * 2, `inte` = `level` * 2, `spi` = `level` * 2;
+UPDATE `player_class_stats`
+SET `Strength` = `level` * 2, `Agility` = `level` * 2, `Stamina` = `level` * 2, `Intellect` = `level` * 2, `Spirit` = `level` * 2; 

@@ -434,12 +434,6 @@ void Guardian::InitSummon()
     }
 }
 
-std::string Guardian::GetDebugInfo() const
-{
-    std::stringstream sstr;
-    sstr << Minion::GetDebugInfo();
-    return sstr.str();
-}
 
 Puppet::Puppet(SummonPropertiesEntry const* properties, ObjectGuid owner) : Minion(properties, owner, false), m_owner(owner) //maybe true?
 {

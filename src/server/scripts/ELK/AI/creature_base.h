@@ -50,10 +50,10 @@ struct ELKAI : public ScriptedAI
     uint8 comboing = 0;
     std::vector<WorldLocation> positions{me->GetWorldLocation()};
 
-    uint8 reinforcementCall = rand() % 2 + 1;
+    uint8 reinforcementCall = RandomInt(1, 2);
 
-    uint8 chanceAtk = rand() % 2 + 2;
-    uint8 chanceDef = rand() % 2;
+    uint8 chanceAtk = RandomInt(2,3);
+    uint8 chanceDef = RandomInt(0, 1);
     uint8 chanceSpell = 0;
     uint8 chanceBuff = 0;
 
@@ -148,7 +148,7 @@ struct ELKAI : public ScriptedAI
         auto target = me->GetVictim();
         if (!target)
             return;
-        uint16 fighting = target->InCombatWithHowMany();
+        uint16 fighting = target->GetThreatMgr().GetThreatListSize();
         if (fighting < reinforcementCall)
         {
             std::list<Creature*> cList;

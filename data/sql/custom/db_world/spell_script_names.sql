@@ -65,4 +65,4 @@ REPLACE INTO `spell_script_names` (`spell_id`, `ScriptName`) VALUES
 	(210025, 'spell_elk_blessing_of_might_basic'),
 	(210026, 'spell_elk_avenging_wrath_aura'),
 	(210027, 'spell_elk_avenging_wrath_falling_aura'),
-	(210030, 'spell_elk_crusader_strike_expert_aura');
+	(210030, 'spell_elk_crusader_strike_expert_aura'); 

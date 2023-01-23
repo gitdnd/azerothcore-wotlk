@@ -1816,7 +1816,6 @@ public:
 
     [[nodiscard]] bool IsInCombat() const { return HasUnitFlag(UNIT_FLAG_IN_COMBAT); }
 	bool IsInCombatWith(Unit const* who) const;
-    int InCombatWithHowMany();
 
     [[nodiscard]] bool IsPetInCombat() const { return HasUnitFlag(UNIT_FLAG_PET_IN_COMBAT); }
     void CombatStart(Unit* target, bool initialAggro = true);
@@ -2259,13 +2258,12 @@ public:
     void ApplyFeralAPBonus(int32 amount, bool apply);
     void UpdateAttackPowerAndDamage(bool ranged = false, bool derived = false);
     void UpdateShieldBlockValue();
+    void CalculateMinMaxDamage(WeaponAttackType attType, bool normalized, bool addTotalPct, float& minDamage, float& maxDamage, uint8 damageIndex = 0);
     void ApplySpellPowerBonus(int32 amount, bool apply);
     void UpdateSpellDamageAndHealingBonus();
     void ApplyRatingMod(CombatRating cr, int32 value, bool apply, bool derived = false);
     void UpdateRating(CombatRating cr);
     void UpdateAllRatings();
-
-    void CalculateMinMaxDamage(WeaponAttackType attType, bool normalized, bool addTotalPct, float& minDamage, float& maxDamage);
 
     void UpdateDefenseBonusesMod();
     inline void RecalculateRating(CombatRating cr) { ApplyRatingMod(cr, 0, true); }
@@ -2320,7 +2318,7 @@ public:
     float GetTotalAttackPowerValue(WeaponAttackType attType, Unit* pVictim = nullptr) const;
     [[nodiscard]] float GetWeaponDamageRange(WeaponAttackType attType, WeaponDamageRange type, uint8 damageIndex = 0) const;
     void SetBaseWeaponDamage(WeaponAttackType attType, WeaponDamageRange damageRange, float value, uint8 damageIndex = 0) { m_weaponDamage[attType][damageRange][damageIndex] = value; }
-    virtual void CalculateMinMaxDamage(WeaponAttackType attType, bool normalized, bool addTotalPct, float& minDamage, float& maxDamage, uint8 damageIndex = 0) = 0;
+
     uint32 CalculateDamage(WeaponAttackType attType, bool normalized, bool addTotalPct, uint8 itemDamagesMask = 0);
     float GetAPMultiplier(WeaponAttackType attType, bool normalized);
 
@@ -2400,7 +2398,7 @@ public:
     int32 SpellBasePowerBonusDone(SpellSchoolMask schoolMask, int16 bonusSpellPower = 0, bool noDerived = false) const;
     int32 SpellBaseDamageBonusTaken(SpellSchoolMask schoolMask, bool isDoT = false);
     float SpellPctDamageModsDone(Unit* victim, SpellInfo const* spellProto, DamageEffectType damagetype);
-    uint32 SpellDamageBonusDone(Unit* victim, SpellInfo const* spellProto, uint32 pdamage, DamageEffectType damagetype, float TotalMod = 0.0f, uint32 stack = 1);
+    uint32 SpellDamageBonusDone(Unit* victim, SpellInfo const* spellProto, uint32 pdamage, DamageEffectType damagetype, uint8 effIndex, float TotalMod = 0.0f, uint32 stack = 1);
     uint32 SpellDamageBonusTaken(Unit* caster, SpellInfo const* spellProto, uint32 pdamage, DamageEffectType damagetype, uint32 stack = 1); 
     int32 SpellBaseHealingBonusTaken(SpellSchoolMask schoolMask);
     float SpellPctHealingModsDone(Unit* victim, SpellInfo const* spellProto, DamageEffectType damagetype);

@@ -9,4 +9,4 @@ BEGIN
    ); 
 END;;
 CALL slang_dictionary_elk();;
-DROP PROCEDURE  slang_dictionary_elk;;
+DROP PROCEDURE  slang_dictionary_elk;; 

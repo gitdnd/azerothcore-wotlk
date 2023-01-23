@@ -14,6 +14,11 @@
 
 enum class MapDummy : uint8;
 
+inline uint32 RandomInt(uint32 min, uint32 max)
+{
+    uint32 ret = rand32() % max;
+    return std::min(ret, min);
+}
 enum OutsideSpells
 {
 
@@ -125,16 +130,16 @@ protected:
         Unit* victim = GetHitUnit();
 
         CalcDamageInfo damageInfo;
-        GetCaster()->CalculateMeleeDamage(victim, 0, &damageInfo);
+        GetCaster()->CalculateMeleeDamage(victim, &damageInfo);
         damageInfo.HitInfo |= HITINFO_NO_ANIMATION;
-        Unit::DealDamageMods(victim, damageInfo.damage, &damageInfo.absorb);
+        Unit::DealDamageMods(victim, damageInfo.damages[0].damage, &damageInfo.damages[0].absorb);
         GetCaster()->PlayDistanceSound(129);
 
         GetCaster()->DealMeleeDamage(&damageInfo, true);
 
         DamageInfo dmgInfo(damageInfo);
         dmgInfo.SetSpellInfo(GetSpellInfo());
-        GetCaster()->ProcDamageAndSpell(damageInfo.target, damageInfo.procAttacker, damageInfo.procVictim, damageInfo.procEx, damageInfo.damage,
+        GetCaster()->ProcDamageAndSpell(damageInfo.target, damageInfo.target, damageInfo.procAttacker, damageInfo.procVictim, damageInfo.procEx, damageInfo.damages[0].damage,
             damageInfo.attackType, nullptr, nullptr, -1, nullptr, &dmgInfo);
         GetCaster()->DoOnAttackHitScripts(victim, dmgInfo);
     }
@@ -232,7 +237,7 @@ class spell_elk_attack : public ELKSpellScript
             if (player)
             {
                 int weps = 0;
-                int anim = RAND(1, 4);
+                int anim = RandomInt(1, 4);
                 int animSpell = ATTACKUNARMED;
                 auto wep1 = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND); 
                 auto wep2 = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND);
@@ -323,7 +328,7 @@ class spell_elk_attack : public ELKSpellScript
             {
 
                 int weps = 0;
-                int anim = RAND(1, 4);
+                int anim = RandomInt(1, 4);
                 int animSpell = ATTACKUNARMED;
                 auto weapons = creature->GetWeaponEquippedEntry();
                  
@@ -493,7 +498,7 @@ class spell_elk_critical_attack : public ELKSpellScript
             if (player)
             {
                 int weps = 0;
-                int anim = RAND(1, 4);
+                int anim = RandomInt(1, 4);
                 int animSpell = ATTACKUNARMED;
                 auto wep1 = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
                 auto wep2 = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND);
@@ -553,7 +558,7 @@ class spell_elk_critical_attack : public ELKSpellScript
             {
 
                 int weps = 0;
-                int anim = RAND(1, 4);
+                int anim = RandomInt(1, 4);
                 int animSpell = ATTACKUNARMED;
                 auto weapons = creature->GetWeaponEquippedEntry();
                  

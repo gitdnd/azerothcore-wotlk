@@ -309,7 +309,7 @@ struct boss_veknilash : public boss_twinemperorsAI
         _scheduler
             .Schedule(14s, [this](TaskContext context)
             {
-                DoCastRandomTarget(SPELL_UPPERCUT, 0, me->GetMeleeReach(), true);
+                DoCastRandomTarget(SPELL_UPPERCUT, 0, me->GetCombatReach(), true);
                 context.Repeat(4s, 15s);
             })
             .Schedule(12s, [this](TaskContext context)
@@ -363,7 +363,7 @@ struct boss_veklor : public boss_twinemperorsAI
             })
             .Schedule(1s, [this](TaskContext context)
             {
-                if (me->SelectNearestPlayer(NOMINAL_MELEE_RANGE))
+                if (me->SelectNearestPlayer(ATTACK_DISTANCE))
                     DoCastAOE(SPELL_ARCANE_BURST);
                 context.Repeat(7s, 12s);
             })

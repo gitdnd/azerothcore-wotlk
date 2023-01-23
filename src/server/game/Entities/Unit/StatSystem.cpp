@@ -476,7 +476,7 @@ void Unit::UpdateShieldBlockValue()
     SetUInt32Value(PLAYER_SHIELD_BLOCK, GetShieldBlockValue());
 }
 
-void Player::CalculateMinMaxDamage(WeaponAttackType attType, bool normalized, bool addTotalPct, float& minDamage, float& maxDamage, uint8 damageIndex)
+void Unit::CalculateMinMaxDamage(WeaponAttackType attType, bool normalized, bool addTotalPct, float& minDamage, float& maxDamage, uint8 damageIndex)
 {
     // Only proto damage, not affected by any mods
     if (damageIndex != 0)
@@ -484,7 +484,7 @@ void Player::CalculateMinMaxDamage(WeaponAttackType attType, bool normalized, bo
         minDamage = 0.0f;
         maxDamage = 0.0f;
 
-        if (!IsInFeralForm() && CanUseAttackType(attType))
+        if (CanUseAttackType(attType))
         {
             minDamage = GetWeaponDamageRange(attType, MINDAMAGE, damageIndex);
             maxDamage = GetWeaponDamageRange(attType, MAXDAMAGE, damageIndex);

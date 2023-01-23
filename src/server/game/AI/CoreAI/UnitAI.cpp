@@ -99,7 +99,7 @@ void UnitAI::DoSpellAttackToRandomTargetIfReady(uint32 spell, uint32 threatTable
     {
         if (Unit* target = SelectTarget(SelectTargetMethod::Random, threatTablePosition, dist, playerOnly))
         {
-            if (me->IsWithinCombatRange(target, spellInfo->GetMaxRange(false)))
+            if (me->IsWithinMeleeRange(target, spellInfo->GetMaxRange(false)))
             {
                 me->CastSpell(target, spell, false);
                 me->resetAttackTimer();

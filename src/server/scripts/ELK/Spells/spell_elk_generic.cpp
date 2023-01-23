@@ -149,10 +149,10 @@ class spell_elk_critical_attack_hit : public ELKSpellScript
         Unit* victim = GetHitUnit();
 
         CalcDamageInfo damageInfo;
-        GetCaster()->CalculateMeleeDamage(victim, 0, &damageInfo);
+        GetCaster()->CalculateMeleeDamage(victim, &damageInfo);
         damageInfo.hitOutCome = MELEE_HIT_CRIT;
         damageInfo.HitInfo |= HITINFO_NO_ANIMATION;
-        damageInfo.damage *= 2;
+        damageInfo.damages[0].damage *= 2;
 
         Spell* spell = GetSpell();
         caster->ModifyPower(POWER_MANA, caster->GetStat(STAT_SPIRIT));
@@ -179,14 +179,14 @@ class spell_elk_critical_attack_hit : public ELKSpellScript
             break;
 
         }
-        Unit::DealDamageMods(victim, damageInfo.damage, &damageInfo.absorb);
+        Unit::DealDamageMods(victim, damageInfo.damages[0].damage, &damageInfo.damages[0].absorb);
         GetCaster()->PlayDistanceSound(129);
 
         GetCaster()->DealMeleeDamage(&damageInfo, true);
 
         DamageInfo dmgInfo(damageInfo);
         dmgInfo.SetSpellInfo(GetSpellInfo());
-        GetCaster()->ProcDamageAndSpell(damageInfo.target, damageInfo.procAttacker, damageInfo.procVictim, damageInfo.procEx, damageInfo.damage,
+        GetCaster()->ProcDamageAndSpell(GetCaster(), damageInfo.target, damageInfo.procAttacker, damageInfo.procVictim, damageInfo.procEx, damageInfo.damages[0].damage,
             damageInfo.attackType, nullptr, nullptr, -1, nullptr, &dmgInfo);
         GetCaster()->DoOnAttackHitScripts(victim, dmgInfo);
     }
@@ -219,17 +219,17 @@ class spell_elk_critical_attack_hit : public ELKSpellScript
                 for (auto victim : targetsHitVec)
                 {
                     CalcDamageInfo damageInfo;
-                    damageInfo.damageSchoolMask = SPELL_SCHOOL_MASK_HOLY;
-                    GetCaster()->CalculateMeleeDamage(victim, 0, &damageInfo);
+                    damageInfo.damages[0].damageSchoolMask = SPELL_SCHOOL_MASK_HOLY;
+                    GetCaster()->CalculateMeleeDamage(victim, &damageInfo);
                     damageInfo.HitInfo |= HITINFO_NO_ANIMATION;
-                    damageInfo.damage *= (2.f / float(targetsHit));
-                    Unit::DealDamageMods(victim, damageInfo.damage, &damageInfo.absorb);
+                    damageInfo.damages[0].damage *= (2.f / float(targetsHit));
+                    Unit::DealDamageMods(victim, damageInfo.damages[0].damage, &damageInfo.damages[0].absorb);
 
                     GetCaster()->DealMeleeDamage(&damageInfo, true);
 
                     DamageInfo dmgInfo(damageInfo);
                     dmgInfo.SetSpellInfo(GetSpellInfo());
-                    GetCaster()->ProcDamageAndSpell(damageInfo.target, damageInfo.procAttacker, damageInfo.procVictim, damageInfo.procEx, damageInfo.damage,
+                    GetCaster()->ProcDamageAndSpell(GetCaster(), damageInfo.target, damageInfo.procAttacker, damageInfo.procVictim, damageInfo.procEx, damageInfo.damages[0].damage,
                         damageInfo.attackType, nullptr, nullptr, -1, nullptr, &dmgInfo);
                     GetCaster()->DoOnAttackHitScripts(victim, dmgInfo);
                      
@@ -284,10 +284,10 @@ class spell_elk_spin_attack_hit : public ELKSpellScript
         Unit* victim = GetHitUnit();
 
         CalcDamageInfo damageInfo;
-        GetCaster()->CalculateMeleeDamage(victim, 0, &damageInfo);
+        GetCaster()->CalculateMeleeDamage(victim, &damageInfo);
         damageInfo.hitOutCome = MELEE_HIT_CRIT;
         damageInfo.HitInfo |= HITINFO_NO_ANIMATION;
-        damageInfo.damage *= 2;
+        damageInfo.damages[0].damage *= 2;
 
         Spell* spell = GetSpell();
         caster->ModifyPower(POWER_MANA, caster->GetStat(STAT_SPIRIT));
@@ -309,14 +309,14 @@ class spell_elk_spin_attack_hit : public ELKSpellScript
             break;
 
         }
-        Unit::DealDamageMods(victim, damageInfo.damage, &damageInfo.absorb);
+        Unit::DealDamageMods(victim, damageInfo.damages[0].damage, &damageInfo.damages[0].absorb);
         GetCaster()->PlayDistanceSound(129);
 
         GetCaster()->DealMeleeDamage(&damageInfo, true);
 
         DamageInfo dmgInfo(damageInfo);
         dmgInfo.SetSpellInfo(GetSpellInfo());
-        GetCaster()->ProcDamageAndSpell(damageInfo.target, damageInfo.procAttacker, damageInfo.procVictim, damageInfo.procEx, damageInfo.damage,
+        GetCaster()->ProcDamageAndSpell(GetCaster(), damageInfo.target, damageInfo.procAttacker, damageInfo.procVictim, damageInfo.procEx, damageInfo.damages[0].damage,
             damageInfo.attackType, nullptr, nullptr, -1, nullptr, &dmgInfo);
         GetCaster()->DoOnAttackHitScripts(victim, dmgInfo);
     }
@@ -834,7 +834,7 @@ class spell_elk_generic_finale_hit : public ELKSpellScript
         Unit* victim = GetHitUnit();
 
         CalcDamageInfo damageInfo;
-        GetCaster()->CalculateMeleeDamage(victim, 0, &damageInfo);
+        GetCaster()->CalculateMeleeDamage(victim, &damageInfo);
         damageInfo.hitOutCome = MELEE_HIT_CRIT;
         damageInfo.HitInfo |= HITINFO_NO_ANIMATION;
 
@@ -858,15 +858,15 @@ class spell_elk_generic_finale_hit : public ELKSpellScript
             break;
 
         }
-        damageInfo.damage *= combo;
-        Unit::DealDamageMods(victim, damageInfo.damage, &damageInfo.absorb);
+        damageInfo.damages[0].damage *= combo;
+        Unit::DealDamageMods(victim, damageInfo.damages[0].damage, &damageInfo.damages[0].absorb);
         GetCaster()->PlayDistanceSound(129);
 
         GetCaster()->DealMeleeDamage(&damageInfo, true);
 
         DamageInfo dmgInfo(damageInfo);
         dmgInfo.SetSpellInfo(GetSpellInfo());
-        GetCaster()->ProcDamageAndSpell(damageInfo.target, damageInfo.procAttacker, damageInfo.procVictim, damageInfo.procEx, damageInfo.damage,
+        GetCaster()->ProcDamageAndSpell(GetCaster(), damageInfo.target, damageInfo.procAttacker, damageInfo.procVictim, damageInfo.procEx, damageInfo.damages[0].damage,
             damageInfo.attackType, nullptr, nullptr, -1, nullptr, &dmgInfo);
         GetCaster()->DoOnAttackHitScripts(victim, dmgInfo);
     }

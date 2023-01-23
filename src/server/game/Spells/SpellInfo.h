@@ -460,6 +460,7 @@ public:
     bool IsPositive() const;
     bool IsPositiveEffect(uint8 effIndex) const;
     bool IsChanneled() const;
+	bool IsMoveAllowedChannel() const;
     [[nodiscard]] bool IsActionAllowedChannel() const;
     bool NeedsComboPoints() const;
     bool IsBreakingStealth() const;

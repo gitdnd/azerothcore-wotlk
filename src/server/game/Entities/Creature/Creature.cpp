@@ -849,6 +849,7 @@ void Creature::Update(uint32 diff)
 
                         // regenerate health if not in combat or if polymorphed)
                         if (!IsInCombat() || IsPolymorphed())
+                        {
                             RegenerateHealth();
                             LOG_DEBUG("entities.unit", "RegenerateHealth() enabled because Creature cannot reach the target. Detail: {}", GetDebugInfo());
                         }

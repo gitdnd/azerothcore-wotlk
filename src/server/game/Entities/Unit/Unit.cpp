@@ -1534,7 +1534,7 @@ void Unit::CalculateMeleeDamage(Unit* victim, CalcDamageInfo* damageInfo, Weapon
 
     for (uint8 i = 0; i < MAX_ITEM_PROTO_DAMAGES; ++i)
     {
-        if(damageInfo->damageSchoolMask == 0)
+        if(damageInfo->damages[i].damageSchoolMask == 0)
             damageInfo->damages[i].damageSchoolMask = GetMeleeDamageSchoolMask(attackType, i);
         damageInfo->damages[i].damage = 0;
         damageInfo->damages[i].absorb = 0;
@@ -3510,6 +3510,8 @@ SpellMissInfo Unit::SpellHitResult(Unit* victim, SpellInfo const* spell, bool Ca
     return SPELL_MISS_NONE;
 }
 
+
+SpellMissInfo Unit::SpellHitResult(Unit* victim, Spell const* spell, bool CanReflect)
 {
     SpellInfo const* spellInfo = spell->GetSpellInfo();
 
@@ -3569,35 +3571,38 @@ SpellMissInfo Unit::SpellHitResult(Unit* victim, SpellInfo const* spell, bool Ca
 
     switch (spellInfo->DmgClass)
     {
-        case SPELL_DAMAGE_CLASS_RANGED:
-        case SPELL_DAMAGE_CLASS_MELEE:
-            return MeleeSpellHitResult(victim, spellInfo);
-        case SPELL_DAMAGE_CLASS_NONE:
+    case SPELL_DAMAGE_CLASS_RANGED:
+    case SPELL_DAMAGE_CLASS_MELEE:
+        return MeleeSpellHitResult(victim, spellInfo);
+    case SPELL_DAMAGE_CLASS_NONE:
+    {
+        if (spellInfo->SpellFamilyName)
         {
-            if (spellInfo->SpellFamilyName)
-            {
-                return SPELL_MISS_NONE;
-            }
+            return SPELL_MISS_NONE;
+        }
 
-            // Xinef: apply DAMAGE_CLASS_MAGIC conditions to damaging DAMAGE_CLASS_NONE spells
-            for (uint8 i = EFFECT_0; i < MAX_SPELL_EFFECTS; ++i)
+        // Xinef: apply DAMAGE_CLASS_MAGIC conditions to damaging DAMAGE_CLASS_NONE spells
+        for (uint8 i = EFFECT_0; i < MAX_SPELL_EFFECTS; ++i)
+        {
+            if (spellInfo->Effects[i].Effect && spellInfo->Effects[i].Effect != SPELL_EFFECT_SCHOOL_DAMAGE)
             {
-                if (spellInfo->Effects[i].Effect && spellInfo->Effects[i].Effect != SPELL_EFFECT_SCHOOL_DAMAGE)
+                if (spellInfo->Effects[i].ApplyAuraName != SPELL_AURA_PERIODIC_DAMAGE)
                 {
-                    if (spellInfo->Effects[i].ApplyAuraName != SPELL_AURA_PERIODIC_DAMAGE)
-                    {
-                        return SPELL_MISS_NONE;
-                    }
+                    return SPELL_MISS_NONE;
                 }
             }
-            [[fallthrough]];
         }
-        case SPELL_DAMAGE_CLASS_MAGIC:
-            return MagicSpellHitResult(victim, spellInfo);
+        [[fallthrough]];
+    }
+    case SPELL_DAMAGE_CLASS_MAGIC:
+        return MagicSpellHitResult(victim, spellInfo);
     }
 
     return SPELL_MISS_NONE;
+}
+
 void Unit::HandleBaseModValue(BaseModGroup modGroup, BaseModType modType, float amount, bool apply)
+{
     if (modGroup >= BASEMOD_END)
     {
         LOG_ERROR("entities.player", "ERROR in HandleBaseModValue(): non existed BaseModGroup!");
@@ -3664,6 +3669,7 @@ float Unit::GetTotalBaseModValue(BaseModGroup modGroup) const
     return m_auraBaseMod[modGroup][FLAT_MOD] * m_auraBaseMod[modGroup][PCT_MOD];
 }
 
+uint32 Unit::GetDefenseSkillValue(Unit const* target) const
 {
     if (GetTypeId() == TYPEID_PLAYER)
     {
@@ -12666,8 +12672,25 @@ uint32 Unit::SpellHealingBonusDone(Unit* victim, SpellInfo const* spellProto, ui
             case SPELL_AURA_PERIODIC_HEALTH_FUNNEL:
                 DoneTotal = 0;
                 break;
+        }
+        if (spellProto->Effects[i].Effect == SPELL_EFFECT_HEALTH_LEECH)
+            DoneTotal = 0;
+    }
+
+    // use float as more appropriate for negative values and percent applying
+    float heal = float(int32(healamount) + DoneTotal) * DoneTotalMod;
+    // apply spellmod to Done amount
+
+    if (Player* modOwner = GetSpellModOwner())
+        modOwner->ApplySpellMod(spellProto->Id, damagetype == DOT ? SPELLMOD_DOT : SPELLMOD_DAMAGE, heal);
+
+    return uint32(std::max(heal, 0.0f));
+}
+
+uint32 Unit::SpellHealingBonusTaken(Unit * caster, SpellInfo const* spellProto, uint32 healamount, DamageEffectType damagetype, uint32 stack)
 {
     float TakenTotalMod = 1.0f;
+    float minval = 0.0f;
 
     // Healing taken percent
     if (!sScriptMgr->OnSpellHealingBonusTakenNegativeModifiers(this, caster, spellProto, minval))
@@ -21723,6 +21746,7 @@ std::string Unit::GetDebugInfo() const
         << " UnitMovementFlags: " << GetUnitMovementFlags() << " ExtraUnitMovementFlags: " << GetExtraUnitMovementFlags()
         << " Class: " << std::to_string(getClass());
     return sstr.str();
+}
 float Unit::GetMeleeCritFromAgility()
 {
     uint8 level = getLevel();
@@ -22000,5 +22024,5 @@ void Unit::DoDamageYourself(Unit* target, uint32 damage, const SpellInfo* spellI
         overkill = 0;
 
     Unit::DealDamage(this, target, damage, nullptr, SPELL_DIRECT_DAMAGE, spellInfo->GetSchoolMask(), spellInfo, true);
-    ProcDamageAndSpell(target, PROC_FLAG_DONE_SPELL_MAGIC_DMG_CLASS_POS, damage ? PROC_FLAG_TAKEN_DAMAGE : 0, absorb ? PROC_EX_ABSORB : 0, damage, BASE_ATTACK, spellInfo, nullptr, effect, nullptr, &dmgInfo);
+    ProcDamageAndSpell(this, target, PROC_FLAG_DONE_SPELL_MAGIC_DMG_CLASS_POS, damage ? PROC_FLAG_TAKEN_DAMAGE : 0, absorb ? PROC_EX_ABSORB : 0, damage, BASE_ATTACK, spellInfo, nullptr, effect, nullptr, &dmgInfo);
 }

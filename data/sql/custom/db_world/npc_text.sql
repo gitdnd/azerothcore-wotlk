@@ -228,4 +228,4 @@ If you are to survive this upheaval... and carry on thine birthright of this rus
 	(200215, "Very well, I'm going to need you to return my Scrying Orb, my collection of Scourge Magic Scrolls, and my notes, libriform.", 1),
 	(200215, "Very well, I'm going to need you to return my Scrying Orb, my collection of Scourge Magic Scrolls, and my notes, libriform.", 1),
 	(200215, "Very well, I'm going to need you to return my Scrying Orb, my collection of Scourge Magic Scrolls, and my notes, libriform.", 1);
-	
+	 

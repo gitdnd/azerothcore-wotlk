@@ -1382,6 +1382,11 @@ bool SpellInfo::IsChanneled() const
     return (AttributesEx & (SPELL_ATTR1_IS_CHANNELED | SPELL_ATTR1_IS_SELF_CHANNELED));
 }
 
+bool SpellInfo::IsMoveAllowedChannel() const
+{
+	return IsChanneled() && !ChannelInterruptFlags & (SpellAuraInterruptFlags::AURA_INTERRUPT_FLAG_MOVE | SpellAuraInterruptFlags::AURA_INTERRUPT_FLAG_TURNING);
+}
+
 bool SpellInfo::IsActionAllowedChannel() const
 {
     return IsChanneled() && HasAttribute(SPELL_ATTR5_ALLOW_ACTION_DURING_CHANNEL);

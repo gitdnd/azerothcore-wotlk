@@ -11,4 +11,4 @@ DROP PROCEDURE  gameobject_elk;;
  
 UPDATE gameobject
 SET id = "500001", spawntimesecs = 1
-WHERE (id = "175784"); 
+WHERE (id = "175784");  
