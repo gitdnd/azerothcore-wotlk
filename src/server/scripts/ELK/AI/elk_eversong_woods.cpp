@@ -325,7 +325,23 @@ public:
                 break;
             }
             case 2:
+            {
+                if (me->GetAvailableRunes() >= 5 && me->GetCritTempo() > 100 && me->GetDistance(me->GetVictim()) < me->GetCombatReach())
+                {
+                    exit = true;
+                    EasyQueCombo(ATK_3);
+                }
+                break;
+            }
             case 3:
+            {
+                if (me->GetAvailableRunes() >= 5 && me->GetCritTempo() > 100 && me->GetDistance(me->GetVictim()) < me->GetCombatReach())
+                {
+                    exit = true;
+                    EasyQueCombo(ATK_4);
+                }
+                break;
+            }
             case 4:
             {
                 events.ScheduleEvent(DYNAMIC_MOVEMENT_1, 0);
@@ -1248,6 +1264,52 @@ public:
                 }
                 break;
             }
+            case ATK_3:
+            {
+                switch (comboing)
+                {
+                case 1:
+                    EasyAttack(CRITICAL_ATTACK, ATK_3, 700);
+                    break;
+                case 2:
+                    EasyAttack(SPIN_ATTACK, ATK_3, 300);
+                    break;
+                case 3:
+                    EasyAttack(SPIN_ATTACK, ATK_3, 300);
+                    break;
+                case 4:
+                    EasyAttack(SPIN_ATTACK, ATK_3, 300);
+                    break;
+                case 5:
+                    EasyCast(SPIN_ATTACK);
+                    comboing = 0;
+                    break;
+                }
+                break;
+            }
+            case ATK_4:
+            {
+                switch (comboing)
+                {
+                case 1:
+                    EasyAttack(CRITICAL_ATTACK, ATK_4, 700);
+                    break;
+                case 2:
+                    EasyAttack(SPIN_ATTACK, ATK_4, 300);
+                    break;
+                case 3:
+                    EasyAttack(SPIN_ATTACK, ATK_4, 700);
+                    break;
+                case 4:
+                    EasyAttack(SPIN_ATTACK, ATK_4, 300);
+                    break;
+                case 5:
+                    EasyCast(SPIN_ATTACK);
+                    comboing = 0;
+                    break;
+                }
+                break;
+            }
             case SPL_1:
             {
                 switch (comboing)
@@ -1890,7 +1952,7 @@ void AddSC_elk_eversong_woods_mobs()
     new scourge_scroll();
 
     new amani_shadowpriest();
-    new amani_shadowpriest();
+    new amani_berserker();
     /*
     new amani_axe_thrower(); // jumps and throws axes in 3s. hes an imp basically. doesnt even deflect, dies fast
     new spearcrafter_otembe(); // gets +10 deflect chance after being hit every few attacks, lots of dmg, throws spears and bladestorms in place, after using lives system starts summoning serpent wards
