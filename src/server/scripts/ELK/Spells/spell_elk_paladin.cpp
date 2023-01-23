@@ -92,10 +92,8 @@ class spell_elk_retribution_aura_2 : public AuraScript
 
     uint8 hits = 0;
     uint8 hitsMax = 1;
-    Unit* target;
     void OnApply(AuraEffect const* aurEff, AuraEffectHandleModes mode)
     {
-        target = GetTarget();
         auto caster = GetCaster();
         if (!caster)
             return;
@@ -113,7 +111,7 @@ class spell_elk_retribution_aura_2 : public AuraScript
     }
     void OnAttack(Unit* const target, DamageInfo const dmgInfo)
     {  
-        if (target && hits && GetCaster())
+        if (GetTarget() && hits && GetCaster())
             GetCaster()->DoDamageYourself(target, uint32(float(dmgInfo.GetDamage()) / 3.33f), GetSpellInfo(), EFFECT_0);
     }
     void AfterAtk()

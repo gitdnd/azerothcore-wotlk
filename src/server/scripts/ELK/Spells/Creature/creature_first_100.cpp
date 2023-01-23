@@ -63,12 +63,14 @@ class spell_elk_dark_wave : public SpellScript
 {
     PrepareSpellScript(spell_elk_dark_wave);
 
-    void Hit()
+    void Hit(SpellEffIndex effIndex)
     {
         Unit* caster = GetCaster();
         if (!caster)
             return;
         Aura* aura = caster->GetAura(150057);
+        if (!aura)
+            aura = caster->AddAura(150057, caster);
         if (!aura)
             return;
         spell_elk_dark_wave_aura* script = dynamic_cast<spell_elk_dark_wave_aura*>(aura->GetScriptByName("spell_elk_dark_wave"));
@@ -77,7 +79,7 @@ class spell_elk_dark_wave : public SpellScript
     }
     void Register() override
     {
-        AfterHit += SpellHitFn(spell_elk_dark_wave::Hit);
+        OnEffectHitTarget += SpellEffectFn(spell_elk_dark_wave::Hit, EFFECT_2, SPELL_EFFECT_DUMMY);
     }
 };
 
@@ -129,12 +131,14 @@ class spell_elk_black_wave : public SpellScript
 {
     PrepareSpellScript(spell_elk_black_wave);
 
-    void Hit()
+    void Hit(SpellEffIndex effIndex)
     {
         Unit* caster = GetCaster();
         if (!caster)
             return;
         Aura* aura = caster->GetAura(150058);
+        if (!aura)
+            aura = caster->AddAura(150058, caster);
         if (!aura)
             return;
         spell_elk_black_wave_aura* script = dynamic_cast<spell_elk_black_wave_aura*>(aura->GetScriptByName("spell_elk_black_wave"));
@@ -143,7 +147,7 @@ class spell_elk_black_wave : public SpellScript
     }
     void Register() override
     {
-        AfterHit += SpellHitFn(spell_elk_black_wave::Hit);
+        OnEffectHitTarget += SpellEffectFn(spell_elk_black_wave::Hit, EFFECT_2, SPELL_EFFECT_DUMMY);
     }
 };
 
@@ -177,6 +181,8 @@ class spell_elk_black_space_aura : public AuraScript
     }
     void Periodic(AuraEffect const* aurEff)
     {
+        if (!GetUnitOwner())
+            return;
         for (std::vector<WaveTargets>::iterator target = targets.begin(); target != targets.end(); )
         {
             target->ticks++;
@@ -192,7 +198,6 @@ class spell_elk_black_space_aura : public AuraScript
             }
             else
             {
-                target->pos = pos2;
                 GetUnitOwner()->CastSpell(pos2.m_positionX, pos2.m_positionY, pos2.m_positionZ, 150049, true);
                 ++target;
             }
@@ -208,12 +213,16 @@ class spell_elk_black_space : public SpellScript
 {
     PrepareSpellScript(spell_elk_black_space);
 
-    void Hit()
+    void Hit(SpellEffIndex effIndex)
     {
+        if (!GetHitUnit())
+            return;
         Unit* caster = GetCaster();
         if (!caster)
             return;
         Aura* aura = caster->GetAura(150059);
+        if (!aura)
+            aura = caster->AddAura(150059, caster);
         if (!aura)
             return;
         spell_elk_black_space_aura* script = dynamic_cast<spell_elk_black_space_aura*>(aura->GetScriptByName("spell_elk_black_space"));
@@ -222,7 +231,7 @@ class spell_elk_black_space : public SpellScript
     }
     void Register() override
     {
-        AfterHit += SpellHitFn(spell_elk_black_space::Hit);
+        OnEffectHitTarget += SpellEffectFn(spell_elk_black_space::Hit, EFFECT_2, SPELL_EFFECT_DUMMY);
     }
 };
 
@@ -258,6 +267,8 @@ class spell_elk_way_to_hellfire_aura : public AuraScript
     }
     void Periodic(AuraEffect const* aurEff)
     {
+        if (!GetUnitOwner())
+            return;
         for (std::vector<WaveTargets>::iterator target = targets.begin(); target != targets.end(); )
         {
             target->ticks++;
@@ -286,13 +297,18 @@ class spell_elk_way_to_hellfire_aura : public AuraScript
                         target->normX = (target->pos.m_positionX - pos2.m_positionX) / dist;
                         target->normY = (target->pos.m_positionY - pos2.m_positionY) / dist;
                         target->normZ = (target->pos.m_positionZ - (pos2.m_positionZ + GetUnitOwner()->GetVictim()->GetCollisionHeight() / 2)) / dist;
+                        GetUnitOwner()->CastSpell(pos2.m_positionX, pos2.m_positionY, pos2.m_positionZ, 150047, true);
                         ++target;
                     }
                     else
                         target = targets.erase(target);
                 }
             }
-            GetUnitOwner()->CastSpell(pos2.m_positionX, pos2.m_positionY, pos2.m_positionZ, 150047, true);
+            else
+            {
+                GetUnitOwner()->CastSpell(pos2.m_positionX, pos2.m_positionY, pos2.m_positionZ, 150049, true);
+                ++target;
+            }
         }
     }
     void Register() override
@@ -305,12 +321,16 @@ class spell_elk_way_to_hellfire : public SpellScript
 {
     PrepareSpellScript(spell_elk_way_to_hellfire);
 
-    void Hit()
+    void Hit(SpellEffIndex effIndex)
     {
+        if (!GetHitUnit())
+            return;
         Unit* caster = GetCaster();
         if (!caster)
             return;
         Aura* aura = caster->GetAura(150060);
+        if (!aura)
+            aura = caster->AddAura(150060, caster);
         if (!aura)
             return;
         spell_elk_way_to_hellfire_aura* script = dynamic_cast<spell_elk_way_to_hellfire_aura*>(aura->GetScriptByName("spell_elk_way_to_hellfire"));
@@ -319,7 +339,7 @@ class spell_elk_way_to_hellfire : public SpellScript
     }
     void Register() override
     {
-        AfterHit += SpellHitFn(spell_elk_way_to_hellfire::Hit);
+        OnEffectHitTarget += SpellEffectFn(spell_elk_way_to_hellfire::Hit, EFFECT_2, SPELL_EFFECT_DUMMY);
     }
 };
 
