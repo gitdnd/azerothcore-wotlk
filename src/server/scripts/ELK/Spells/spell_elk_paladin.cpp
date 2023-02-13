@@ -111,7 +111,7 @@ class spell_elk_retribution_aura_2 : public AuraScript
     }
     void OnAttack(Unit* const target, DamageInfo const dmgInfo)
     {  
-        if (GetTarget() && hits && GetCaster())
+        if (GetTargetApplication()->GetTarget() && hits && GetCaster())
             GetCaster()->DoDamageYourself(target, uint32(float(dmgInfo.GetDamage()) / 3.33f), GetSpellInfo(), EFFECT_0);
     }
     void AfterAtk()

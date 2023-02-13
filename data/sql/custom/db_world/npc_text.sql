@@ -189,43 +189,4 @@ REPLACE INTO `npc_text` (`ID`, `text0_0`, `Probability0`) VALUES
 	(200188, "Desolace is not such a bad place, if you don't mind the constant harassments from the centaurs.", 1),
 	(200189, "The Argent Dawn will turn away none who are willing to sacrifice for our cause.", 1),
 	(200190, "Greetings, $n. If you bring me necrotic stones from the undead invaders, I can give you access to the stores of the Argent Dawn.", 1),
-	(200191, "Good day to you, citizen. Have you come to aid us against the Scourge?", 1),
-	
-	
-	(200192, "What do you want, novice? Are you here to help me past wits end?", 1),
-	(200193, "Rudeness doesn't befit you. I am here to relieve my torement. My needs, like any other of our people's needs, they have become great, and I must feed. Though I'm troubled by a slight malaise you see...", 1),
-	(200194, "While I do feel like I'm almost done, I have this odd urge to wait, to extend my Evocation and discharge further, and while I did and keep doing so, I find myself too bemused to worry, yet my thoughts feel empty.", 1),
-	(200195, "So long? I don't remember much time passing since I started, though I can guess why. I'd say it's been a couple of minutes but not much longer than that. Simply put, I can't remember much of anything!", 1),
-	(200196, "Wild elementals? Those are just impurities from my... release. Fel is a gross and disgusting type of energy compared to the usual Arcane I was used to, and it takes a time to get it into a satisfying state. Though every time I've almost reached it, every few seconds, I feel like my standards change so to speak.", 1),
-	(200197, "That's quite rash, blaming me this, supposed, situation. But I'll believe you, I've not much else to believe anyway. I have noticed something odd happening but not exactly what, my head is consistently swelling and I feel that if I were to walk away from here something terrible would happen, that my skull would split in two.", 1),
-	(200198, "Who wants me dead? Lanthan? That insipid 'friend'...
-	<Felendren twitched> 
-	...of mine wants my head? Hahaahahaa aahhh, I wouldn't have figured. Thanks for refreshing my memory about something, though it still feels as if it's stemming from outside of me rather than inside.", 1),
-	(200199, "You believe I'm such a dangerous fiend? If you truly, honestly, must put me down to protect the community, then I surrender. Have it your way.", 1),
-	(200200, "What are you talking about? Feel what?", 1),
-	(200201, "Could... there is something I've been avoiding, as if it's hard to even think about. It seems to be Demonic in nature but not totally alive, pulling me in. Parasitic in nature and isochasmic in complexity. It's not quite a Mana Burn, more of a Mind Devouring glow covered by a kalyptra. It's as if I'm purifying something that radiates degenerate energy, something whose essence is not pure at all, rather pure corruption itself!", 1),
-	(200202, "Absorb it? Why would I do something wholeheartedly dangerous? Although, considreing my current state...", 1),
-	(200203, "If I do that, I fear whatever it has taken from me, from my mind, will be lost.", 1),
-	(200204, "Clear up some of those Tainted Energies I've produced in the meantime. Maybe something will come to me, or you. You seem smart, you'll figure it out.", 1),
-	(200205, "If the energies I've produced work as I expect them to, perhaps try using some of their Essence, extract the pure part and use it to cast a Dispel or two on me.", 1),
-	(200206, "Just do it already.", 1),
-	(200207, "Do I know you? I can't quite remember.", 1),
-	(200208, "<The Orb radiates a sort of... intellectual energy. If you destroyed it, you could devour some of it's power.>", 1),
-	(200209, "...", 1),
-	(200210, "<The scroll smells corrosive, rotten and damp.>", 1),
-	(200211, "'...may the bodies of those deceased carry on their use for our Master and King, and may the Damned be free of the shackles of life forever more...'", 1),
-	(200212, "'...as the Damned rise from the dead to fulfill their duties to the KING of all that is Death, ruler beyond Life, they shall partake in the grace of His Will and breathe the air of his cold plague...", 1),
-	(200213, "<...may the Spirited Inamorata sing cold praise of his Eternal Wisdom and Strength, and may their echoes chill our homely bones and freeze the blood of the defiers...>", 1),
-	(200214, "<...Learn form your Masters...>", 1),
-	(200215, "Congragulations on your early Alumna, $n. Was it deserved?", 1),
-	(200216, "Good. I'm going to need you to return my Scrying Orb, one of my rare Scourge Magic Scrolls, and my notes, libriform. The Falthrien disaster shall be rectified, and as our pheonix blood wills, it shall rise from the ashes! Go forth!", 1),
-	(200215, "Hello, $n.", 1),
-	(200215, "The Sunspire used to hold a beautiful vantage of the Sunwell... long before. Our lives have been turned upside down, $n, but we shall nonetheless carry on. It is our way; we are survivors.
-
-If you are to survive this upheaval... and carry on thine birthright of this russet land, then you MUST learn how to thrive in the depths of this buzzardly world. All Sin'dorei must. Master your insatiable hungering for magic before it throws you into a slough of despair. ", 1),
-	(200215, "Worry not $n, your weak blade shall be saved from shattering by the bond of thine friends and allies. You have made friends while here, haven't you? If not, now is the time to start.", 1),
-	(200215, "We suspect Felendren is responsible for Sunstrider Isle's plight. He has left me and my friends wondering over the sorcerry he is commanding, questioning his motives for what could have been the cause.", 1),
-	(200215, "Very well, I'm going to need you to return my Scrying Orb, my collection of Scourge Magic Scrolls, and my notes, libriform.", 1),
-	(200215, "Very well, I'm going to need you to return my Scrying Orb, my collection of Scourge Magic Scrolls, and my notes, libriform.", 1),
-	(200215, "Very well, I'm going to need you to return my Scrying Orb, my collection of Scourge Magic Scrolls, and my notes, libriform.", 1);
-	 
+	(200191, "Good day to you, citizen. Have you come to aid us against the Scourge?", 1);

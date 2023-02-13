@@ -4,6 +4,7 @@
 
 enum class QuestStageFlags : uint32
 {
+    // Eversong Woods
     FELENDREN_MET,
     FELENDREN_KILLED,
     FELENDREN_PUT_DOWN,
@@ -15,6 +16,8 @@ enum class QuestStageFlags : uint32
     SCOLL_OF_SCOURGE_MAGIC_CONSUMED,
     SOLANIANS_JOURNAL_FOUND,
     SOLANIANS_JOURNAL_CONSUMED,
+
+
 };
 
 enum class ChestFlags : uint32

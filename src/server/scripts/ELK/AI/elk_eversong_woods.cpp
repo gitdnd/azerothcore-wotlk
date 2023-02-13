@@ -734,6 +734,19 @@ public:
     }
     struct felendrenAI : public ELKAI
     {
+        static inline std::map<uint8, DialogueResponse> Responses =
+        {
+            {1, DialogueResponse(
+                    "",
+                    {},
+                    {
+                        DialogueLine("", {""}, {""}, 2)
+                    },
+                    nullptr
+                )
+            }
+        };
+
         felendrenAI(Creature* creature) : ELKAI(creature)
         {
             reinforcementCall = RAND(1, 2); 
@@ -938,7 +951,9 @@ public:
 class solanians_orb : public ELKCreatureScript
 {
 public:
-    solanians_orb() : ELKCreatureScript("solanians_orb") { }
+    solanians_orb() : ELKCreatureScript("solanians_orb")
+    {
+    }
 
     ELKAI* GetAI(Creature* creature) const override
     {
@@ -1362,6 +1377,8 @@ public:
         uint16 damagedAmount = 0;
         void DamageTaken(Unit* doneby, uint32& damage, DamageEffectType, SpellSchoolMask) override
         {
+            if (me->IsAlive() == false)
+                return;
             if (damage >= me->GetHealth() && lives > rand() % 10)
             {
                 isLeaping = 0;
@@ -1370,7 +1387,6 @@ public:
                 lives--;
                 chanceDef = 0;
             }
-
             if (me->HasAura(150033))
                 return;
             damagedAmount += damage;

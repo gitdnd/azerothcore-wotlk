@@ -17959,6 +17959,7 @@ bool Unit::IsTriggeredAtSpellProcEvent(Unit* victim, Aura* aura, WeaponAttackTyp
         modOwner->ApplySpellMod(spellProto->Id, SPELLMOD_CHANCE_OF_SUCCESS, chance);
     }
 
+    chance *= aura->GetDevelopment();
     return roll_chance_f(chance);
 }
 

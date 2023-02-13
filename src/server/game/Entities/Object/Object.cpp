@@ -225,7 +225,7 @@ void Object::BuildCreateUpdateBlockForPlayer(UpdateData* data, Player* target) c
                     break;
             }
         }
-
+        
         if (isType(TYPEMASK_UNIT))
         {
             if (((Unit*)this)->GetVictim())
@@ -457,13 +457,10 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint16 flags) const
         }
     }
 
-    // 0x4
+
     if (flags & UPDATEFLAG_HAS_TARGET)
     {
-        if (Unit* victim = unit->GetVictim())
-            *data << victim->GetPackGUID();
-        else
-            *data << uint8(0);
+        *data << uint8(0);
     }
 
     // 0x2

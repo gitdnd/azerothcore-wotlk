@@ -10001,3 +10001,73 @@ void ObjectMgr::LoadMailServerTemplates()
     LOG_INFO("server.loading", ">> Loaded {} Mail Server Template in {} ms", _serverMailStore.size(), GetMSTimeDiffToNow(oldMSTime));
     LOG_INFO("server.loading", " ");
 }
+
+ELKDialogue* ObjectMgr::GetELKDialogue(std::string name)
+{
+    ELKDialogueLocaleContainer::iterator itr = _elkDialogueStore.find(name);
+    if (itr != _elkDialogueStore.end())
+        return &(itr->second);
+
+    return nullptr;
+}
+
+void ObjectMgr::LoadELKDialogue()
+{
+    uint32 oldMSTime = getMSTime();
+
+    _elkDialogueStore.clear();                              // need for reload case
+
+    QueryResult result = WorldDatabase.Query("SELECT id, text_name, dialogue FROM elk_dialogue_text");
+
+    if (!result)
+        return;
+
+    do
+    {
+        Field* fields = result->Fetch();
+
+        uint32 id = fields[0].Get<uint32>();
+        std::string text_name = fields[1].Get<std::string>();
+        std::string dialogue = fields[2].Get<std::string>();
+
+        _elkDialogueStore.emplace(text_name, ELKDialogue(id, dialogue));
+
+    } while (result->NextRow());
+
+    LOG_INFO("server.loading", ">> Loaded {} ELK Dialogue Strings in {} ms", (unsigned long)_elkDialogueStore.size(), GetMSTimeDiffToNow(oldMSTime));
+}
+
+uint32 ObjectMgr::GetELKFlag(std::string name)
+{
+    ELKFlagLocaleContainer::const_iterator itr = _elkFlagStore.find(name);
+    if (itr != _elkFlagStore.end())
+        return (itr->second);
+
+    return 0;
+}
+
+void ObjectMgr::LoadELKFlags()
+{
+    uint32 oldMSTime = getMSTime();
+
+    _elkFlagStore.clear();                              // need for reload case
+
+    QueryResult result = WorldDatabase.Query("SELECT id, flag_name FROM elk_flag");
+
+    if (!result)
+        return;
+
+    do
+    {
+        Field* fields = result->Fetch();
+
+        uint32 id = fields[0].Get<uint32>();
+        std::string flag_name = fields[1].Get<std::string>();
+
+
+        _elkFlagStore.emplace(flag_name, id);
+
+    } while (result->NextRow());
+
+    LOG_INFO("server.loading", ">> Loaded {} ELK Flags in {} ms", (unsigned long)_elkFlagStore.size(), GetMSTimeDiffToNow(oldMSTime));
+}

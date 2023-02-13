@@ -33,7 +33,6 @@ enum Events : uint16
     RETURN_CHECK,
     DYNAMIC_MOVEMENT_1,
 };
-
 class ELKCreatureScript : public CreatureScript
 {
 protected:
@@ -292,4 +291,52 @@ struct ELKAI : public ScriptedAI
     virtual void RandomDef(uint8, bool&) {};
     virtual void RandomSpell(uint8, bool&) {};
     virtual void RandomBuff(uint8, bool&) {};
+
+    struct DialogueLine
+    {
+        DialogueLine(std::string textIndex, std::vector<std::string> flagNeededName, std::vector<std::string> flagAddedName, uint16 nextResponse)
+            : nextResponse(nextResponse)
+        {
+            ELKDialogue* dial = sObjectMgr->GetELKDialogue(textIndex);
+            if (dial)
+                textLine = dial->dialogue;
+            else
+                textLine = "";
+            for (std::string& flag : flagNeededName)
+            {
+                flagNeeded.push_back(sObjectMgr->GetELKFlag(flag));
+            }
+            for (std::string& flag : flagAddedName)
+            {
+                flagAdded.push_back(sObjectMgr->GetELKFlag(flag));
+            }
+        }
+        std::string textLine;
+        std::vector<uint32> flagNeeded = {};
+        std::vector<uint32> flagAdded = {};
+        uint16 nextResponse;
+    };
+
+    struct DialogueResponse
+    {
+        DialogueResponse(std::string textIndex, std::vector<std::string> flagNeededName, std::vector<DialogueLine> lines, void (ELKAI::* scriptMethod)())
+            : appearScript(scriptMethod),
+            lines(lines)
+        {
+            ELKDialogue* dial = sObjectMgr->GetELKDialogue(textIndex);
+            if (dial)
+                textIndex = dial->id + 1000000;
+            else
+                textIndex = 1000001;
+            for (std::string& flag : flagNeededName)
+            {
+                flagNeeded.push_back(sObjectMgr->GetELKFlag(flag));
+            }
+        }
+        uint32 textIndex;
+        std::vector<uint32> flagNeeded;
+        std::vector<DialogueLine> lines;
+        void (ELKAI::* appearScript)(); // ai.appearScript = &ELKAI::ScriptFunction;
+    };
+
 };

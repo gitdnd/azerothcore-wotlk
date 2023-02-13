@@ -515,8 +515,12 @@ typedef std::unordered_map<int32, AcoreString> AcoreStringContainer;
 typedef std::unordered_map<uint32, GossipMenuItemsLocale> GossipMenuItemsLocaleContainer;
 typedef std::unordered_map<uint32, PointOfInterestLocale> PointOfInterestLocaleContainer;
 
+
 typedef std::multimap<uint32, uint32> QuestRelations;
 typedef std::pair<QuestRelations::const_iterator, QuestRelations::const_iterator> QuestRelationBounds;
+
+typedef std::unordered_map<std::string, ELKDialogue> ELKDialogueLocaleContainer;
+typedef std::unordered_map<std::string, uint32> ELKFlagLocaleContainer;
 
 struct PetLevelInfo
 {
@@ -778,6 +782,8 @@ public:
     ItemTemplate const* GetItemTemplate(uint32 entry);
     [[nodiscard]] ItemTemplateContainer const* GetItemTemplateStore() const { return &_itemTemplateStore; }
     [[nodiscard]] std::vector<ItemTemplate*> const* GetItemTemplateStoreFast() const { return &_itemTemplateStoreFast; }
+    ELKDialogue* GetELKDialogue(std::string name);
+    uint32 GetELKFlag(std::string name);
 
     ItemSetNameEntry const* GetItemSetNameEntry(uint32 itemId)
     {
@@ -1093,6 +1099,9 @@ public:
     void LoadVendors();
     void LoadTrainerSpell();
     void AddSpellToTrainer(uint32 entry, uint32 spell, uint32 spellCost, uint32 reqSkill, uint32 reqSkillValue, uint32 reqLevel, uint32 reqSpell);
+
+    void LoadELKDialogue();
+    void LoadELKFlags();
 
     std::string GeneratePetName(uint32 entry);
     uint32 GetBaseXP(uint8 level);
@@ -1592,6 +1601,9 @@ private:
     CacheTrainerSpellContainer _cacheTrainerSpellStore;
 
     ServerMailContainer _serverMailStore;
+
+    ELKDialogueLocaleContainer _elkDialogueStore;
+    ELKFlagLocaleContainer _elkFlagStore;
 
     std::set<uint32> _difficultyEntries[MAX_DIFFICULTY - 1]; // already loaded difficulty 1 value in creatures, used in CheckCreatureTemplate
     std::set<uint32> _hasDifficultyEntries[MAX_DIFFICULTY - 1]; // already loaded creatures with difficulty 1 values, used in CheckCreatureTemplate

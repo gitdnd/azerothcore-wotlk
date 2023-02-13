@@ -350,6 +350,13 @@ struct EquipmentInfo
     uint32  ItemEntry[MAX_EQUIPMENT_ITEMS];
 };
 
+struct ELKDialogue
+{
+    ELKDialogue(uint32 id, std::string dialogue) : id(id), dialogue(dialogue) {};
+    uint32 id;
+    std::string dialogue;
+};
+
 // Benchmarked: Faster than std::map (insert/find)
 typedef std::unordered_map<uint8, EquipmentInfo> EquipmentInfoContainerInternal;
 typedef std::unordered_map<uint32, EquipmentInfoContainerInternal> EquipmentInfoContainer;
