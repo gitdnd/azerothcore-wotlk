@@ -2033,7 +2033,7 @@ public:
     AuraApplication* _CreateAuraApplication(Aura* aura, uint8 effMask);
     void _ApplyAuraEffect(Aura* aura, uint8 effIndex);
     void _ApplyAura(AuraApplication* aurApp, uint8 effMask);
-    void _UnapplyAura(AuraApplicationMap::iterator& i, AuraRemoveMode removeMode);
+    void _UnapplyAura(AuraApplicationMap::iterator* i, AuraRemoveMode removeMode);
     void _UnapplyAura(AuraApplication* aurApp, AuraRemoveMode removeMode);
     void _RemoveNoStackAuraApplicationsDueToAura(Aura* aura);
     void _RemoveNoStackAurasDueToAura(Aura* aura);
@@ -2891,7 +2891,23 @@ public:
     void ModCritTempo(int16 tempo) { critTempo += tempo; float check = GetFloatValue(PLAYER_CRIT_PERCENTAGE) * 10;  if (critTempo > uint16(check) && critTempo > 100) critTempo = uint16(check); }
 
     void DoDamageYourself(Unit* target, uint32 damage, const SpellInfo* spellInfo, uint8 effect);
+
+    static inline std::vector<AuraApplicationMap::iterator*> currentAuraIterators = {};
+
+    #define CallScriptIteration(func)                           \
+    AuraApplicationMap::iterator it = m_appliedAuras.begin();   \
+    currentAuraIterators.push_back(&it);                        \
+    while (it != m_appliedAuras.end())                          \
+    {                                                           \
+        it->second->GetBase()->func;                            \
+        if (it != m_appliedAuras.end())                         \
+            it++;                                               \
+    }                                                           \
+    std::erase(currentAuraIterators, &it)                       \
+
 };
+
+
 
 namespace Acore
 {

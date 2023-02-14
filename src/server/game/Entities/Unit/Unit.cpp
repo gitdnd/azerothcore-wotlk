@@ -438,51 +438,7 @@ void Unit::Relocate(float x, float y)
     m_positionYprev = m_positionY;
     Position::Relocate(x, y);
 
-    std::vector< AuraApplicationMap::iterator> passed = {};
-    AuraApplicationMap appliedAurasCopy = m_appliedAuras;
-    for (AuraApplicationMap::iterator it = appliedAurasCopy.begin(); it != appliedAurasCopy.end(); )
-    {
-        if (it->second)
-        {
-            bool succ = it->second->GetBase()->CallScriptOnMovementPacket();
-            if (!succ)
-            {
-                appliedAurasCopy.erase(it);
-                int remaining = -1;
-                bool exit = false;
-                for (AuraApplicationMap::iterator it2 = appliedAurasCopy.begin(); it2 != appliedAurasCopy.end();)
-                {
-                    for (auto o : passed)
-                    {
-                        if (o == it2)
-                        {
-                            ++it2;
-                            remaining++;
-                        }
-                        else
-                        {
-                            passed.erase(passed.begin() + remaining + 1, passed.end());
-                            exit = true;
-                            break;
-                        }
-                    }
-                    if (exit)
-                        break;
-                }
-                if (remaining >= 0)
-                {
-                    it = passed[remaining];
-                    ++it;
-                }
-                else
-                    it = appliedAurasCopy.begin();
-                continue;
-            }
-        }
-        passed.push_back(it);
-        ++it;
-    }
-
+    CallScriptIteration(CallScriptOnMovementPacket());
 }
 
 void Unit::Update(uint32 p_time)
@@ -4582,9 +4538,9 @@ void Unit::_ApplyAura(AuraApplication* aurApp, uint8 effMask)
 }
 
 // removes aura application from lists and unapplies effects
-void Unit::_UnapplyAura(AuraApplicationMap::iterator& i, AuraRemoveMode removeMode)
+void Unit::_UnapplyAura(AuraApplicationMap::iterator* i, AuraRemoveMode removeMode)
 {
-    AuraApplication* aurApp = i->second;
+    AuraApplication* aurApp = (*i)->second;
     ASSERT(aurApp);
     ASSERT(!aurApp->GetRemoveMode());
     ASSERT(aurApp->GetTarget() == this);
@@ -4601,8 +4557,27 @@ void Unit::_UnapplyAura(AuraApplicationMap::iterator& i, AuraRemoveMode removeMo
     Unit* caster = aura->GetCaster();
 
     // Remove all pointers from lists here to prevent possible pointer invalidation on spellcast/auraapply/auraremove
-    m_appliedAuras.erase(i);
-
+    if (currentAuraIterators.size() > 0)
+    {
+        bool beingIterated = false;
+        AuraApplicationMap::iterator iNew;
+        for (AuraApplicationMap::iterator* itRef : currentAuraIterators)
+        {
+            if (beingIterated)
+            {
+                if ((*itRef)->first == (*i)->first)
+                    *itRef = iNew;
+            }
+            else if ((*i)->first == (*itRef)->first)
+            {
+                beingIterated = true;
+                iNew = m_appliedAuras.erase(*i);
+                *itRef = iNew;
+            }
+        }
+    }
+    else
+        m_appliedAuras.erase(*i);
     // xinef: do not insert our application to interruptible list if application target is not the owner (area auras)
     // xinef: event if it gets removed, it will be reapplied in a second
     if (aura->GetSpellInfo()->AuraInterruptFlags && this == aura->GetOwner())
@@ -4659,7 +4634,7 @@ void Unit::_UnapplyAura(AuraApplicationMap::iterator& i, AuraRemoveMode removeMo
 
     // only way correctly remove all auras from list
     //if (removedAuras != m_removedAurasCount) new aura may be added
-    i = m_appliedAuras.begin();
+    (*i) = m_appliedAuras.begin();
 }
 
 void Unit::_UnapplyAura(AuraApplication* aurApp, AuraRemoveMode removeMode)
@@ -4674,7 +4649,7 @@ void Unit::_UnapplyAura(AuraApplication* aurApp, AuraRemoveMode removeMode)
     {
         if (iter->second == aurApp)
         {
-            _UnapplyAura(iter, removeMode);
+            _UnapplyAura(&iter, removeMode);
             return;
         }
         else
@@ -4799,7 +4774,7 @@ void Unit::RemoveAura(AuraApplicationMap::iterator& i, AuraRemoveMode mode)
     if (aurApp->GetRemoveMode())
         return;
     Aura* aura = aurApp->GetBase();
-    _UnapplyAura(i, mode);
+    _UnapplyAura(&i, mode);
     // Remove aura - for Area and Target auras
     if (aura->GetOwner() == this)
         aura->Remove(mode);
@@ -4866,51 +4841,9 @@ void Unit::RemoveAura(Aura* aura, AuraRemoveMode mode)
         return;
     if (AuraApplication* aurApp = aura->GetApplicationOfTarget(GetGUID()))
         RemoveAura(aurApp, mode);
-  
-    std::vector< AuraApplicationMap::iterator> passed = {};
-    AuraApplicationMap appliedAurasCopy = m_appliedAuras;
-    for (AuraApplicationMap::iterator it = appliedAurasCopy.begin(); it != appliedAurasCopy.end(); )
-    {
-        if (it->second)
-        {
-            bool succ = it->second->GetBase()->CallScriptAuraAddRemove(aura, false);
-            if (!succ)
-            {
-                appliedAurasCopy.erase(it);
-                int remaining = -1;
-                bool exit = false;
-                for (AuraApplicationMap::iterator it2 = appliedAurasCopy.begin(); it2 != appliedAurasCopy.end();)
-                {
-                    for (auto o : passed)
-                    {
-                        if (o == it2)
-                        {
-                            ++it2;
-                            remaining++;
-                        }
-                        else
-                        {
-                            passed.erase(passed.begin() + remaining + 1, passed.end());
-                            exit = true;
-                            break;
-                        }
-                    }
-                    if (exit)
-                        break;
-                }
-                if (remaining >= 0)
-                {
-                    it = passed[remaining];
-                    ++it;
-                }
-                else
-                    it = appliedAurasCopy.begin();
-                continue;
-            }
-        }
-        passed.push_back(it);
-        ++it;
-    }  
+
+
+    CallScriptIteration(CallScriptAuraAddRemove(aura, false));
 }
 
 void Unit::RemoveOwnedAuras(std::function<bool(Aura const*)> const& check)
@@ -5377,7 +5310,7 @@ void Unit::RemoveAllAuras()
     {
         AuraApplicationMap::iterator aurAppIter;
         for (aurAppIter = m_appliedAuras.begin(); aurAppIter != m_appliedAuras.end();)
-            _UnapplyAura(aurAppIter, AURA_REMOVE_BY_DEFAULT);
+            _UnapplyAura(&aurAppIter, AURA_REMOVE_BY_DEFAULT);
 
         AuraMap::iterator aurIter;
         for (aurIter = m_ownedAuras.begin(); aurIter != m_ownedAuras.end();)
@@ -5407,7 +5340,7 @@ void Unit::RemoveAllAurasOnDeath()
     {
         Aura const* aura = iter->second->GetBase();
         if ((!aura->IsPassive() || aura->GetSpellInfo()->HasAttribute(SPELL_ATTR7_DISABLE_AURA_WHILE_DEAD)) && !aura->IsDeathPersistent())
-            _UnapplyAura(iter, AURA_REMOVE_BY_DEATH);
+            _UnapplyAura(&iter, AURA_REMOVE_BY_DEATH);
         else
             ++iter;
     }
@@ -5428,7 +5361,7 @@ void Unit::RemoveAllAurasRequiringDeadTarget()
     {
         Aura const* aura = iter->second->GetBase();
         if (!aura->IsPassive() && aura->GetSpellInfo()->IsRequiringDeadTarget())
-            _UnapplyAura(iter, AURA_REMOVE_BY_DEFAULT);
+            _UnapplyAura(&iter, AURA_REMOVE_BY_DEFAULT);
         else
             ++iter;
     }
@@ -5451,7 +5384,7 @@ void Unit::RemoveAllAurasExceptType(AuraType type)
         if (aura->GetSpellInfo()->HasAura(type))
             ++iter;
         else
-            _UnapplyAura(iter, AURA_REMOVE_BY_DEFAULT);
+            _UnapplyAura(&iter, AURA_REMOVE_BY_DEFAULT);
     }
 
     for (AuraMap::iterator iter = m_ownedAuras.begin(); iter != m_ownedAuras.end();)
@@ -5496,7 +5429,7 @@ void Unit::RemoveEvadeAuras()
         if (spellInfo->HasAttribute(SPELL_ATTR0_CU_IGNORE_EVADE) || spellInfo->HasAura(SPELL_AURA_CONTROL_VEHICLE) || spellInfo->HasAura(SPELL_AURA_CLONE_CASTER) || (aura->IsPassive() && GetOwnerGUID().IsPlayer()))
             ++iter;
         else
-            _UnapplyAura(iter, AURA_REMOVE_BY_DEFAULT);
+            _UnapplyAura(&iter, AURA_REMOVE_BY_DEFAULT);
     }
 
     for (AuraMap::iterator iter = m_ownedAuras.begin(); iter != m_ownedAuras.end();)
@@ -11838,242 +11771,33 @@ float Unit::processDummyAuras(float TakenTotalMod) const
 
 void Unit::DoOnAttackHitScripts(Unit* const target, DamageInfo const dmgInfo)
 {
-    std::vector<AuraApplicationMap::iterator> passed = {};
-    AuraApplicationMap appliedAurasCopy = m_appliedAuras;
-    for (AuraApplicationMap::iterator it = appliedAurasCopy.begin(); it != appliedAurasCopy.end(); )
-    {
-        if (it->second)
-        {
-            bool succ = it->second->GetBase()->CallScriptOnAttackHit(target, dmgInfo);
-            if (!succ)
-            {
-                appliedAurasCopy.erase(it);
-                int remaining = -1;
-                bool exit = false;
-                for (AuraApplicationMap::iterator it2 = appliedAurasCopy.begin(); it2 != appliedAurasCopy.end();)
-                {
-                    for (auto o : passed)
-                    {
-                        if (o == it2)
-                        {
-                            ++it2;
-                            remaining++;
-                        }
-                        else
-                        {
-                            passed.erase(passed.begin() + remaining + 1, passed.end());
-                            exit = true;
-                            break;
-                        }
-                    }
-                    if (exit)
-                        break;
-                }
-                if (remaining >= 0)
-                {
-                    it = passed[remaining];
-                    ++it;
-                }
-                else
-                    it = appliedAurasCopy.begin();
-                continue;
-            }
-        }
-        passed.push_back(it);
-        ++it;
-    }
+    CallScriptIteration(CallScriptOnAttackHit(target, dmgInfo));
 }
-
 void Unit::DoAfterAttackScripts()
 {
-    std::vector<AuraApplicationMap::iterator> passed = {};
-    AuraApplicationMap appliedAurasCopy = m_appliedAuras;
-    for (AuraApplicationMap::iterator it = appliedAurasCopy.begin(); it != appliedAurasCopy.end(); )
-    {
-        if (it->second)
-        {
-            bool succ = it->second->GetBase()->CallScriptAfterAttack();
-            if (!succ)
-            {
-                appliedAurasCopy.erase(it);
-                int remaining = -1;
-                bool exit = false;
-                for (AuraApplicationMap::iterator it2 = appliedAurasCopy.begin(); it2 != appliedAurasCopy.end();)
-                {
-                    for (auto o : passed)
-                    {
-                        if (o == it2)
-                        {
-                            ++it2;
-                            remaining++;
-                        }
-                        else
-                        {
-                            passed.erase(passed.begin() + remaining + 1, passed.end());
-                            exit = true;
-                            break;
-                        }
-                    }
-                    if (exit)
-                        break;
-                }
-                if (remaining >= 0)
-                {
-                    it = passed[remaining];
-                    ++it;
-                }
-                else
-                    it = appliedAurasCopy.begin();
-                continue;
-            }
-        }
-        passed.push_back(it);
-        ++it;
-    }
+    CallScriptIteration(CallScriptAfterAttack());
 }
 
 void Unit::DoBeforeSpellCastScripts(Spell* spell)
 {
-    std::vector<AuraApplicationMap::iterator> passed = {};
-    AuraApplicationMap appliedAurasCopy = m_appliedAuras;
-    for (AuraApplicationMap::iterator it = appliedAurasCopy.begin(); it != appliedAurasCopy.end(); )
-    {
-        if (it->second)
-        {
-            bool succ = it->second->GetBase()->CallScriptBeforeSpellCast(spell);
-            if (!succ)
-            {
-                appliedAurasCopy.erase(it);
-                int remaining = -1;
-                bool exit = false;
-                for (AuraApplicationMap::iterator it2 = appliedAurasCopy.begin(); it2 != appliedAurasCopy.end();)
-                {
-                    for (auto o : passed)
-                    {
-                        if (o == it2)
-                        {
-                            ++it2;
-                            remaining++;
-                        }
-                        else
-                        {
-                            passed.erase(passed.begin() + remaining + 1, passed.end());
-                            exit = true;
-                            break;
-                        }
-                    }
-                    if (exit)
-                        break;
-                }
-                if (remaining >= 0)
-                {
-                    it = passed[remaining];
-                    ++it;
-                }
-                else
-                    it = appliedAurasCopy.begin();
-                continue;
-            }
-        }
-        passed.push_back(it);
-        ++it;
-    }
+    CallScriptIteration(CallScriptBeforeSpellCast(spell));
+
+
 }
 
 void Unit::DoOnSpellCastScripts(Spell* spell)
 {
-    std::vector<AuraApplicationMap::iterator> passed = {};
-    AuraApplicationMap appliedAurasCopy = m_appliedAuras;
-    for (AuraApplicationMap::iterator it = appliedAurasCopy.begin(); it != appliedAurasCopy.end(); )
-    {
-        if (it->second)
-        {
-            bool succ = it->second->GetBase()->CallScriptOnSpellCast(spell);
-            if (!succ)
-            {
-                appliedAurasCopy.erase(it);
-                int remaining = -1;
-                bool exit = false;
-                for (AuraApplicationMap::iterator it2 = appliedAurasCopy.begin(); it2 != appliedAurasCopy.end();)
-                {
-                    for (auto o : passed)
-                    {
-                        if (o == it2)
-                        {
-                            ++it2;
-                            remaining++;
-                        }
-                        else
-                        {
-                            passed.erase(passed.begin() + remaining + 1, passed.end());
-                            exit = true;
-                            break;
-                        }
-                    }
-                    if (exit)
-                        break;
-                }
-                if (remaining >= 0)
-                {
-                    it = passed[remaining];
-                    ++it;
-                }
-                else
-                    it = appliedAurasCopy.begin();
-                continue;
-            }
-        }
-        passed.push_back(it);
-        ++it;
-    }
+    CallScriptIteration(CallScriptOnSpellCast(spell));
+
+
 }
 
 void Unit::DoOnAuraStackScripts(Aura* aura, int16 amount)
 {
-    std::vector<AuraApplicationMap::iterator> passed = {};
-    AuraApplicationMap appliedAurasCopy = m_appliedAuras;
-    for (AuraApplicationMap::iterator it = appliedAurasCopy.begin(); it != appliedAurasCopy.end(); )
-    {
-        if (it->second)
-        {
-            bool succ = it->second->GetBase()->CallScriptOnAuraStack(aura, amount);
-            if (!succ)
-            {
-                appliedAurasCopy.erase(it);
-                int remaining = -1;
-                bool exit = false;
-                for (AuraApplicationMap::iterator it2 = appliedAurasCopy.begin(); it2 != appliedAurasCopy.end();)
-                {
-                    for (auto o : passed)
-                    {
-                        if (o == it2)
-                        {
-                            ++it2;
-                            remaining++;
-                        }
-                        else
-                        {
-                            passed.erase(passed.begin() + remaining + 1, passed.end());
-                            exit = true;
-                            break;
-                        }
-                    }
-                    if (exit)
-                        break;
-                }
-                if (remaining >= 0)
-                {
-                    it = passed[remaining];
-                    ++it;
-                }
-                else
-                    it = appliedAurasCopy.begin();
-                continue;
-            }
-        }
-        passed.push_back(it);
-        ++it;
-    }
+
+    CallScriptIteration(CallScriptOnAuraStack(aura, amount));
+
+
 }
 
 int32 Unit::SpellBasePowerBonusDone(SpellSchoolMask schoolMask, int16 bonusSpellPower, bool noDerived) const
@@ -14211,50 +13935,7 @@ int32 Unit::ModifyPower(Powers power, int32 dVal, bool withPowerUpdate /*= true*
     if (gain != 0)
     {
 
-        std::vector< AuraApplicationMap::iterator> passed = {};
-        AuraApplicationMap appliedAurasCopy = m_appliedAuras;
-        for (AuraApplicationMap::iterator it = appliedAurasCopy.begin(); it != appliedAurasCopy.end(); )
-        {
-            if (it->second)
-            {
-                bool succ = it->second->GetBase()->CallScriptOnResourceChange(power, gain, reason, reasonObj);
-                if (!succ)
-                {
-                    appliedAurasCopy.erase(it);
-                    int remaining = -1;
-                    bool exit = false;
-                    for (AuraApplicationMap::iterator it2 = appliedAurasCopy.begin(); it2 != appliedAurasCopy.end();)
-                    {
-                        for (auto o : passed)
-                        {
-                            if (o == it2)
-                            {
-                                ++it2;
-                                remaining++;
-                            }
-                            else
-                            {
-                                passed.erase(passed.begin() + remaining + 1, passed.end());
-                                exit = true;
-                                break;
-                            }
-                        }
-                        if (exit)
-                            break;
-                    }
-                    if (remaining >= 0)
-                    {
-                        it = passed[remaining];
-                        ++it;
-                    }
-                    else
-                        it = appliedAurasCopy.begin();
-                    continue;
-                }
-            }
-            passed.push_back(it);
-            ++it;
-        } 
+        CallScriptIteration(CallScriptOnResourceChange(power, gain, reason, reasonObj));
     }
 
     return gain;
@@ -19286,51 +18967,9 @@ Aura* Unit::AddAura(SpellInfo const* spellInfo, uint8 effMask, Unit* target)
 
     if (Aura* aura = Aura::TryRefreshStackOrCreate(spellInfo, effMask, target, this))
     {
-        std::vector< AuraApplicationMap::iterator> passed = {};
-        AuraApplicationMap appliedAurasCopy = m_appliedAuras;
-        for (AuraApplicationMap::iterator it = appliedAurasCopy.begin(); it != appliedAurasCopy.end(); )
-        {
-            if (it->second)
-            {
-                bool succ = it->second->GetBase()->CallScriptAuraAddRemove(aura, true);
-                if (!succ)
-                {
-                    appliedAurasCopy.erase(it);
-                    int remaining = -1;
-                    bool exit = false;
-                    for (AuraApplicationMap::iterator it2 = appliedAurasCopy.begin(); it2 != appliedAurasCopy.end();)
-                    {
-                        for (auto o : passed)
-                        {
-                            if (o == it2)
-                            {
-                                ++it2;
-                                remaining++;
-                            }
-                            else
-                            {
-                                passed.erase(passed.begin() + remaining + 1, passed.end());
-                                exit = true;
-                                break;
-                            }
-                        }
-                        if (exit)
-                            break;
-                    }
-                    if (remaining >= 0)
-                    {
-                        it = passed[remaining];
-                        ++it;
-                    }
-                    else
-                        it = appliedAurasCopy.begin();
-                    continue;
-                }
-            }
-            passed.push_back(it);
-            ++it;
-        }
-        return aura; 
+
+        CallScriptIteration(CallScriptAuraAddRemove(aura, true));
+
     }
     return nullptr;
 }

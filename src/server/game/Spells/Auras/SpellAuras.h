@@ -38,7 +38,7 @@ class AuraScript;
 class AuraApplication
 {
     friend void Unit::_ApplyAura(AuraApplication* aurApp, uint8 effMask);
-    friend void Unit::_UnapplyAura(AuraApplicationMap::iterator& i, AuraRemoveMode removeMode);
+    friend void Unit::_UnapplyAura(AuraApplicationMap::iterator* i, AuraRemoveMode removeMode);
     friend void Unit::_ApplyAuraEffect(Aura* aura, uint8 effIndex);
     friend void Unit::RemoveAura(AuraApplication* aurApp, AuraRemoveMode mode);
     friend AuraApplication* Unit::_CreateAuraApplication(Aura* aura, uint8 effMask);
