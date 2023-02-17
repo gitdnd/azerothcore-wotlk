@@ -551,32 +551,13 @@ class spell_elk_avenging_wrath_aura : public AuraScript
     PrepareAuraScript(spell_elk_avenging_wrath_aura);
 
 
-    void MovePacket()
-    {
-        if (GetCaster()->IsFalling())
-        {
-            if (!(GetCaster()->HasAura(210027)))
-            {
-                Aura* aura = GetCaster()->AddAura(210027, GetCaster());
-                if (aura)
-                {
-                    aura->GetEffect(EFFECT_0)->SetPeriodic(false);
-                }
-            }
-        }
-        else if (Aura* aura = GetCaster()->GetAura(210027); aura)
-            aura->Remove();
-    }
     void OnAttack(Spell* spell)
     {
         if (spell->m_spellInfo->Id != ATTACK || !(GetCaster()->IsFalling()))
             return;
-        if (Aura* aura = GetCaster()->GetAura(210027))
-        {
-            aura->GetEffect(EFFECT_0)->SetPeriodic(true);
-        }
-        else
-            GetCaster()->AddAura(210027, GetCaster());
+        Aura* aura = GetCaster()->GetAura(210027);
+        if(!aura)
+            aura = GetCaster()->AddAura(210027, GetCaster());
         spell->skip = true;
         GetCaster()->AddSpellCooldown(spell->m_spellInfo->Id, 0, 100, false);
     }
@@ -598,7 +579,6 @@ class spell_elk_avenging_wrath_aura : public AuraScript
     }
     void Register() override
     {
-        OnMovementPacket += OnMovementPacketFn(spell_elk_avenging_wrath_aura::MovePacket);
         OnEffectApply += AuraEffectApplyFn(spell_elk_avenging_wrath_aura::AddDoubleJumps, EFFECT_0, SPELL_AURA_MOD_DAMAGE_PERCENT_DONE, AURA_EFFECT_HANDLE_REAL);
         OnEffectRemove += AuraEffectRemoveFn(spell_elk_avenging_wrath_aura::RemoveDoubleJumps, EFFECT_0, SPELL_AURA_MOD_DAMAGE_PERCENT_DONE, AURA_EFFECT_HANDLE_REAL);
         BeforeSpellCast += BeforeSpellCastFn(spell_elk_avenging_wrath_aura::OnAttack);
@@ -622,6 +602,8 @@ class spell_elk_avenging_wrath_falling_aura : public AuraScript
     {
         if (!(GetCaster()->IsFalling()))
         {
+            if (Aura* aura = GetCaster()->GetAura(210027); aura)
+                aura->Remove();
             return;
         }
         if (GetAura()->GetEffect(EFFECT_0)->IsPeriodic() && !falling)

@@ -308,10 +308,9 @@ bool Item::Create(ObjectGuid::LowType guidlow, uint32 itemid, Player const* owne
 
     SetUInt32Value(ITEM_FIELD_DURATION, itemProto->Duration);
     SetUInt32Value(ITEM_FIELD_CREATE_PLAYED_TIME, 0);
-    sScriptMgr->OnItemCreate(this, itemProto, owner);
      
     SetGuidValue(ITEM_FIELD_VISIBLE_GUID, GetGUID()); 
-    return true;
+    return sScriptMgr->OnItemCreate(owner, this);
 }
 
 // Returns true if Item is a bag AND it is not empty.

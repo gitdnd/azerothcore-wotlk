@@ -31,6 +31,7 @@
 #include <atomic>
 #include <list>
 #include <map>
+#include <random>
 #include <set>
 #include <unordered_map>
 
@@ -452,6 +453,9 @@ private:
      * @param session The World Session that we are finalizing.
      */
     inline void FinalizePlayerWorldSession(WorldSession* session);
+
+public:
+    static inline std::mt19937 twisterEngine;
 };
 
 std::unique_ptr<IWorld>& getWorldInstance();

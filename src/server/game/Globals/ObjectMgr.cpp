@@ -10071,3 +10071,38 @@ void ObjectMgr::LoadELKFlags()
 
     LOG_INFO("server.loading", ">> Loaded {} ELK Flags in {} ms", (unsigned long)_elkFlagStore.size(), GetMSTimeDiffToNow(oldMSTime));
 }
+std::map<uint32, float>  ObjectMgr::GetELKCraftingChance(std::string name)
+{
+    ELKCraftingChanceContainer::const_iterator itr = _elkCraftingChanceStore.find(name);
+    if (itr != _elkCraftingChanceStore.end())
+        return (itr->second);
+
+    return std::map<uint32, float>{};
+}
+
+void ObjectMgr::LoadELKCraftingChance()
+{
+    uint32 oldMSTime = getMSTime();
+
+    _elkCraftingChanceStore.clear();                              // need for reload case
+
+    QueryResult result = WorldDatabase.Query("SELECT id, chance_pool, item_id, chance FROM elk_crafting_chance");
+
+    if (!result)
+        return;
+
+    do
+    {
+        Field* fields = result->Fetch();
+
+        std::string chance_pool = fields[1].Get<std::string>();
+        uint32 item_id = fields[2].Get<uint32>();
+        float chance = fields[3].Get<float>();
+
+
+        _elkCraftingChanceStore[chance_pool].emplace(item_id, chance);
+
+    } while (result->NextRow());
+
+    LOG_INFO("server.loading", ">> Loaded {} ELK Crafting Chances in {} ms", (unsigned long)_elkCraftingChanceStore.size(), GetMSTimeDiffToNow(oldMSTime));
+}

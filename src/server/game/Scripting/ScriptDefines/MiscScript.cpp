@@ -18,7 +18,7 @@
 #include "ScriptMgr.h"
 #include "ScriptMgrMacros.h"
 
-void ScriptMgr::OnItemCreate(Item* item, ItemTemplate const* itemProto, Player const* owner)
+void ScriptMgr::OnPlayerItemCreate(Item* item, ItemTemplate const* itemProto, Player const* owner)
 {
     ExecuteScript<MiscScript>([&](MiscScript* script)
     {

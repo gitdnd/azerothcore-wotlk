@@ -1485,6 +1485,10 @@ void World::SetInitialWorldSettings()
     ///- Initialize the random number generator
     srand((unsigned int)GameTime::GetGameTime().count());
 
+
+    std::random_device randomFloatSeed;
+    twisterEngine = std::mt19937(randomFloatSeed());
+
     ///- Initialize detour memory management
     dtAllocSetCustom(dtCustomAlloc, dtCustomFree);
 
@@ -1864,6 +1868,15 @@ void World::SetInitialWorldSettings()
 
     // Loot tables
     LoadLootTables();
+
+
+    LOG_INFO("server.loading", "ELK Dialogue...");
+    sObjectMgr->LoadELKDialogue();
+    LOG_INFO("server.loading", "ELK Flags...");
+    sObjectMgr->LoadELKFlags();
+    LOG_INFO("server.loading", "ELK Crafting Chances...");
+    sObjectMgr->LoadELKCraftingChance();
+
 
     LOG_INFO("server.loading", "Loading Skill Discovery Table...");
     LoadSkillDiscoveryTable();

@@ -521,6 +521,7 @@ typedef std::pair<QuestRelations::const_iterator, QuestRelations::const_iterator
 
 typedef std::unordered_map<std::string, ELKDialogue> ELKDialogueLocaleContainer;
 typedef std::unordered_map<std::string, uint32> ELKFlagLocaleContainer;
+typedef std::unordered_map<std::string, std::map<uint32, float>> ELKCraftingChanceContainer;
 
 struct PetLevelInfo
 {
@@ -784,6 +785,7 @@ public:
     [[nodiscard]] std::vector<ItemTemplate*> const* GetItemTemplateStoreFast() const { return &_itemTemplateStoreFast; }
     ELKDialogue* GetELKDialogue(std::string name);
     uint32 GetELKFlag(std::string name);
+    std::map<uint32, float> GetELKCraftingChance(std::string name);
 
     ItemSetNameEntry const* GetItemSetNameEntry(uint32 itemId)
     {
@@ -1102,6 +1104,7 @@ public:
 
     void LoadELKDialogue();
     void LoadELKFlags();
+    void LoadELKCraftingChance();
 
     std::string GeneratePetName(uint32 entry);
     uint32 GetBaseXP(uint8 level);
@@ -1604,6 +1607,7 @@ private:
 
     ELKDialogueLocaleContainer _elkDialogueStore;
     ELKFlagLocaleContainer _elkFlagStore;
+    ELKCraftingChanceContainer _elkCraftingChanceStore;
 
     std::set<uint32> _difficultyEntries[MAX_DIFFICULTY - 1]; // already loaded difficulty 1 value in creatures, used in CheckCreatureTemplate
     std::set<uint32> _hasDifficultyEntries[MAX_DIFFICULTY - 1]; // already loaded creatures with difficulty 1 values, used in CheckCreatureTemplate

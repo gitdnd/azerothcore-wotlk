@@ -727,26 +727,52 @@ public:
 class felendren : public ELKCreatureScript
 {
 public:
-    felendren() : ELKCreatureScript("felendren") {}
+    enum FelendrenResponses {
+        INITIAL,
+        a1,
+        b1,
+    };
+    static inline std::map<FelendrenResponses, DialogueResponse> Responses = {};
+
+    felendren() : ELKCreatureScript("felendren")
+    {
+        Responses.emplace(FelendrenResponses::INITIAL, DialogueResponse(
+            "FELENDREN_INRO_1",
+            {},
+            {
+                DialogueLine("FELENDREN_DIALOGUE_1A", {}, {}, FelendrenResponses::a1, nullptr),
+                DialogueLine("FELENDREN_DIALOGUE_1B", {}, {}, FelendrenResponses::b1, nullptr),
+                DialogueLine("FELENDREN_DIALOGUE_1C", {}, {}, 0, nullptr)
+            },
+            nullptr
+        ));
+        Responses.emplace(FelendrenResponses::a1, DialogueResponse(
+            "FELENDREN_TALK_R1A",
+            {},
+            {
+                DialogueLine("FELENDREN_DIALOGUE_1A", {}, {}, FelendrenResponses::a1, nullptr),
+                DialogueLine("FELENDREN_DIALOGUE_1B", {}, {}, FelendrenResponses::b1, nullptr),
+                DialogueLine("FELENDREN_DIALOGUE_1C", {}, {}, 0, nullptr)
+            },
+            nullptr
+        ));
+        Responses.emplace(FelendrenResponses::a1, DialogueResponse(
+            "FELENDREN_TALK_R1B",
+            {},
+            {
+                DialogueLine("FELENDREN_DIALOGUE_1A", {}, {}, FelendrenResponses::a1, nullptr),
+                DialogueLine("FELENDREN_DIALOGUE_1B", {}, {}, FelendrenResponses::b1, nullptr),
+                DialogueLine("FELENDREN_DIALOGUE_1C", {}, {}, 0, nullptr)
+            },
+            nullptr
+        ));
+    }
     CreatureAI* GetAI(Creature* creature) const override
     {
         return new felendrenAI(creature);
     }
     struct felendrenAI : public ELKAI
     {
-        static inline std::map<uint8, DialogueResponse> Responses =
-        {
-            {1, DialogueResponse(
-                    "",
-                    {},
-                    {
-                        DialogueLine("", {""}, {""}, 2)
-                    },
-                    nullptr
-                )
-            }
-        };
-
         felendrenAI(Creature* creature) : ELKAI(creature)
         {
             reinforcementCall = RAND(1, 2); 
@@ -756,7 +782,8 @@ public:
 
         }
         void EnterCombatCustom(Unit* /*who*/) override
-        { 
+        {
+            std::cout << Responses[FelendrenResponses::a1].textIndex;
         }
         void UpdateAI(uint32 diff) override
         { 

@@ -19,6 +19,22 @@
 #include "ScriptMgrMacros.h"
 #include "ScriptedGossip.h"
 
+bool ScriptMgr::OnItemCreate(Player const* player, Item* item)
+{
+    ASSERT(player);
+    ASSERT(item);
+
+    ExecuteScript<AllItemScript>([&](AllItemScript* script)
+        {
+            return script->OnItemCreate(player, item);
+        });
+
+    if (auto tempScript = ScriptRegistry<ItemScript>::GetScriptById(item->GetScriptId()))
+    {
+        return tempScript->OnItemCreate(player, item);
+    }
+    return true;
+}
 bool ScriptMgr::OnQuestAccept(Player* player, Item* item, Quest const* quest)
 {
     ASSERT(player);

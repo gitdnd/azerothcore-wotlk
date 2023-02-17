@@ -344,6 +344,7 @@ void Unit::UpdateArmor(bool derived)
 
     SetArmor(int32(value + m_derivedModifiers[unitMod]));
 
+    UpdateMaxHealth();
     UpdateAttackPowerAndDamage();                           // armor dependent auras update for SPELL_AURA_MOD_ATTACK_POWER_OF_ARMOR
     UpdateWeight();
 }

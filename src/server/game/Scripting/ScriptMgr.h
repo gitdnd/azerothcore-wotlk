@@ -386,6 +386,9 @@ protected:
 public:
     [[nodiscard]] bool IsDatabaseBound() const override { return true; }
 
+    // On Create
+    [[nodiscard]] virtual bool OnItemCreate(Player const* /*player*/, Item* /*item*/) { }
+
     // Called when a player accepts a quest from the item.
     [[nodiscard]] virtual bool OnQuestAccept(Player* /*player*/, Item* /*item*/, Quest const* /*quest*/) { return false; }
 
@@ -633,6 +636,9 @@ protected:
     AllItemScript(const char* name);
 
 public:
+    // On Create
+    [[nodiscard]] virtual bool OnItemCreate(Player const* /*player*/, Item* /*item*/) { }
+
     // Called when a player accepts a quest from the item.
     [[nodiscard]] virtual bool CanItemQuestAccept(Player* /*player*/, Item* /*item*/, Quest const* /*quest*/) { return true; }
 
@@ -2127,6 +2133,7 @@ public: /* InstanceMapScript */
     InstanceScript* CreateInstanceScript(InstanceMap* map);
 
 public: /* ItemScript */
+    void OnItemCreate(Player const* player, Item* item);
     bool OnQuestAccept(Player* player, Item* item, Quest const* quest);
     bool OnItemUse(Player* player, Item* item, SpellCastTargets const& targets);
     bool OnItemExpire(Player* player, ItemTemplate const* proto);
@@ -2561,7 +2568,7 @@ public: /* MiscScript */
     void OnDestructGroup(Group* origin);
     void OnConstructInstanceSave(InstanceSave* origin);
     void OnDestructInstanceSave(InstanceSave* origin);
-    void OnItemCreate(Item* item, ItemTemplate const* itemProto, Player const* owner);
+    void OnPlayerItemCreate(Item* item, ItemTemplate const* itemProto, Player const* owner);
     bool CanApplySoulboundFlag(Item* item, ItemTemplate const* proto);
     bool CanItemApplyEquipSpell(Player* player, Item* item);
     bool CanSendAuctionHello(WorldSession const* session, ObjectGuid guid, Creature* creature);

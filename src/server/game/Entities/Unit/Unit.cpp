@@ -2045,53 +2045,32 @@ uint32 Unit::CalcArmorReducedDamage(Unit const* attacker, Unit const* victim, co
                 armor = floor(AddPct(armor, -(*j)->GetAmount()));
         }
 
-        // Apply Player CR_ARMOR_PENETRATION rating and buffs from stances\specializations etc.
-        if (attacker->GetTypeId() == TYPEID_PLAYER)
+        float bonusPct = 0;
+        AuraEffectList const& armorPenAuras = attacker->GetAuraEffectsByType(SPELL_AURA_MOD_ARMOR_PENETRATION_PCT);
+        for (AuraEffectList::const_iterator itr = armorPenAuras.begin(); itr != armorPenAuras.end(); ++itr)
         {
-            float bonusPct = 0;
-            AuraEffectList const& armorPenAuras = attacker->GetAuraEffectsByType(SPELL_AURA_MOD_ARMOR_PENETRATION_PCT);
-            for (AuraEffectList::const_iterator itr = armorPenAuras.begin(); itr != armorPenAuras.end(); ++itr)
+            if ((*itr)->GetSpellInfo()->EquippedItemClass == -1)
             {
-                if ((*itr)->GetSpellInfo()->EquippedItemClass == -1)
-                {
-                    if (!spellInfo || (*itr)->IsAffectedOnSpell(spellInfo) || (*itr)->GetMiscValue() & spellInfo->GetSchoolMask())
-                        bonusPct += (*itr)->GetAmount();
-                    else if (!(*itr)->GetMiscValue() && !(*itr)->HasSpellClassMask())
-                        bonusPct += (*itr)->GetAmount();
-                }
-                else
-                {
-                    if (attacker->ToPlayer()->HasItemFitToSpellRequirements((*itr)->GetSpellInfo()))
-                        bonusPct += (*itr)->GetAmount();
-                }
+                if (!spellInfo || (*itr)->IsAffectedOnSpell(spellInfo) || (*itr)->GetMiscValue() & spellInfo->GetSchoolMask())
+                    bonusPct += (*itr)->GetAmount();
+                else if (!(*itr)->GetMiscValue() && !(*itr)->HasSpellClassMask())
+                    bonusPct += (*itr)->GetAmount();
             }
-
-            float maxArmorPen = float(attacker->getLevel() * 40);
-            // Cap armor penetration to this number
-            maxArmorPen = std::min((armor + maxArmorPen) / 3, armor);
-            // Figure out how much armor do we ignore
-            float armorPen = CalculatePct(maxArmorPen, bonusPct + attacker->ToPlayer()->GetRatingBonusValue(CR_ARMOR_PENETRATION));
-            // Got the value, apply it
-            armor -= std::min(armorPen, maxArmorPen);
+            else
+            {
+                if (attacker->ToPlayer()->HasItemFitToSpellRequirements((*itr)->GetSpellInfo()))
+                    bonusPct += (*itr)->GetAmount();
+            }
         }
+
+        armor -= attacker->GetRatingBonusValue(CR_ARMOR_PENETRATION);
     }
 
     if (armor < 0.0f)
         armor = 0.0f;
 
-    float levelModifier = attacker ? attacker->GetLevel() : attackerLevel;
-    if (levelModifier > 59)
-        levelModifier = levelModifier + (4.5f * (levelModifier - 59));
 
-    float tmpvalue = 0.1f * armor / (8.5f * levelModifier + 40);
-    tmpvalue = tmpvalue / (1.0f + tmpvalue);
-
-    if (tmpvalue < 0.0f)
-        tmpvalue = 0.0f;
-    if (tmpvalue > 0.75f)
-        tmpvalue = 0.75f;
-
-    return uint32(std::ceil(std::max(damage * (1.0f - tmpvalue), 0.0f)));
+    return uint32(std::ceil(std::max(damage * ( 1 - (armor / (armor + damage))), 0.0f)));
 }
 
 float Unit::GetEffectiveResistChance(Unit const* owner, SpellSchoolMask schoolMask, Unit const* victim)
@@ -4575,6 +4554,8 @@ void Unit::_UnapplyAura(AuraApplicationMap::iterator* i, AuraRemoveMode removeMo
                 *itRef = iNew;
             }
         }
+        if(!beingIterated)
+            m_appliedAuras.erase(*i);
     }
     else
         m_appliedAuras.erase(*i);
@@ -16950,7 +16931,7 @@ void Unit::AddComboPoints(Unit* target, int8 count)
     }
     else
     {
-        m_comboPoints = std::max<int8>(std::min<int8>(m_comboPoints + count, 5), 0);
+        m_comboPoints = std::max<int8>(std::min<int8>(m_comboPoints + count, 100), 0);
     }
 
     SendComboPoints();
@@ -16985,7 +16966,7 @@ void Unit::SendComboPoints()
     {
         WorldPacket data(SMSG_UPDATE_COMBO_POINTS, packGUID.size() + 1);
         data << packGUID;
-        data << uint8(m_comboPoints);
+        data << uint8(m_comboPoints/20);
         playerMe->SendDirectMessage(&data);
     }
 
@@ -18970,6 +18951,7 @@ Aura* Unit::AddAura(SpellInfo const* spellInfo, uint8 effMask, Unit* target)
 
         CallScriptIteration(CallScriptAuraAddRemove(aura, true));
 
+        return aura;
     }
     return nullptr;
 }
