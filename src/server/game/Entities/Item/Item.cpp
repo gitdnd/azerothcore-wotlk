@@ -381,6 +381,8 @@ void Item::SaveToDB(CharacterDatabaseTransaction trans)
                 stmt->SetData(++index, GetUInt32Value(ITEM_FIELD_DURABILITY));
                 stmt->SetData(++index, GetUInt32Value(ITEM_FIELD_CREATE_PLAYED_TIME));
                 stmt->SetData(++index, m_text);
+                stmt->SetData(++index, m_iLvlBonus);
+                
                 stmt->SetData(++index, guid);
 
                 trans->Append(stmt);
@@ -518,6 +520,8 @@ bool Item::LoadFromDB(ObjectGuid::LowType guid, ObjectGuid owner_guid, Field* fi
         stmt->SetData(3, guid);
         CharacterDatabase.Execute(stmt);
     }
+
+    m_iLvlBonus = fields[11].Get<uint16>();
 
     return true;
 }

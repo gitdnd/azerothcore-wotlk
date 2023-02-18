@@ -387,7 +387,7 @@ public:
     [[nodiscard]] bool IsDatabaseBound() const override { return true; }
 
     // On Create
-    [[nodiscard]] virtual bool OnItemCreate(Player const* /*player*/, Item* /*item*/) { }
+    [[nodiscard]] virtual bool OnItemCreate(Player const* /*player*/, Item* /*item*/) { return true; }
 
     // Called when a player accepts a quest from the item.
     [[nodiscard]] virtual bool OnQuestAccept(Player* /*player*/, Item* /*item*/, Quest const* /*quest*/) { return false; }
@@ -637,7 +637,7 @@ protected:
 
 public:
     // On Create
-    [[nodiscard]] virtual bool OnItemCreate(Player const* /*player*/, Item* /*item*/) { }
+    [[nodiscard]] virtual bool OnItemCreate(Player const* /*player*/, Item* /*item*/) { return true; }
 
     // Called when a player accepts a quest from the item.
     [[nodiscard]] virtual bool CanItemQuestAccept(Player* /*player*/, Item* /*item*/, Quest const* /*quest*/) { return true; }
@@ -2133,7 +2133,7 @@ public: /* InstanceMapScript */
     InstanceScript* CreateInstanceScript(InstanceMap* map);
 
 public: /* ItemScript */
-    void OnItemCreate(Player const* player, Item* item);
+    bool OnItemCreate(Player const* player, Item* item);
     bool OnQuestAccept(Player* player, Item* item, Quest const* quest);
     bool OnItemUse(Player* player, Item* item, SpellCastTargets const& targets);
     bool OnItemExpire(Player* player, ItemTemplate const* proto);

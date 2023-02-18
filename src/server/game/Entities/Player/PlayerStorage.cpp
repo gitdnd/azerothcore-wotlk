@@ -5756,8 +5756,8 @@ void Player::_LoadInventory(PreparedQueryResult result, uint32 timeDiff)
             Field* fields = result->Fetch();
             if (Item* item = _LoadItem(trans, zoneId, timeDiff, fields))
             {
-                ObjectGuid::LowType bagGuid  = fields[11].Get<uint32>();
-                uint8  slot     = fields[12].Get<uint8>();
+                ObjectGuid::LowType bagGuid  = fields[12].Get<uint32>();
+                uint8  slot     = fields[13].Get<uint8>();
 
                 uint8 err = EQUIP_ERR_OK;
                 // Item is not in bag
@@ -5867,8 +5867,8 @@ void Player::_LoadInventory(PreparedQueryResult result, uint32 timeDiff)
 Item* Player::_LoadItem(CharacterDatabaseTransaction trans, uint32 zoneId, uint32 timeDiff, Field* fields)
 {
     Item* item = nullptr;
-    ObjectGuid::LowType itemGuid  = fields[13].Get<uint32>();
-    uint32 itemEntry = fields[14].Get<uint32>();
+    ObjectGuid::LowType itemGuid  = fields[14].Get<uint32>();
+    uint32 itemEntry = fields[15].Get<uint32>();
     if (ItemTemplate const* proto = sObjectMgr->GetItemTemplate(itemEntry))
     {
         bool remove = false;
@@ -6002,8 +6002,8 @@ Item* Player::_LoadItem(CharacterDatabaseTransaction trans, uint32 zoneId, uint3
 // load mailed item which should receive current player
 Item* Player::_LoadMailedItem(ObjectGuid const& playerGuid, Player* player, uint32 mailId, Mail* mail, Field* fields)
 {
-    ObjectGuid::LowType itemGuid = fields[11].Get<uint32>();
-    uint32 itemEntry = fields[12].Get<uint32>();
+    ObjectGuid::LowType itemGuid = fields[12].Get<uint32>();
+    uint32 itemEntry = fields[13].Get<uint32>();
 
     ItemTemplate const* proto = sObjectMgr->GetItemTemplate(itemEntry);
     if (!proto)
@@ -6023,7 +6023,7 @@ Item* Player::_LoadMailedItem(ObjectGuid const& playerGuid, Player* player, uint
 
     Item* item = NewItemOrBag(proto);
 
-    ObjectGuid ownerGuid = fields[13].Get<uint32>() ? ObjectGuid::Create<HighGuid::Player>(fields[13].Get<uint32>()) : ObjectGuid::Empty;
+    ObjectGuid ownerGuid = fields[14].Get<uint32>() ? ObjectGuid::Create<HighGuid::Player>(fields[13].Get<uint32>()) : ObjectGuid::Empty;
     if (!item->LoadFromDB(itemGuid, ownerGuid, fields, itemEntry))
     {
         LOG_ERROR("entities.player", "Player::_LoadMailedItems: Item (GUID: {}) in mail ({}) doesn't exist, deleted from mail.", itemGuid, mailId);
@@ -6105,7 +6105,7 @@ void Player::_LoadMail(PreparedQueryResult mailsResult, PreparedQueryResult mail
         do
         {
             Field* fields = mailItemsResult->Fetch();
-            uint32 mailId = fields[14].Get<uint32>();
+            uint32 mailId = fields[15].Get<uint32>();
             _LoadMailedItem(GetGUID(), this, mailId, mailById[mailId], fields);
         } while (mailItemsResult->NextRow());
     }

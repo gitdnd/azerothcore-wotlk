@@ -352,13 +352,13 @@ public:
     void AddToObjectUpdate() override;
     void RemoveFromObjectUpdate() override;
 
-    void SetLvlBonus(uint16 bonus) { m_iLvlBonus = bonus; }
-    void ModLvlBonus(uint16 bonus) { m_iLvlBonus += bonus; }
+    void SetLvlBonus(uint16 bonus) { m_iLvlBonus = bonus; SetState(ITEM_CHANGED, GetOwner()); }
+    void ModLvlBonus(uint16 bonus) { m_iLvlBonus += bonus; SetState(ITEM_CHANGED, GetOwner()); }
     uint16 GetLvlBonus() { return m_iLvlBonus; }
-    void SetLvlExpense(uint16 bonus) { m_iLvlExpense = bonus; }
-    void ModLvlExpense(uint16 bonus) { m_iLvlExpense += bonus; }
+    void SetLvlExpense(uint16 bonus) { m_iLvlExpense = bonus; ; SetState(ITEM_CHANGED, GetOwner()); }
+    void ModLvlExpense(uint16 bonus) { m_iLvlExpense += bonus; ; SetState(ITEM_CHANGED, GetOwner()); }
     uint16 GetLvlExpense() { return m_iLvlExpense; }
-    uint16 GetLvlTotal() { return m_iLvlBonus + GetTemplate()->ItemLevel; }
+    uint16 GetLvlTotal() { return m_iLvlBonus; }
 
     void SetGifter(ObjectGuid player) { gifter = player; }
     ObjectGuid GetGifter() const { return gifter; }

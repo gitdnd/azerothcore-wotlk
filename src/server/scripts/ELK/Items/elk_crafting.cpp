@@ -12,10 +12,9 @@ class elk_item_random_craft : public ItemScript
 public:
     elk_item_random_craft() : ItemScript("elk_item_random_craft") { }
 
-    virtual void OnItemCreate(Player const* player, Item* item) override
+    virtual bool OnItemCreate(Player const* player, Item* item) override
     {
         Player* owner = item->GetOwner();
-        owner->DestroyItem(item->GetBagSlot(), item->GetSlot(), true);
         auto chanceMap = sObjectMgr->GetELKCraftingChance("COPPER_BASIC");
         float chanceTotal = 0.f;
         for (auto [k, v] : chanceMap)
@@ -36,6 +35,7 @@ public:
                 outcome -= v;
         }
         owner->AddItem(result, 1);
+        return false;
     }
 };
 

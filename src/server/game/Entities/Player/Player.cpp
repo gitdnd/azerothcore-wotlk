@@ -3959,7 +3959,7 @@ void Player::DeleteFromDB(ObjectGuid::LowType lowGuid, uint32 accountId, bool up
                         do
                         {
                             Field* fields = resultItems->Fetch();
-                            uint32 mailId = fields[14].Get<uint32>();
+                            uint32 mailId = fields[15].Get<uint32>();
                             if (Item* mailItem = _LoadMailedItem(playerGuid, nullptr, mailId, nullptr, fields))
                             {
                                 itemsByMail[mailId].push_back(mailItem);
@@ -6255,7 +6255,7 @@ void Player::_ApplyItemBonuses(Item* item, ItemTemplate const* proto, uint8 slot
 
         if (val == 0)
             continue; 
-        val *= 100 + proto->ItemLevel + item->GetLvlTotal();
+        val *= 100 + item->GetLvlBonus();
         val /= 100;
         switch (statType)
         {
