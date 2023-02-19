@@ -1157,6 +1157,7 @@ public:
     uint32 GetItemCount(uint32 item, bool inBankAlso = false, Item* skipItem = nullptr) const;
     uint32 GetItemCountWithLimitCategory(uint32 limitCategory, Item* skipItem = nullptr) const;
     [[nodiscard]] Item* GetItemByGuid(ObjectGuid guid) const;
+	[[nodiscard]] Item* GetItemByGuidCounter(uint32 guid) const;
     [[nodiscard]] Item* GetItemByEntry(uint32 entry) const;
     [[nodiscard]] Item* GetItemByPos(uint16 pos) const;
     [[nodiscard]] Item* GetItemByPos(uint8 bag, uint8 slot) const;

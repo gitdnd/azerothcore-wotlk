@@ -35,7 +35,7 @@ enum EItemFields
     ITEM_FIELD_OWNER                          = OBJECT_END + 0x0000, // Size: 2, Type: LONG, Flags: PUBLIC
     ITEM_FIELD_CONTAINED                      = OBJECT_END + 0x0002, // Size: 2, Type: LONG, Flags: PUBLIC
     ITEM_FIELD_CREATOR                        = OBJECT_END + 0x0004, // Size: 2, Type: LONG, Flags: PUBLIC
-    ITEM_FIELD_VISIBLE_GUID                   = OBJECT_END + 0x0006, // Size: 2, Type: LONG, Flags: PUBLIC
+    ITEM_FIELD_VISIBLE_GUID                   = OBJECT_END + 0x0006, // Size: 2, Type: LONG, Flags: PUBLIC but could be size 1 since its uint32
     ITEM_FIELD_STACK_COUNT                    = OBJECT_END + 0x0008, // Size: 1, Type: INT, Flags: OWNER, ITEM_OWNER
     ITEM_FIELD_DURATION                       = OBJECT_END + 0x0009, // Size: 1, Type: INT, Flags: OWNER, ITEM_OWNER
     ITEM_FIELD_SPELL_CHARGES                  = OBJECT_END + 0x000A, // Size: 5, Type: INT, Flags: OWNER, ITEM_OWNER

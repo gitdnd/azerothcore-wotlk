@@ -347,3 +347,83 @@ struct ELKAI : public ScriptedAI
 
 
 };
+/*
+class magistrix_erona : public ELKCreatureScript
+{
+public:
+    enum EronaResponses {
+        INITIAL_1,
+        TALK_2,
+        TALK_2a1,
+        TALK_3,
+        TALK_4
+    };
+    static inline std::map<EronaResponses, DialogueResponse> Responses = {};
+
+    magistrix_erona() : ELKCreatureScript("magistrix_erona")
+    {
+        Responses.emplace(EronaResponses::INITIAL_1, DialogueResponse(
+            "INTRO_1",
+            {},
+            {
+                DialogueLine("ERONA_DIALOGUE_1A", {}, {}, EronaResponses::TALK_1, nullptr),
+                DialogueLine("ERONA_DIALOGUE_1B", {}, {}, EronaResponses::TALK_1, nullptr),
+                DialogueLine("ERONA_DIALOGUE_1C", {}, {}, EronaResponses::TALK_1, nullptr)
+            },
+            nullptr
+        ));
+        Responses.emplace(EronaResponses::TALK_2, DialogueResponse(
+            "ERONA_TALK_2",
+            {},
+            {
+                DialogueLine("ERONA_DIALOGUE_2A", {}, {}, EronaResponses::TALK_2, nullptr),
+                DialogueLine("ERONA_DIALOGUE_2B", {}, {}, EronaResponses::TALK_2, nullptr),
+                DialogueLine("ERONA_DIALOGUE_2C", {}, {}, EronaResponses::TALK_2a1, nullptr)
+            },
+            nullptr
+        ));
+        Responses.emplace(EronaResponses::TALK_2a1, DialogueResponse(
+            "ERONA_TALK_2a1",
+            {},
+            {
+                DialogueLine("ERONA_DIALOGUE_2A", {}, {}, EronaResponses::TALK_2, nullptr),
+                DialogueLine("ERONA_DIALOGUE_2B", {}, {}, EronaResponses::TALK_2, nullptr),
+            },
+            nullptr
+        ));
+    }
+    CreatureAI* GetAI(Creature* creature) const override
+    {
+        return new magistrix_eronaAI(creature);
+    }
+    struct magistrix_eronaAI : public ELKAI
+    {
+        magistrix_eronaAI(Creature* creature) : ELKAI(creature) {}
+
+        virtual void sGossipHello(Player* player)  override
+        {
+            if (player->GetQuestStageFlag(QuestStageFlags::FELENDREN_PUT_DOWN))
+            {
+                AddGossipItemFor(player, 0, "<Attack> You're dead.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_PUT_DOWN_ATTACK);
+                AddGossipItemFor(player, 0, "<Return> Never mind, I'm being hasty. What else can I do?", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_6);
+                SendGossipMenuFor(player, FELENDREN_PUT_DOWN_RESET, me);
+            }
+        }
+        void sGossipSelect(Player* player, uint32 sender, uint32 uiAction) override
+        {
+            ClearGossipMenuFor(player);
+            switch (uiAction)
+            {
+            case FELENDREN_LEAVE_DIALOGUE:
+            {
+                AddGossipItemFor(player, 0, "What happens to be your problem?", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_1);
+                AddGossipItemFor(player, 0, "Speak quickly or you'll be a skinned rat soon.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_1);
+                AddGossipItemFor(player, GOSSIP_ICON_CHAT, "<Attack> Never mind, you're just another pathetic waste of Mana.", GOSSIP_SENDER_MAIN, FELENDREN_DIALOGUE_ASSAULTED);
+                SendGossipMenuFor(player, FELENDREN_TALK_1, me);
+                break;
+            }
+        }
+    };
+
+};
+*/

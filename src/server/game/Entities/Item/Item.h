@@ -352,8 +352,8 @@ public:
     void AddToObjectUpdate() override;
     void RemoveFromObjectUpdate() override;
 
-    void SetLvlBonus(uint16 bonus) { m_iLvlBonus = bonus; SetState(ITEM_CHANGED, GetOwner()); }
-    void ModLvlBonus(uint16 bonus) { m_iLvlBonus += bonus; SetState(ITEM_CHANGED, GetOwner()); }
+    void SetLvlBonus(uint16 bonus) { m_iLvlBonus = bonus; SetState(ITEM_CHANGED, GetOwner()); if (m_iLvlBonus > 300) m_iLvlBonus = 300; }
+    void ModLvlBonus(uint16 bonus) { SetLvlBonus(m_iLvlBonus + bonus); }
     uint16 GetLvlBonus() { return m_iLvlBonus; }
     void SetLvlExpense(uint16 bonus) { m_iLvlExpense = bonus; ; SetState(ITEM_CHANGED, GetOwner()); }
     void ModLvlExpense(uint16 bonus) { m_iLvlExpense += bonus; ; SetState(ITEM_CHANGED, GetOwner()); }

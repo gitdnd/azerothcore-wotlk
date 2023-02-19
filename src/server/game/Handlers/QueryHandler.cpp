@@ -47,7 +47,7 @@ void WorldSession::SendNameQueryOpcode(ObjectGuid guid)
         if (item)
         {
             std::ostringstream os;
-            os << guid.GetRawValue();
+            os << guid.GetCounter();
             std::string name =  os.str();
             data << uint8(0);                               // name known
             data << name;                  // item id as name
