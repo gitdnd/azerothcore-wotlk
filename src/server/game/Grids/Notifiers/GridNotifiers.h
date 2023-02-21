@@ -699,7 +699,7 @@ namespace Acore
     class NearestGameObjectCheck
     {
     public:
-        NearestGameObjectCheck(WorldObject const& obj) : i_obj(obj), i_range(999) {}
+        NearestGameObjectCheck(WorldObject const& obj, float range = 999.0f) : i_obj(obj), i_range(range) {}
         bool operator()(GameObject* go)
         {
             if (i_obj.IsWithinDistInMap(go, i_range))

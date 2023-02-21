@@ -736,36 +736,6 @@ public:
 
     felendren() : ELKCreatureScript("felendren")
     {
-        Responses.emplace(FelendrenResponses::INITIAL, DialogueResponse(
-            "FELENDREN_INRO_1",
-            {},
-            {
-                DialogueLine("FELENDREN_DIALOGUE_1A", {}, {}, FelendrenResponses::a1, nullptr),
-                DialogueLine("FELENDREN_DIALOGUE_1B", {}, {}, FelendrenResponses::b1, nullptr),
-                DialogueLine("FELENDREN_DIALOGUE_1C", {}, {}, 0, nullptr)
-            },
-            nullptr
-        ));
-        Responses.emplace(FelendrenResponses::a1, DialogueResponse(
-            "FELENDREN_TALK_R1A",
-            {},
-            {
-                DialogueLine("FELENDREN_DIALOGUE_1A", {}, {}, FelendrenResponses::a1, nullptr),
-                DialogueLine("FELENDREN_DIALOGUE_1B", {}, {}, FelendrenResponses::b1, nullptr),
-                DialogueLine("FELENDREN_DIALOGUE_1C", {}, {}, 0, nullptr)
-            },
-            nullptr
-        ));
-        Responses.emplace(FelendrenResponses::a1, DialogueResponse(
-            "FELENDREN_TALK_R1B",
-            {},
-            {
-                DialogueLine("FELENDREN_DIALOGUE_1A", {}, {}, FelendrenResponses::a1, nullptr),
-                DialogueLine("FELENDREN_DIALOGUE_1B", {}, {}, FelendrenResponses::b1, nullptr),
-                DialogueLine("FELENDREN_DIALOGUE_1C", {}, {}, 0, nullptr)
-            },
-            nullptr
-        ));
     }
     CreatureAI* GetAI(Creature* creature) const override
     {

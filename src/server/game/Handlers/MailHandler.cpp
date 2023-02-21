@@ -604,14 +604,8 @@ void WorldSession::HandleMailTakeMoney(WorldPacket& recvData)
     CharacterDatabase.CommitTransaction(trans);
 }
 
-//called when player lists his received mails
-void WorldSession::HandleGetMailList(WorldPacket& recvData)
+void WorldSession::GetMailbox()
 {
-    ObjectGuid mailbox;
-    recvData >> mailbox;
-
-    if (!CanOpenMailBox(mailbox))
-        return;
 
     Player* player = _player;
 
@@ -654,15 +648,15 @@ void WorldSession::HandleGetMailList(WorldPacket& recvData)
 
         switch (mail->messageType)
         {
-            case MAIL_NORMAL:                               // sender guid
-                data << ObjectGuid::Create<HighGuid::Player>(mail->sender);
-                break;
-            case MAIL_CREATURE:
-            case MAIL_GAMEOBJECT:
-            case MAIL_AUCTION:
-            case MAIL_CALENDAR:
-                data << uint32(mail->sender);            // creature/gameobject entry, auction id, calendar event id?
-                break;
+        case MAIL_NORMAL:                               // sender guid
+            data << ObjectGuid::Create<HighGuid::Player>(mail->sender);
+            break;
+        case MAIL_CREATURE:
+        case MAIL_GAMEOBJECT:
+        case MAIL_AUCTION:
+        case MAIL_CALENDAR:
+            data << uint32(mail->sender);            // creature/gameobject entry, auction id, calendar event id?
+            break;
         }
 
         // prevent client crash
@@ -730,6 +724,16 @@ void WorldSession::HandleGetMailList(WorldPacket& recvData)
 
     // recalculate m_nextMailDelivereTime and unReadMails
     _player->UpdateNextMailTimeAndUnreads();
+}
+//called when player lists his received mails
+void WorldSession::HandleGetMailList(WorldPacket& recvData)
+{
+    ObjectGuid mailbox;
+    recvData >> mailbox;
+
+    if (!CanOpenMailBox(mailbox))
+        return;
+    GetMailbox();
 }
 
 //used when player copies mail body to his inventory

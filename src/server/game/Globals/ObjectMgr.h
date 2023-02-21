@@ -498,6 +498,16 @@ struct AcoreString
     std::vector<std::string> Content;
 };
 
+struct ELKDialogue
+{
+    ELKDialogue(uint32 id, std::string dialogue) : id(id), dialogue(dialogue) {};
+    uint32 id;
+    std::string dialogue;
+    std::string flagNeeded;
+    std::string flagAdded;
+    std::string nextId;
+};
+
 typedef std::map<ObjectGuid, ObjectGuid> LinkedRespawnContainer;
 typedef std::unordered_map<ObjectGuid::LowType, CreatureData> CreatureDataContainer;
 typedef std::unordered_map<ObjectGuid::LowType, GameObjectData> GameObjectDataContainer;

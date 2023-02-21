@@ -769,6 +769,8 @@ public:                                                 // opcodes handlers
     void HandleBuyBankSlotOpcode(WorldPackets::Bank::BuyBankSlot& buyBankSlot);
 
     void HandleGetMailList(WorldPacket& recvData);
+    void GetMailbox();
+
     void HandleSendMail(WorldPacket& recvData);
     void HandleMailTakeMoney(WorldPacket& recvData);
     void HandleMailTakeItem(WorldPacket& recvData);

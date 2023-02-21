@@ -1,5 +1,6 @@
 #pragma once 
 
+#include <sstream>
 
 #include "ScriptMgr.h"
 #include "ScriptedCreature.h"
@@ -43,7 +44,7 @@ protected:
     struct DialogueLine
     {
         DialogueLine() {};
-        DialogueLine(std::string textIndex, std::vector<std::string> flagNeededName, std::vector<std::string> flagAddedName, uint16 nextResponse, void (ELKAI::* pressedScript)())
+        DialogueLine(std::string textIndex, std::vector<std::string> flagNeededName, std::vector<std::string> flagAddedName, std::string nextResponse, void (ELKAI::* pressedScript)())
             : nextResponse(nextResponse),
             pressedScript(pressedScript)
         {
@@ -64,18 +65,20 @@ protected:
         std::string textLine = "";
         std::vector<uint32> flagNeeded = {};
         std::vector<uint32> flagAdded = {};
-        uint16 nextResponse = 0;
+        std::string nextResponse = "";
+        uint8 nextIndex = 0;
         void (ELKAI::* pressedScript)() = nullptr; // ai.appearScript = &ELKAI::ScriptFunction;
     };
 
     struct DialogueResponse
     {
         DialogueResponse() {};
-        DialogueResponse(std::string textIndex, std::vector<std::string> flagNeededName, std::vector<DialogueLine> lines, void (ELKAI::* scriptMethod)())
-            : lines(lines),
+        DialogueResponse(std::string textName, std::vector<std::string> flagNeededName, std::vector<DialogueLine> lines, void (ELKAI::* scriptMethod)())
+            : textName(textName),
+            lines(lines),
             appearScript(scriptMethod)
         {
-            ELKDialogue* dial = sObjectMgr->GetELKDialogue(textIndex);
+            ELKDialogue* dial = sObjectMgr->GetELKDialogue(textName);
             if (dial)
                 textIndex = dial->id + 1000000;
             else
@@ -84,11 +87,69 @@ protected:
             {
                 flagNeeded.push_back(sObjectMgr->GetELKFlag(flag));
             }
+
+
+
+
+
+
+            // get the shit in the deebee
+            //std::string nextLines = DB[string];
+            //std::vector<std::string> v = SplitLines(nextLines);
         }
+        std::vector<std::string> SplitLines(std::string const& str) {
+            std::vector<std::string> ret;
+            std::stringstream ss(str);
+            std::string item;
+
+            while (getline(ss, item, ' ')) {
+                ret.push_back(item);
+            }
+
+            return ret;
+        }
+
+        std::string textName = "";
         uint32 textIndex = 0;
         std::vector<uint32> flagNeeded = {};
         std::vector<DialogueLine> lines = {};
         void (ELKAI::* appearScript)() = nullptr; // ai.appearScript = &ELKAI::ScriptFunction;
+    };
+
+    struct ResponseHolder
+    {
+    private:
+        std::vector<DialogueResponse> responsesArray = {};
+        std::map<std::string, uint16> responseIndexes = {};
+    public:
+        void AddResponseIndex(std::string str)
+        {
+            if (responseIndexes[str] == 0)
+            {
+                responseIndexes[str] = responseIndexes.size() + 1;
+            }
+        }
+
+        void Insert(DialogueResponse const& response)
+        {
+            AddResponseIndex(response.textName);
+            for (auto& line : response.lines)
+            {
+                if (line.nextResponse != "")
+                    AddResponseIndex(line.nextResponse);
+            }
+            responsesArray.push_back(response);
+        }
+        void Refine()
+        {
+            for (auto& response : responsesArray)
+            {
+                for (auto& line : response.lines)
+                {
+                    line.nextIndex = responseIndexes[line.nextResponse];
+                }
+            }
+        }
     };
 };
 struct ELKAI : public ScriptedAI
@@ -347,47 +408,92 @@ struct ELKAI : public ScriptedAI
 
 
 };
+
 /*
 class magistrix_erona : public ELKCreatureScript
 {
 public:
-    enum EronaResponses {
-        INITIAL_1,
-        TALK_2,
-        TALK_2a1,
-        TALK_3,
-        TALK_4
-    };
-    static inline std::map<EronaResponses, DialogueResponse> Responses = {};
+
+    static inline ResponseHolder responses = {};
 
     magistrix_erona() : ELKCreatureScript("magistrix_erona")
     {
-        Responses.emplace(EronaResponses::INITIAL_1, DialogueResponse(
-            "INTRO_1",
+        responses.Insert(DialogueResponse(
+            "ERONA_INTRO_1",
             {},
             {
-                DialogueLine("ERONA_DIALOGUE_1A", {}, {}, EronaResponses::TALK_1, nullptr),
-                DialogueLine("ERONA_DIALOGUE_1B", {}, {}, EronaResponses::TALK_1, nullptr),
-                DialogueLine("ERONA_DIALOGUE_1C", {}, {}, EronaResponses::TALK_1, nullptr)
+                DialogueLine("ERONA_DIALOGUE_1A", {}, {}, "ERONA_TALK_2", nullptr),
+                DialogueLine("ERONA_DIALOGUE_1B", {}, {}, "ERONA_TALK_2", nullptr),
+                DialogueLine("ERONA_DIALOGUE_1C", {}, {}, "ERONA_TALK_2", nullptr)
             },
             nullptr
         ));
-        Responses.emplace(EronaResponses::TALK_2, DialogueResponse(
+
+        responses.Insert(DialogueResponse(
             "ERONA_TALK_2",
             {},
             {
-                DialogueLine("ERONA_DIALOGUE_2A", {}, {}, EronaResponses::TALK_2, nullptr),
-                DialogueLine("ERONA_DIALOGUE_2B", {}, {}, EronaResponses::TALK_2, nullptr),
-                DialogueLine("ERONA_DIALOGUE_2C", {}, {}, EronaResponses::TALK_2a1, nullptr)
+                DialogueLine("ERONA_DIALOGUE_2A", {}, {}, "ERONA_TALK_3", nullptr),
+                DialogueLine("ERONA_DIALOGUE_2B", {}, {}, "ERONA_TALK_3", nullptr),
+                DialogueLine("ERONA_DIALOGUE_2C", {}, {}, "ERONA_TALK_2C", nullptr)
             },
             nullptr
         ));
-        Responses.emplace(EronaResponses::TALK_2a1, DialogueResponse(
-            "ERONA_TALK_2a1",
+
+        responses.Insert(DialogueResponse(
+            "ERONA_TALK_2C",
             {},
             {
-                DialogueLine("ERONA_DIALOGUE_2A", {}, {}, EronaResponses::TALK_2, nullptr),
-                DialogueLine("ERONA_DIALOGUE_2B", {}, {}, EronaResponses::TALK_2, nullptr),
+                DialogueLine("ERONA_DIALOGUE_2A", {}, {}, "ERONA_TALK_3", nullptr),
+                DialogueLine("ERONA_DIALOGUE_2B", {}, {}, "ERONA_TALK_3", nullptr),
+                DialogueLine("ERONA_DIALOGUE_2C", {}, {}, "ERONA_TALK_2C", nullptr)
+            },
+            nullptr
+        ));
+
+        Responses.emplace(EronaResponses::TALK_2C, DialogueResponse(
+            "ERONA_TALK_2C",
+            {},
+            {
+                DialogueLine("ERONA_DIALOGUE_2A", {}, {}, "ERONA_TALK_3", nullptr),
+                DialogueLine("ERONA_DIALOGUE_2B", {}, {}, "ERONA_TALK_3", nullptr),
+                DialogueLine("ERONA_DIALOGUE_2CA", {}, {}, "ERONA_TALK_2CA", nullptr),
+                DialogueLine("ERONA_DIALOGUE_2CB", {}, {}, "ERONA_TALK_2CB", nullptr)
+            },
+            nullptr
+        ));
+
+        responses.Refine();
+
+
+
+
+
+
+
+        Responses.emplace(EronaResponses::TALK_2CA, DialogueResponse(
+            "ERONA_TALK_2CA",
+            {},
+            {
+                DialogueLine("ERONA_DIALOGUE_2A", {}, {}, EronaResponses::TALK_3, nullptr),
+                DialogueLine("ERONA_DIALOGUE_2B", {}, {}, EronaResponses::TALK_3, nullptr)
+            },
+            nullptr
+        ));
+        Responses.emplace(EronaResponses::TALK_2CB, DialogueResponse(
+            "ERONA_TALK_2CB",
+            {},
+            {
+                DialogueLine("ERONA_DIALOGUE_2A", {}, {}, EronaResponses::TALK_3, nullptr),
+                DialogueLine("ERONA_DIALOGUE_2B", {}, {}, EronaResponses::TALK_3, nullptr)
+            },
+            nullptr
+        ));
+        Responses.emplace(EronaResponses::TALK_3, DialogueResponse(
+            "ERONA_TALK_2CB",
+            {},
+            {
+                DialogueLine("ERONA_DIALOGUE_2A", {}, {}, EronaResponses::TALK_4, nullptr)
             },
             nullptr
         ));

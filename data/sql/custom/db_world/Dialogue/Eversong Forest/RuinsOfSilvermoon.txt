@@ -1,0 +1,32 @@
+You wake up a student/visitor to Sunstrider Isle that's been taken hostage by Felendrens hijacking the experiments he was doing with Lanthan and Arona. You meet Erona and decide you want to do something about it so you decide to learn how to fight and visit the local store, arm up and kill some of the now-uncontrolled Mana Wyrms as practice. Raelis teaches you about attacking, Faraden about deflecting and Jainthess about dodging. Helion teaches you how Mana Wyrms are made and controlled using Arcane Torrent. Afterwards you get sent to the class trainers and do quests for them.
+
+make felendren the ghost town gunfight, with preparations to kill him or save him. add intrigue, questions, implications
+>pala trainer and felendren were in cahoots for the project which used scourge texts taken from solanian, felendren got mad trainer took his gril so started disproved of his methods.
+>you go to each trainer and ask of them for something if you do a small task, which you can do ahead of time such as bring some scales or w/e
+>you can ask everyone some gossip and they'll tell you about other npcs. lock trainer was more antisocial but taught by rogue trainer to be less distaseful. theres a dark ranger as the hunter trainer that tells you of the secret dungeon and if you do it she tells you about secret treasures.
+>add an unused boat near the shore which is how you normally get there.
+>store owners are also property owners of the "inn" which reminds me add a teleporter and say its an inn, and add inkeeper etc. have the rogue trainer also be inkeeper.
+>no mage trainer, if asked say she went down and she ends up being the runner.
+>all zones start with you "waking up" from your sleep in some way or other.
+>instead of plants for alchemy, extract essences and use combinations of essences to make potions of varying qualities. this means random stuff like animal organs can be used. when used consumes whole stack and gives random amount between 0 and amount used.
+>a few people are mentioned leaving soon and you see them elsewhere later. warlock trainer is sick rn. merchant also leaves for the "party" or w/e. paladin trainer is a gifted high lvl guy who tells you some history of the war. pala/priest have shared dialogue boxes.
+>quest involving climbing peak of mountain in sunstrider and seeing the Gilderleaf.
+>quest to plant an item for NPC and then report your observations, weird events happen and you get 3 interpretations each.
+>quest to play music to tame some big cats and bring them to hunter trainer. you keep the noise machine.
+>go to some random place in the twisting nether temporarily before going back.
+>help a wretched NPC kill some mana wyrms to get betrayed
+>talk to some blacksmith to teach him about blacksmithing by either having it already or talking to an NPC about it to get info, needs different town.
+>feed grapes to fancy npc which you can use a poisoned grape.
+>more verticality. especiall in the academy. also raise the general level of the area and add a small lower area filled w the tenders instead.
+>actually fuck it, layers of verticality including a bridge on a tower on the lowest level.
+>including an elite lvl 20 mob that you need a party to kill, secrets, plants to take etc.
+>priest talks of how pala came over and how he changed her life and they get deep into it, the scene of their meeting, scene of them reading together, becoming interested in his zeal and potential but need do their quest for this.
+>quest to go to silvermoon to talk to someone specific
+>start of a longer plot involving blood knights and farstriders that leads you south east.
+>help some guy wants you to use use burning crystals, get +1 to a stat talent for free for all 3 but get neg silvermoon rep for acting outside permission.
+>the paladin continues to be a partner for operations in the larger subplot, mentions darkhan but the pala guy goes all the way to EPL. mentors you and teaches you. mentions subplot to clear out Zazhen or w/e the necros name is, how he knew him in life.
+>meet NPCs ahead of having to do stuff for them, like the one on top the dead scar.
+>alliance ambassador only wants surface level info because he knows hes being watched but a farstrider wants him dead anyway.
+>Nelf island is neutral and not hostile. you can do quests to get help for the deatholme minidungeon or become hostile and have to kill a bunch of them.
+>meet an illidari naga near the coast, he gives you diff quest in dungeon to use something that makes the boss take 50% max hp in dmg but enrages him and the naga gives a reward for using this first time.
+>at fairbreeze one guy has a fel orc slave or w/e.

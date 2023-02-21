@@ -1,27 +1,32 @@
+
 DELIMITER ;;
 DROP PROCEDURE IF EXISTS create_elk_flag;
 CREATE PROCEDURE create_elk_flag ()
 BEGIN
-    DECLARE CONTINUE HANDLER FOR 1050 BEGIN END;	
+    DECLARE CONTINUE HANDLER FOR 1050 BEGIN END;
 	CREATE TABLE elk_flag (
     id int NOT NULL AUTO_INCREMENT,
     flag_name varchar(64) NOT NULL,
 	UNIQUE (id)
-   ); 
+   );
 END;;
 CALL create_elk_flag();;
-DROP PROCEDURE  create_elk_flag;; 
+DROP PROCEDURE  create_elk_flag;;
 
-REPLACE INTO `elk_flag` (`id`, `flag_name`) VALUES
-	(1, "TEST_FLAG"),
-    (2, "FELENDREN_MET"),
-    (3, "FELENDREN_KILLED"),
-    (4, "FELENDREN_PUT_DOWN"),
-    (5, "FELENDREN_TALKED_6"),
-    (6, "SHRINE_OF_DATHREMAR_READ"),
-    (7, "SOLANIANS_SCRYING_ORB_FOUND"),
-    (8, "SOLANIANS_SCRYING_ORB_CONSUMED"),
-    (9, "SOLANIANS_JOURNAL_FOUND"),
-    (10, "SOLANIANS_JOURNAL_CONSUMED"),
-    (11, "SCOLL_OF_SCOURGE_MAGIC_FOUND"),
-    (12, "SCOLL_OF_SCOURGE_MAGIC_CONSUMED");
+
+TRUNCATE TABLE elk_flag;
+DROP PROCEDURE IF EXISTS add_elk_flag;
+SET @flagAdded = 1;
+
+
+CREATE PROCEDURE add_elk_flag (IN flag_nameP VARCHAR(64))
+BEGIN
+   DECLARE CONTINUE HANDLER FOR 1050 BEGIN END;
+	REPLACE INTO `elk_flag` (`id`, `flag_name`) VALUES
+	(@flagAdded, flag_nameP);
+	SET @flagAdded = @flagAdded + 1;
+END;;
+
+CALL add_elk_flag ("TEST_FLAG");
+
+CALL add_elk_flag ("ERONA_INITIAL_INTRO");
