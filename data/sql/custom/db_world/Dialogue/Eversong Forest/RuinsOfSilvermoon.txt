@@ -30,3 +30,5 @@ make felendren the ghost town gunfight, with preparations to kill him or save hi
 >Nelf island is neutral and not hostile. you can do quests to get help for the deatholme minidungeon or become hostile and have to kill a bunch of them.
 >meet an illidari naga near the coast, he gives you diff quest in dungeon to use something that makes the boss take 50% max hp in dmg but enrages him and the naga gives a reward for using this first time.
 >at fairbreeze one guy has a fel orc slave or w/e.
+>rogue trainer talks about rudeness of lock trainer and RT shows up later at fairbreeze after you visit silvermoon. use diff NPCs with same AI package to count differences. later witnesses a murder like an ER NPC
+>bandits ambush you if you decide to snitch on a guy, you find a note involving them. 
