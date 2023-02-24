@@ -1,0 +1,10 @@
+UPDATE player_race_stats SET `Strength` = 5, `Agility` = 5, `Stamina` = 5, `Intellect` = 5, `Spirit` = 5  WHERE (race=1);
+UPDATE player_race_stats SET `Strength` = 8, `Agility` = 2, `Stamina` = 6, `Intellect` = 2, `Spirit` = 7  WHERE (race=2);
+UPDATE player_race_stats SET `Strength` = 10, `Agility` = 1, `Stamina` = 6, `Intellect` = 5, `Spirit` = 5  WHERE (race=3);
+UPDATE player_race_stats SET `Strength` = 1, `Agility` = 9, `Stamina` = 5, `Intellect` = 5, `Spirit` = 5  WHERE (race=5);
+UPDATE player_race_stats SET `Strength` = 4, `Agility` = 3, `Stamina` = 5, `Intellect` = 3, `Spirit` = 10  WHERE (race=5);
+UPDATE player_race_stats SET `Strength` = 10, `Agility` = 1, `Stamina` = 16, `Intellect` = 2, `Spirit` = 6  WHERE (race=6);
+UPDATE player_race_stats SET `Strength` = 1, `Agility` = 6, `Stamina` = 5, `Intellect` = 8, `Spirit` = 5  WHERE (race=7);
+UPDATE player_race_stats SET `Strength` = 6, `Agility` = 7, `Stamina` = 5, `Intellect` = 1, `Spirit` = 6  WHERE (race=8);
+UPDATE player_race_stats SET `Strength` = 2, `Agility` = 7, `Stamina` = 5, `Intellect` = 8, `Spirit` = 3  WHERE (race=10);
+UPDATE player_race_stats SET `Strength` = 6, `Agility` = 2, `Stamina` = 5, `Intellect` = 5, `Spirit` = 7  WHERE (race=11);

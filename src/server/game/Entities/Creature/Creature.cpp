@@ -555,6 +555,10 @@ bool Creature::UpdateEntry(uint32 Entry, const CreatureData* data, bool changele
     SetModifierValue(UNIT_MOD_RESISTANCE_SHADOW, BASE_VALUE, float(cInfo->resistance[SPELL_SCHOOL_SHADOW]));
     SetModifierValue(UNIT_MOD_RESISTANCE_ARCANE, BASE_VALUE, float(cInfo->resistance[SPELL_SCHOOL_ARCANE]));
 
+
+    for (uint8 i = STAT_STRENGTH; i < MAX_STATS; ++i)
+        SetCreateStat(Stats(i), changelevel);
+
     SetCanModifyStats(true);
     UpdateAllStats();
 
@@ -3450,7 +3454,7 @@ void Creature::SetObjectScale(float scale)
     if (IsPet())
         combatReach = DEFAULT_COMBAT_REACH;
 
-    SetFloatValue(UNIT_FIELD_COMBATREACH, combatReach * scale);
+    SetCombatReach(combatReach * scale);
 }
 
 void Creature::SetDisplayId(uint32 modelId)
@@ -3469,7 +3473,7 @@ void Creature::SetDisplayId(uint32 modelId)
     if (IsPet())
         combatReach = DEFAULT_COMBAT_REACH;
 
-    SetFloatValue(UNIT_FIELD_COMBATREACH, combatReach * GetObjectScale());
+    SetCombatReach(combatReach * GetObjectScale());
 }
 
 void Creature::SetTarget(ObjectGuid guid)

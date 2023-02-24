@@ -826,7 +826,7 @@ enum PlayerLoginQueryIndex
     PLAYER_LOGIN_QUERY_LOAD_CORPSE_LOCATION         = 35,
     PLAYER_LOGIN_QUERY_LOAD_CHARACTER_SETTINGS      = 36,
     PLAYER_LOGIN_QUERY_LOAD_PET_SLOTS               = 37,
-    PLAYER_LOGIN_QUERY_LOAD_TALENT_POINTS           = 38,
+    PLAYER_LOGIN_QUERY_LOAD_DEVELOPMENT_POINTS      = 38,
     PLAYER_LOGIN_QUERY_LOAD_QUEST_STAGE_FLAGS       = 39,
     PLAYER_LOGIN_QUERY_LOAD_CHEST_FLAGS             = 40,
     MAX_PLAYER_LOGIN_QUERY
@@ -1002,11 +1002,44 @@ public:
     void AddToWorld() override;
     void RemoveFromWorld() override;
 
+
+    void SetCombatReach(float val) const {
+        float bonusCombatReach;
+
+        auto wep1 = GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
+        if (wep1)
+        {
+            switch (wep1->GetSkill())
+            {
+            case SKILL_AXES:
+            case SKILL_SWORDS:
+            case SKILL_MACES:
+                bonusCombatReach = 1.0f;
+            case SKILL_FISHING:
+            case SKILL_2H_AXES:
+            case SKILL_2H_SWORDS:
+            case SKILL_2H_MACES:
+                bonusCombatReach = 2.f;
+            case SKILL_POLEARMS:
+            case SKILL_STAVES:
+                bonusCombatReach = 4.0f;
+            case SKILL_DAGGERS:
+            case SKILL_FIST_WEAPONS:
+            default:
+                bonusCombatReach = 1.f;
+            }
+
+        }
+        else
+            bonusCombatReach = 0.0f;
+        m_floatValues[UNIT_FIELD_COMBATREACH] = val + bonusCombatReach;
+
+    }
     void SetObjectScale(float scale) override
     {
         Unit::SetObjectScale(scale);
         SetFloatValue(UNIT_FIELD_BOUNDINGRADIUS, scale * DEFAULT_WORLD_OBJECT_SIZE);
-        SetFloatValue(UNIT_FIELD_COMBATREACH, scale * DEFAULT_COMBAT_REACH);
+        SetCombatReach(scale * (DEFAULT_COMBAT_REACH));
     }
 
     [[nodiscard]] bool hasSpanishClient()
@@ -1091,7 +1124,7 @@ public:
     void SetPvPDeath(bool on) { if (on) m_ExtraFlags |= PLAYER_EXTRA_PVP_DEATH; else m_ExtraFlags &= ~PLAYER_EXTRA_PVP_DEATH; }
 
     void GiveXP(uint32 xp, Unit* victim, float group_rate = 1.0f, bool isLFGReward = false);
-    void GiveLevel(uint8 level);
+    void SetToLevel(uint8 questLevel);
 
     void InitStatsForLevel(bool reapplyMods = false);
 
@@ -1638,7 +1671,8 @@ public:
     void _addTalentAurasAndSpells(uint32 spellId, uint8 development);
     [[nodiscard]] bool HasTalent(uint32 spell_id, uint8 spec) const;
 
-    [[nodiscard]] uint32 CalculateTalentsPoints() const;
+    [[nodiscard]] uint32 RecalculateLevel() const;
+    void SetLevel(uint8 lvl, bool showLevelChange = true);
 
     // Dual Spec
     void UpdateSpecCount(uint8 count);
@@ -1993,7 +2027,8 @@ public:
      *
      * 2). Data initing situation (like PlayerScript:OnLoadFromDB)
      */
-    void RewardExtraBonusTalentPoints(uint32 bonusTalentPoints);
+    void RewardDevelopmentPoints(uint32 bonusDevelopmentPoints);
+    void RewardQuestPoints(uint32 bonusQuestPoints);
 
     /*********************************************************/
     /***                  PVP SYSTEM                       ***/
@@ -2676,8 +2711,8 @@ public:
     uint32 m_resetTalentsCost;
     time_t m_resetTalentsTime;
     uint32 m_usedTalentCount;
-    uint32 m_questRewardTalentCount;
-    uint32 m_talentMod;
+    uint32 m_questLevel;
+    uint32 m_developmentPoints;
 
     // Social
     PlayerSocial* m_social;

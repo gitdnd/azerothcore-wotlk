@@ -216,9 +216,9 @@ bool LoginQueryHolder::Initialize()
     stmt->SetData(0, lowGuid);
     res &= SetPreparedQuery(PLAYER_LOGIN_QUERY_LOAD_PET_SLOTS, stmt);
 
-    stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_TALENT_POINTS);
+    stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_DEVELOPMENT_POINTS);
     stmt->SetData(0, lowGuid);
-    res &= SetPreparedQuery(PLAYER_LOGIN_QUERY_LOAD_TALENT_POINTS, stmt);
+    res &= SetPreparedQuery(PLAYER_LOGIN_QUERY_LOAD_DEVELOPMENT_POINTS, stmt);
 
     stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_QUEST_STAGE_FLAGS);
     stmt->SetData(0, lowGuid);

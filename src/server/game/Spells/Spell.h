@@ -103,6 +103,7 @@ enum class MapDummy : uint8
     WasInAir,
     Que,
     ComboLength,
+    BonusRange,
 };
 
 struct SpellDestination

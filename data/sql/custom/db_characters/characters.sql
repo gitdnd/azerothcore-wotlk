@@ -3,7 +3,7 @@ CREATE PROCEDURE characters_elk ()
 BEGIN
     DECLARE CONTINUE HANDLER FOR 1060 BEGIN END;	
 	ALTER TABLE `characters`
-	ADD COLUMN talent_points INT NOT NULL DEFAULT 0;
+	ADD COLUMN development_points MEDIUMINT NOT NULL DEFAULT 0;
 END;;
 CALL characters_elk();;
 DROP PROCEDURE  characters_elk;;

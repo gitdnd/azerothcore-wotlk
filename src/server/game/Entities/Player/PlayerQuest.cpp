@@ -780,7 +780,7 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver, 
 
     if (quest->GetBonusTalents())
     {
-        m_questRewardTalentCount += quest->GetBonusTalents();
+        m_developmentPoints += quest->GetBonusTalents();
         InitTalentForLevel();
     }
 

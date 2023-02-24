@@ -5547,7 +5547,7 @@ bool Player::LoadFromDB(ObjectGuid playerGuid, CharacterDatabaseQueryHolder cons
         if (!HasAuraState((AuraStateType)m_spellInfo->CasterAuraState))
             aura->HandleAllEffects(itr->second, AURA_EFFECT_HANDLE_REAL, false);
     }
-    RewardExtraBonusTalentPoints(fields[73].Get<uint8>());
+    RewardDevelopmentPoints(fields[73].Get<uint8>());
 
     return true;
 }
@@ -6271,9 +6271,6 @@ void Player::_LoadQuestStatusRewarded(PreparedQueryResult result)
                     if (CharTitlesEntry const* titleEntry = sCharTitlesStore.LookupEntry(quest->GetCharTitleId()))
                         SetTitle(titleEntry);
                 }
-
-                if (quest->GetBonusTalents())
-                    m_questRewardTalentCount += quest->GetBonusTalents();
             }
 
             m_RewardedQuests.insert(quest_id);

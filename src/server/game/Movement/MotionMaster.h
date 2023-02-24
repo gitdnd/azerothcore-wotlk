@@ -104,7 +104,7 @@ struct ChaseAngle
 };
 
 // assume it is 25 yard per 0.6 second
-#define SPEED_CHARGE    42.0f
+#define SPEED_CHARGE    70.0f
 
 class MotionMaster //: private std::stack<MovementGenerator *>
 {

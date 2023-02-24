@@ -250,7 +250,7 @@ public:
     {
         if (player)
         {
-            player->GiveLevel(newLevel);
+            player->SetToLevel(newLevel);
             player->InitTalentForLevel();
             player->SetUInt32Value(PLAYER_XP, 0);
 

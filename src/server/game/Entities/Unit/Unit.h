@@ -1473,6 +1473,7 @@ public:
     [[nodiscard]] bool haveOffhandWeapon() const;
     [[nodiscard]] bool CanDualWield() const { return m_canDualWield; }
     virtual void SetCanDualWield(bool value) { m_canDualWield = value; }
+    void SetCombatReach(float val) const { m_floatValues[UNIT_FIELD_COMBATREACH] = val; }
     [[nodiscard]] float GetCombatReach() const override { return m_floatValues[UNIT_FIELD_COMBATREACH]; } 
     [[nodiscard]] bool IsWithinRange(Unit const* obj, float dist) const; 
     bool IsWithinMeleeRange(Unit const* obj, float dist = 0.f) const;

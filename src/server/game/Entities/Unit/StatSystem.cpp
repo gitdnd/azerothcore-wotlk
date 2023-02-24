@@ -351,12 +351,12 @@ void Unit::UpdateArmor(bool derived)
 
 float Unit::GetHealthBonusFromStamina()
 {
-    return GetStat(STAT_STAMINA) * 20;
+    return GetStat(STAT_STAMINA) * 10;
 }
 
 float Unit::GetManaBonusFromIntellect()
 {
-    return GetStat(STAT_INTELLECT) * 10;
+    return GetStat(STAT_INTELLECT) * 5;
 }
 
 void Unit::UpdateMaxHealth()
@@ -364,8 +364,7 @@ void Unit::UpdateMaxHealth()
     UnitMods unitMod = UNIT_MOD_HEALTH;
 
     float value = GetModifierValue(unitMod, BASE_VALUE) + GetCreateHealth();
-    value *= GetModifierValue(unitMod, BASE_PCT);
-    value += GetModifierValue(unitMod, TOTAL_VALUE) + GetArmor() + GetHealthBonusFromStamina();
+    value += GetModifierValue(unitMod, TOTAL_VALUE) + GetHealthBonusFromStamina();
     value *= GetModifierValue(unitMod, TOTAL_PCT);
 
     sScriptMgr->OnAfterUpdateMaxHealth(this, value);

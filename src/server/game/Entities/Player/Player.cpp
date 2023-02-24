@@ -171,8 +171,8 @@ Player::Player(WorldSession* session): Unit(true), m_mover(this)
         SetAcceptWhispers(true);
 
     m_usedTalentCount = 0;
-    m_questRewardTalentCount = 0;
-    m_talentMod = 0;
+    m_questLevel = 0;
+    m_developmentPoints = 0;
 
     m_regenTimer = 0;
     m_regenTimerCount = 0;
@@ -2338,31 +2338,13 @@ void Player::GiveXP(uint32 xp, Unit* victim, float group_rate, bool isLFGReward)
         return;
     }
 
-    uint8 level = GetLevel();
+
 
     sScriptMgr->OnGivePlayerXP(this, xp, victim);
 
-    // Favored experience increase START
-    uint32 zone = GetZoneId();
-    float favored_exp_mult = 0;
-    if ((zone == 3483 || zone == 3562 || zone == 3836 || zone == 3713 || zone == 3714) && (HasAura(32096) || HasAura(32098)))
-        favored_exp_mult = 0.05f; // Thrallmar's Favor and Honor Hold's Favor
-
-    xp = uint32(xp * (1 + favored_exp_mult));
-    // Favored experience increase END
-
-    // XP to money conversion processed in Player::RewardQuest
-    if (level >= sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL))
-        return;
 
     uint32 bonus_xp = 0;
-    bool recruitAFriend = GetsRecruitAFriendBonus(true);
-
-    // RaF does NOT stack with rested experience
-    if (recruitAFriend)
-        bonus_xp = 2 * xp; // xp + bonus_xp must add up to 3 * xp for RaF; calculation for quests done client-side
-    else
-        bonus_xp = victim ? GetXPRestBonus(xp) : 0; // XP resting bonus
+    bonus_xp = GetXPRestBonus(xp); // XP resting bonus
 
     // hooks and multipliers can modify the xp with a zero or negative value
     // check again before sending invalid xp to the client
@@ -2371,21 +2353,17 @@ void Player::GiveXP(uint32 xp, Unit* victim, float group_rate, bool isLFGReward)
         return;
     }
 
-    SendLogXPGain(xp, victim, bonus_xp, recruitAFriend, group_rate);
+    SendLogXPGain(xp, victim, bonus_xp, false, group_rate);
 
     uint32 curXP = GetUInt32Value(PLAYER_XP);
-    uint32 nextLvlXP = GetUInt32Value(PLAYER_NEXT_LEVEL_XP);
+    uint32 nextXP = 200000;
     uint32 newXP = curXP + xp + bonus_xp;
 
-    while (newXP >= nextLvlXP && level < sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL))
+    while (newXP >= nextXP)
     {
-        newXP -= nextLvlXP;
+        newXP -= nextXP;
 
-        if (level < sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL))
-            GiveLevel(level + 1);
-
-        level = GetLevel();
-        nextLvlXP = GetUInt32Value(PLAYER_NEXT_LEVEL_XP);
+        RewardDevelopmentPoints(1);
     }
 
     SetUInt32Value(PLAYER_XP, newXP);
@@ -2393,11 +2371,14 @@ void Player::GiveXP(uint32 xp, Unit* victim, float group_rate, bool isLFGReward)
 
 // Update player to next level
 // Current player experience not update (must be update by caller)
-void Player::GiveLevel(uint8 level)
+void Player::SetToLevel(uint8 questLevel)
 {
-    uint8 oldLevel = GetLevel();
+    uint8 oldLevel = RecalculateLevel();
+    SetLevel(questLevel);
+    uint8 level = RecalculateLevel();
     if (level == oldLevel)
         return;
+
 
     if (Guild* guild = GetGuild())
         guild->UpdateMemberData(this, GUILD_MEMBER_DATA_LEVEL, level);
@@ -2426,14 +2407,11 @@ void Player::GiveLevel(uint8 level)
 
     SendDirectMessage(packet.Write());
 
-    SetUInt32Value(PLAYER_NEXT_LEVEL_XP, sObjectMgr->GetXPForLevel(level));
-
     //update level, max level of skills
     m_Played_time[PLAYED_TIME_LEVEL] = 0;                   // Level Played Time reset
 
     _ApplyAllLevelScaleItemMods(false);
 
-    SetLevel(level);
 
     UpdateSkillsForLevel();
 
@@ -2497,7 +2475,7 @@ void Player::GiveLevel(uint8 level)
 
 void Player::InitTalentForLevel()
 {
-    uint32 talentPointsForLevel = CalculateTalentsPoints();
+    uint32 talentPointsForLevel = RecalculateLevel();
 
     SetFreeTalentPoints(talentPointsForLevel - m_usedTalentCount);
 
@@ -3641,7 +3619,7 @@ bool Player::resetTalents(bool noResetCost)
         RemoveAtLoginFlag(AT_LOGIN_RESET_TALENTS, true);
 
     // xinef: get max available talent points amount
-    uint32 talentPointsForLevel = CalculateTalentsPoints();
+    uint32 talentPointsForLevel = RecalculateLevel();
 
     // xinef: no talent points are used, return
     if (m_usedTalentCount == 0)
@@ -5666,12 +5644,39 @@ void Player::RewardReputation(Quest const* quest)
     }
 }
 
-void Player::RewardExtraBonusTalentPoints(uint32 bonusTalentPoints)
+void Player::SetLevel(uint8 lvl, bool showLevelChange)
 {
-    if (bonusTalentPoints)
+    m_questLevel = lvl;
+    uint8 level = RecalculateLevel();
+    SetUInt32Value(UNIT_FIELD_LEVEL, level);
+
+    // Xinef: unmark field bit update
+    if (!showLevelChange)
+        _changesMask.UnsetBit(UNIT_FIELD_LEVEL);
+
+    // group update
+    if (GetTypeId() == TYPEID_PLAYER && ToPlayer()->GetGroup())
+        ToPlayer()->SetGroupUpdateFlag(GROUP_UPDATE_FLAG_LEVEL);
+
+    if (GetTypeId() == TYPEID_PLAYER)
     {
-        m_talentMod += bonusTalentPoints;
-        SetFreeTalentPoints(CalculateTalentsPoints() - m_usedTalentCount);
+        sCharacterCache->UpdateCharacterLevel(GetGUID(), level);
+    }
+}
+void Player::RewardDevelopmentPoints(uint32 bonusDevelopmentPoints)
+{
+    if (bonusDevelopmentPoints)
+    {
+        m_developmentPoints += bonusDevelopmentPoints;
+        SetFreeTalentPoints(m_developmentPoints);
+    }
+}
+void Player::RewardQuestPoints(uint32 bonusQuestPoints)
+{
+    if (bonusQuestPoints)
+    {
+        m_questLevel += bonusQuestPoints;
+        RecalculateLevel();
     }
 }
 
@@ -13088,14 +13093,19 @@ LootItem* Player::StoreLootItem(uint8 lootSlot, Loot* loot, InventoryResult& msg
     return item;
 }
 
-uint32 Player::CalculateTalentsPoints() const
+uint32 Player::RecalculateLevel() const
 {
-    uint32 base_talent = GetLevel() < 10 ? 0 : GetLevel() - 9;
-
-    uint32 talentPointsForLevel = m_questRewardTalentCount + base_talent;
-     
-    talentPointsForLevel += m_talentMod;
-    return uint32(talentPointsForLevel * sWorld->getRate(RATE_TALENT));
+    uint8 twenties = 1;
+    uint8 total = 1;
+    uint16 questPoints = m_questLevel;
+    while (questPoints > 0)
+    {
+        uint16 reduceQP = std::min(questPoints, uint16(20 * twenties));
+        questPoints -= reduceQP;
+        total += reduceQP / twenties;
+        twenties++;
+    }
+    return total;
 }
 
 bool Player::canFlyInZone(uint32 mapid, uint32 zone, SpellInfo const* bySpell) const
@@ -14187,7 +14197,7 @@ void Player::_SaveCharacter(bool create, CharacterDatabaseTransaction trans)
         stmt->SetData(index++, GetByteValue(PLAYER_FIELD_BYTES, 2));
         stmt->SetData(index++, m_grantableLevels);
         stmt->SetData(index++, _innTriggerId);
-        stmt->SetData(index++, m_talentMod);
+        stmt->SetData(index++, m_developmentPoints);
     }
     else
     {
@@ -14329,7 +14339,7 @@ void Player::_SaveCharacter(bool create, CharacterDatabaseTransaction trans)
         stmt->SetData(index++, _innTriggerId);
 
         stmt->SetData(index++, IsInWorld() && !GetSession()->PlayerLogout() ? 1 : 0);
-        stmt->SetData(index++, m_talentMod);
+        stmt->SetData(index++, m_developmentPoints);
         // Index
         stmt->SetData(index++, GetGUID().GetCounter());
     }
