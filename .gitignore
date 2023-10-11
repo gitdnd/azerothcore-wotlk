@@ -91,3 +91,5 @@ local.properties
 #  !modules/yourmodule
 #
 # ==================
+deps/git-subrepo/
+deps/git-subrepo/
