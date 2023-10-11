@@ -121,6 +121,10 @@ protected:
 class ELKSpellScript : public SpellScript
 {
 protected:
+    void TriggerExtension()
+    {
+        GetCaster()->AddAura(1000000, GetCaster());
+    }
     void AttackBegin()
     {
         GetSpell()->SetBonusRange(GetCaster()->GetCombatReach());

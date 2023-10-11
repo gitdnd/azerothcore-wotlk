@@ -243,9 +243,7 @@ void Player::Update(uint32 p_time)
                 _restTime = currTime;
 
                 float bubble = 0.125f * sWorld->getRate(RATE_REST_INGAME);
-                float extraPerSec =
-                    ((float) GetUInt32Value(PLAYER_NEXT_LEVEL_XP) / 72000.0f) *
-                    bubble;
+                float extraPerSec = (float) bubble;
 
                 // speed collect rest bonus (section/in hour)
                 SetRestBonus(GetRestBonus() + timeDiff * extraPerSec);

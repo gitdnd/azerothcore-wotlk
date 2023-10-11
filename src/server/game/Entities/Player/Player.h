@@ -2030,6 +2030,7 @@ public:
     void RewardDevelopmentPoints(uint32 bonusDevelopmentPoints);
     void RewardQuestPoints(uint32 bonusQuestPoints);
 
+    uint16 GetCharacterQuestLevel() { return m_questLevel; }
     /*********************************************************/
     /***                  PVP SYSTEM                       ***/
     /*********************************************************/

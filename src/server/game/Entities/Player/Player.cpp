@@ -547,7 +547,7 @@ bool Player::Create(ObjectGuid::LowType guidlow, CharacterCreateInfo* createInfo
             start_level = gm_level;
     }
 
-    SetUInt32Value(UNIT_FIELD_LEVEL, start_level);
+    SetLevel(start_level);
 
     SetUInt32Value(PLAYER_FIELD_COINAGE, sWorld->getIntConfig(CONFIG_START_PLAYER_MONEY));
     SetHonorPoints(sWorld->getIntConfig(CONFIG_START_HONOR_POINTS));
@@ -2356,7 +2356,7 @@ void Player::GiveXP(uint32 xp, Unit* victim, float group_rate, bool isLFGReward)
     SendLogXPGain(xp, victim, bonus_xp, false, group_rate);
 
     uint32 curXP = GetUInt32Value(PLAYER_XP);
-    uint32 nextXP = 200000;
+    uint32 nextXP = 20000;
     uint32 newXP = curXP + xp + bonus_xp;
 
     while (newXP >= nextXP)
@@ -2497,7 +2497,6 @@ void Player::InitStatsForLevel(bool reapplyMods)
     uint32 maxPlayerLevel = sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL);
     sScriptMgr->OnSetMaxLevel(this, maxPlayerLevel);
     SetUInt32Value(PLAYER_FIELD_MAX_LEVEL, maxPlayerLevel);
-    SetUInt32Value(PLAYER_NEXT_LEVEL_XP, sObjectMgr->GetXPForLevel(GetLevel()));
 
     // reset before any aura state sources (health set/aura apply)
     SetUInt32Value(UNIT_FIELD_AURASTATE, 0);
@@ -5675,8 +5674,7 @@ void Player::RewardQuestPoints(uint32 bonusQuestPoints)
 {
     if (bonusQuestPoints)
     {
-        m_questLevel += bonusQuestPoints;
-        RecalculateLevel();
+        SetLevel(bonusQuestPoints + m_questLevel);
     }
 }
 
@@ -9812,7 +9810,7 @@ void Player::SetRestBonus(float rest_bonus_new)
     if (rest_bonus_new < 0)
         rest_bonus_new = 0;
 
-    float rest_bonus_max = (float)GetUInt32Value(PLAYER_NEXT_LEVEL_XP) * 1.5f / 2;
+    float rest_bonus_max = 20000;
 
     if (rest_bonus_new > rest_bonus_max)
         _restBonus = rest_bonus_max;
@@ -13096,7 +13094,7 @@ LootItem* Player::StoreLootItem(uint8 lootSlot, Loot* loot, InventoryResult& msg
 uint32 Player::RecalculateLevel() const
 {
     uint8 twenties = 1;
-    uint8 total = 1;
+    uint8 total = 0;
     uint16 questPoints = m_questLevel;
     while (questPoints > 0)
     {
@@ -14089,7 +14087,7 @@ void Player::_SaveCharacter(bool create, CharacterDatabaseTransaction trans)
         stmt->SetData(index++, getRace(true));
         stmt->SetData(index++, getClass());
         stmt->SetData(index++, GetByteValue(PLAYER_BYTES_3, 0));   // save gender from PLAYER_BYTES_3, UNIT_BYTES_0 changes with every transform effect
-        stmt->SetData(index++, GetLevel());
+        stmt->SetData(index++, m_questLevel);
         stmt->SetData(index++, GetUInt32Value(PLAYER_XP));
         stmt->SetData(index++, GetMoney());
         stmt->SetData(index++, GetByteValue(PLAYER_BYTES, 0));
@@ -14207,7 +14205,7 @@ void Player::_SaveCharacter(bool create, CharacterDatabaseTransaction trans)
         stmt->SetData(index++, getRace(true));
         stmt->SetData(index++, getClass());
         stmt->SetData(index++, GetByteValue(PLAYER_BYTES_3, 0));   // save gender from PLAYER_BYTES_3, UNIT_BYTES_0 changes with every transform effect
-        stmt->SetData(index++, GetLevel());
+        stmt->SetData(index++, m_questLevel);
         stmt->SetData(index++, GetUInt32Value(PLAYER_XP));
         stmt->SetData(index++, GetMoney());
         stmt->SetData(index++, GetByteValue(PLAYER_BYTES, 0));

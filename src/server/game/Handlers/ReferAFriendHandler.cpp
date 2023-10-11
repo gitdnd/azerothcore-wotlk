@@ -82,5 +82,5 @@ void WorldSession::HandleAcceptGrantLevel(WorldPacket& recvData)
     else
         return;
 
-    _player->SetToLevel(_player->GetLevel() + 1);
+    _player->SetToLevel(_player->GetCharacterQuestLevel() + 1);
 }

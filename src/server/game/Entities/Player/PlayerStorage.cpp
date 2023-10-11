@@ -4925,7 +4925,7 @@ bool Player::LoadFromDB(ObjectGuid playerGuid, CharacterDatabaseQueryHolder cons
     m_realRace = fields[3].Get<uint8>(); // set real race
     m_race = fields[3].Get<uint8>(); // set real race
 
-    SetUInt32Value(UNIT_FIELD_LEVEL, fields[6].Get<uint8>());
+    SetLevel(fields[6].Get<uint8>());
     SetUInt32Value(PLAYER_XP, fields[7].Get<uint32>());
 
     if (!_LoadIntoDataField(fields[66].Get<std::string>(), PLAYER_EXPLORED_ZONES_1, PLAYER_EXPLORED_ZONES_SIZE))
@@ -5335,7 +5335,7 @@ bool Player::LoadFromDB(ObjectGuid playerGuid, CharacterDatabaseQueryHolder cons
                        : bubble0 * sWorld->getRate(RATE_REST_OFFLINE_IN_WILDERNESS);
 
         // Client automatically doubles the value sent so we have to divide it by 2
-        SetRestBonus(GetRestBonus() + time_diff * ((float)GetUInt32Value(PLAYER_NEXT_LEVEL_XP) / 144000)*bubble);
+        SetRestBonus(GetRestBonus() + time_diff * bubble);
     }
 
     uint32 innTriggerId = fields[72].Get<uint32>();

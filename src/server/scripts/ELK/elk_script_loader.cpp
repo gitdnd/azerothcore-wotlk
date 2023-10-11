@@ -24,6 +24,8 @@ void AddSC_elk_creature_100_scripts();
 
 void AddSC_elk_crafting();
 
+void AddSC_combosystem();
+
 // The name of this function should match:
 // void Add${NameOfDirectory}Scripts()
 void AddELKScripts()
@@ -35,4 +37,6 @@ void AddELKScripts()
     AddSC_elk_creature_100_scripts();
 
     AddSC_elk_crafting();
+
+    AddSC_combosystem();
 }

@@ -888,6 +888,8 @@ void Aura::SetDuration(int32 duration, bool withMods)
                 modOwner->ApplySpellMod(GetId(), SPELLMOD_DURATION, duration);
     }
     m_duration = duration;
+    if (m_duration > GetMaxDuration())
+        m_duration = GetMaxDuration();
     SetNeedClientUpdateForTargets();
 }
 
