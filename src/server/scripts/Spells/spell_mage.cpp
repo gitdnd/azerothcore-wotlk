@@ -1019,11 +1019,11 @@ class spell_mage_fingers_of_frost_proc_aura : public AuraScript
     }
 
 public:
-    Spell const* GetProcSpell() const { return _spell; }
+    Spell* GetProcSpell() const { return _spell; }
 
 private:
     float _chance = 0.f;
-    Spell const* _spell = nullptr;
+    Spell* _spell = nullptr;
 };
 
 typedef spell_mage_fingers_of_frost_proc_aura spell_mage_fingers_of_frost_proc_aura_script;
@@ -1038,7 +1038,7 @@ class spell_mage_fingers_of_frost_proc : public AuraScript
         {
             if (spell_mage_fingers_of_frost_proc_aura_script* script = dynamic_cast<spell_mage_fingers_of_frost_proc_aura_script*>(aura->GetScriptByName(FingersOfFrostScriptName)))
             {
-                if (Spell const* fofProcSpell = script->GetProcSpell())
+                if (Spell* fofProcSpell = script->GetProcSpell())
                 {
                     if (fofProcSpell == eventInfo.GetProcSpell())
                     {

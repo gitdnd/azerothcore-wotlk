@@ -3424,7 +3424,7 @@ void Spell::EffectWeaponDmg(SpellEffIndex effIndex)
                 {
                     case 20467: // Seal of Command Unleashed
                         spell_bonus += int32(0.08f * m_caster->GetTotalAttackPowerValue(BASE_ATTACK));
-                        spell_bonus += int32(0.13f * m_caster->SpellBaseDamageBonusDone(m_spellInfo->GetSchoolMask()));
+                        spell_bonus += int32(0.13f * m_caster->SpellBasePowerBonusDone(m_spellInfo->GetSchoolMask()));
                         break;
                     case 42463: // Seals of the Pure for Seal of Vengeance/Corruption
                     case 53739:

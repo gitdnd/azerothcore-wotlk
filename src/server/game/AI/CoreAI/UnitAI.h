@@ -98,10 +98,10 @@ struct SpellTargetSelector : public Acore::unary_function<Unit*, bool>
 {
 public:
     SpellTargetSelector(Unit* caster, uint32 spellId);
-    bool operator()(Unit const* target) const;
+    bool operator()(Unit* target) const;
 
 private:
-    Unit const* _caster;
+    Unit* _caster;
     SpellInfo const* _spellInfo;
 };
 

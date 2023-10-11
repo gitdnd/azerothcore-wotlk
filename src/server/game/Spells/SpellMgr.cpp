@@ -834,7 +834,7 @@ bool SpellMgr::IsSpellProcEventCanTriggeredBy(SpellInfo const* spellProto, Spell
             // Check tick numbers
             if (procEvent_procEx & PROC_EX_ONLY_FIRST_TICK)
             {
-                if (Spell const* procSpell = eventInfo.GetProcSpell())
+                if (Spell* procSpell = eventInfo.GetProcSpell())
                 {
                     if (procSpell->GetTriggeredByAuraTickNumber() > 1)
                     {

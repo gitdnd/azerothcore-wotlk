@@ -1026,7 +1026,7 @@ void AuraEffect::UpdatePeriodic(Unit* caster)
     GetBase()->CallScriptEffectUpdatePeriodicHandlers(this);
 }
 
-float AuraEffect::CalcPeriodicCritChance(Unit const* caster, Unit const* target) const
+float AuraEffect::CalcPeriodicCritChance(Unit* caster, Unit const* target) const
 {
     float critChance = 0.0f;
     if (caster)

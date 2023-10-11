@@ -817,7 +817,13 @@ public:
     uint16 runeCooldown = 0;
     uint8 runeCostAlt = 0;
     float bonusRange = 0;
+    uint32 bonusSpellPower = 0;
 public:
+
+    uint32 GetBonusSpellPower() { return bonusSpellPower; }
+    void SetBonusSpellPower(uint32 spellPower) { bonusSpellPower = spellPower; }
+    void ModBonusSpellPower(uint32 spellPower) { bonusSpellPower += spellPower; }
+
     Unit* GetCastTarget() { return unitTarget; }
 	void SetCastTarget(Unit* unit) { unitTarget = unit; }
     SpellDestination* GetDestTargets(int index)
@@ -849,6 +855,8 @@ public:
 
     void SetBonusRange(float range);
     float GetBonusRange() { return bonusRange; }
+
+
 };
 
 namespace Acore

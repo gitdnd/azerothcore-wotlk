@@ -405,11 +405,15 @@ bool SpellEffectInfo::IsUnitOwnedAuraEffect() const
     return IsAreaAuraEffect() || Effect == SPELL_EFFECT_APPLY_AURA;
 }
 
-int32 SpellEffectInfo::CalcValue(Unit const* caster, int32 const* bp, Unit const* /*target*/, int16 bonusSpellPower) const
+int32 SpellEffectInfo::CalcValue(Unit* caster, int32 const* bp, Unit const* /*target*/, int16 bonusSpellPower) const
 {
     float basePointsPerLevel = RealPointsPerLevel;
     int32 basePoints = bp ? *bp : BasePoints;
-    int32 randomPoints = int32(DieSides); 
+    int32 randomPoints = int32(DieSides);
+
+    if (caster)
+        if(Spell* spell = caster->GetCurrentSpell(CURRENT_GENERIC_SPELL))
+            bonusSpellPower += spell->GetBonusSpellPower();
     // base amount modification based on spell lvl vs caster lvl
     // xinef: added basePointsPerLevel check
     if (caster && basePointsPerLevel != 0.0f)
@@ -1726,7 +1730,7 @@ SpellCastResult SpellInfo::CheckLocation(uint32 map_id, uint32 zone_id, uint32 a
     return SPELL_CAST_OK;
 }
 
-bool SpellInfo::IsStrongerAuraActive(Unit const* caster, Unit const* target) const
+bool SpellInfo::IsStrongerAuraActive(Unit* caster, Unit const* target) const
 {
     if (!target)
         return false;
@@ -1810,7 +1814,7 @@ bool SpellInfo::IsStrongerAuraActive(Unit const* caster, Unit const* target) con
 
             // xinef: should have the same id, can be different if spell is triggered
             // xinef: have to fix spell mods for triggered spell, turn off current spellmodtakingspell for preparing and restore after
-            if (Player const* player = caster->GetSpellModOwner())
+            if (Player* player = caster->GetSpellModOwner())
                 if (player->m_spellModTakingSpell && player->m_spellModTakingSpell->m_spellInfo->Id == Id)
                     basePoints = player->m_spellModTakingSpell->GetSpellValue()->EffectBasePoints[i];
 
@@ -1902,7 +1906,7 @@ bool SpellInfo::ValidateAttribute6SpellDamageMods(Unit const* caster, const Aura
     return !isDot && auraEffect && (auraEffect->GetAmount() < 0 || (auraEffect->GetCasterGUID() == caster->GetGUID() && auraEffect->GetSpellInfo()->SpellFamilyName == SpellFamilyName)) && !auraEffect->GetBase()->GetCastItemGUID();
 }
 
-SpellCastResult SpellInfo::CheckTarget(Unit const* caster, WorldObject const* target, bool implicit) const
+SpellCastResult SpellInfo::CheckTarget(Unit* caster, WorldObject* target, bool implicit) const
 {
     if (AttributesEx & SPELL_ATTR1_EXCLUDE_CASTER && caster == target)
         return SPELL_FAILED_BAD_TARGETS;
@@ -1911,7 +1915,7 @@ SpellCastResult SpellInfo::CheckTarget(Unit const* caster, WorldObject const* ta
     if (!(AttributesEx6 & SPELL_ATTR6_IGNORE_PHASE_SHIFT) && !caster->CanSeeOrDetect(target, implicit))
         return SPELL_FAILED_BAD_TARGETS;
 
-    Unit const* unitTarget = target->ToUnit();
+    Unit* unitTarget = target->ToUnit();
 
     // creature/player specific target checks
     if (unitTarget)

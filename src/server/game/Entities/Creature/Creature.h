@@ -98,7 +98,7 @@ public:
     [[nodiscard]] bool IsValidTrainerForPlayer(Player* player, uint32* npcFlags = nullptr) const;
     bool CanCreatureAttack(Unit const* victim, bool skipDistCheck = false) const;
     void LoadSpellTemplateImmunity();
-    bool IsImmunedToSpell(SpellInfo const* spellInfo, Spell const* spell = nullptr) override;
+    bool IsImmunedToSpell(SpellInfo const* spellInfo, Spell* spell = nullptr) override;
 
     [[nodiscard]] bool HasMechanicTemplateImmunity(uint32 mask) const;
     // redefine Unit::IsImmunedToSpell
@@ -142,11 +142,11 @@ public:
     bool SetWaterWalking(bool enable, bool packetOnly = false) override;
     bool SetFeatherFall(bool enable, bool packetOnly = false) override;
     bool SetHover(bool enable, bool packetOnly = false, bool updateAnimationTier = true) override;
-    bool HasSpellFocus(Spell const* focusSpell = nullptr) const;
+    bool HasSpellFocus(Spell* focusSpell = nullptr) const;
 
     struct
     {
-        ::Spell const* Spell = nullptr;
+        ::Spell* Spell = nullptr;
         uint32 Delay = 0;         // ms until the creature's target should snap back (0 = no snapback scheduled)
         ObjectGuid Target;        // the creature's "real" target while casting
         float Orientation = 0.0f; // the creature's "real" orientation while casting
@@ -360,8 +360,8 @@ public:
     // Handling caster facing during spellcast
     void SetTarget(ObjectGuid guid = ObjectGuid::Empty) override;
     void ClearTarget() { SetTarget(); };
-    void FocusTarget(Spell const* focusSpell, WorldObject const* target);
-    void ReleaseFocus(Spell const* focusSpell);
+    void FocusTarget(Spell* focusSpell, WorldObject const* target);
+    void ReleaseFocus(Spell* focusSpell);
     [[nodiscard]] bool IsMovementPreventedByCasting() const override;
 
     // Part of Evade mechanics
@@ -480,7 +480,7 @@ private:
     ObjectGuid m_cannotReachTarget;
     uint32 m_cannotReachTimer;
 
-    Spell const* _focusSpell;   ///> Locks the target during spell cast for proper facing
+    Spell* _focusSpell;   ///> Locks the target during spell cast for proper facing
 
     bool _isMissingSwimmingFlagOutOfCombat;
 

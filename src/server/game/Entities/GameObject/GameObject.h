@@ -341,12 +341,12 @@ public:
     void UpdateModelPosition();
 
     [[nodiscard]] bool IsAtInteractDistance(Position const& pos, float radius) const;
-    [[nodiscard]] bool IsAtInteractDistance(Player const* player, SpellInfo const* spell = nullptr) const;
+    [[nodiscard]] bool IsAtInteractDistance(Player* player, SpellInfo const* spell = nullptr) const;
 
-    [[nodiscard]] bool IsWithinDistInMap(Player const* player) const;
+    [[nodiscard]] bool IsWithinDistInMap(Player* player) const;
     using WorldObject::IsWithinDistInMap;
 
-    [[nodiscard]] SpellInfo const* GetSpellForLock(Player const* player) const;
+    [[nodiscard]] SpellInfo const* GetSpellForLock(Player* player) const;
 
     static std::unordered_map<int, goEventFlag> gameObjectToEventFlag; // Gameobject -> event flag
 

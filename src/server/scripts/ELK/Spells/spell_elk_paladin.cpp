@@ -66,6 +66,7 @@ class spell_elk_crusader_strike_expert_aura : public AuraScript
         OnAuraStack += OnAuraStackFn(spell_elk_crusader_strike_expert_aura::ComboAura);
     }
 };
+
 class spell_elk_retribution_aura : public AuraScript
 {
     PrepareAuraScript(spell_elk_retribution_aura);
@@ -647,6 +648,154 @@ class spell_elk_inquisite_aura : public AuraScript
         OnSpellCast += OnSpellCastFn(spell_elk_inquisite_aura::RemoveCharge);
     }
 };
+
+
+
+void CrusaderStrike(spell_extension_system* ext, Spell* spell)
+{
+    Aura* aura = ext->GetUnitOwner()->GetAura(1000007);
+    if (!aura)
+        return;
+    float value = (1.f + (float)ext->GetUnitOwner()->SpellBasePowerBonusDone(ext->GetSpellInfo()->GetSchoolMask(), 0, true));
+    aura->ModSpellPowerBonus(value * 0.04f);
+    aura->SetDuration(aura->GetDuration() - 400);
+}
+
+
+void Exorcism(spell_extension_system* ext, Spell* spell)
+{
+    ext->GetUnitOwner()->CastSpell(ext->GetUnitOwner(), 527, true);
+}
+
+void DivineStorm(spell_extension_system* ext, Spell* spell)
+{
+    for (auto* aura : ext->GetUnitOwner()->GetSingleCastAuras())
+    {
+        if (aura->GetSpellInfo()->GetSchoolMask() & SpellSchoolMask::SPELL_SCHOOL_MASK_HOLY)
+            aura->SetDuration(aura->GetDuration() + 1000);
+    }
+}
+
+void AvengingWrath(spell_extension_system* ext, Spell* spell)
+{
+    Aura* aura = ext->GetUnitOwner()->GetAura(1000005);
+    if (!aura)
+        return;
+    aura->SetDuration(aura->GetDuration() + 1000);
+}
+
+
+void Consecration(spell_extension_system* ext, Spell* spell)
+{
+    if (spell->m_spellInfo->Id == 1000001)
+        return;
+    Player* player = ext->GetUnitOwner()->ToPlayer();
+    if (!player)
+        return;
+    player->RemoveSpellCooldown(1000001, true);
+
+}
+
+
+
+void SealOfSilver(spell_extension_system* ext, Spell* spell)
+{
+    Aura* aura = ext->GetUnitOwner()->GetAura(1000007);
+    if (!aura)
+        return;
+    float value = (1.f + (float)ext->GetUnitOwner()->SpellBasePowerBonusDone(ext->GetSpellInfo()->GetSchoolMask(), 0, true));
+    aura->ModSpellPowerBonus(value * 0.1f);
+}
+
+
+class spell_ext_crusader_strike : public ELKSpellScript
+{
+    PrepareSpellScript(spell_ext_crusader_strike);
+
+
+    void Register() override
+    {
+        BeforeCast += SpellCastFn(spell_ext_crusader_strike::TriggerExtension);
+    }
+};
+class spell_ext_exorcism : public ELKSpellScript
+{
+    PrepareSpellScript(spell_ext_exorcism);
+
+
+    void Register() override
+    {
+        BeforeCast += SpellCastFn(spell_ext_exorcism::TriggerExtension);
+    }
+};
+class spell_ext_divine_storm : public ELKSpellScript
+{
+    PrepareSpellScript(spell_ext_divine_storm);
+
+
+    void Register() override
+    {
+        BeforeCast += SpellCastFn(spell_ext_divine_storm::TriggerExtension);
+    }
+};
+class spell_ext_avenging_wrath : public ELKSpellScript
+{
+    PrepareSpellScript(spell_ext_avenging_wrath);
+
+
+    void Register() override
+    {
+        BeforeCast += SpellCastFn(spell_ext_avenging_wrath::TriggerExtension);
+    }
+};
+class spell_ext_consecration : public ELKSpellScript
+{
+    PrepareSpellScript(spell_ext_consecration);
+
+
+    void Register() override
+    {
+        BeforeCast += SpellCastFn(spell_ext_consecration::TriggerExtension);
+    }
+};
+
+class spell_ext_seal_of_silver : public ELKSpellScript
+{
+    PrepareSpellScript(spell_ext_seal_of_silver);
+
+
+    void Register() override
+    {
+        BeforeCast += SpellCastFn(spell_ext_seal_of_silver::TriggerExtension);
+    }
+};
+class spell_ext_flash_heal : public ELKSpellScript
+{
+    PrepareSpellScript(spell_ext_flash_heal);
+
+
+    void Register() override
+    {
+        BeforeCast += SpellCastFn(spell_ext_flash_heal::TriggerExtension);
+    }
+};
+class spell_ext_flash_focus : public AuraScript
+{
+    PrepareAuraScript(spell_ext_flash_focus);
+
+    void FlashFocus(ProcEventInfo& eventInfo)
+    {
+        if (eventInfo.GetSpellInfo()->Id == 1000010)
+            return;
+        Spell* spell = eventInfo.GetProcSpell();
+        spell->ModBonusSpellPower(GetAura()->GetStackAmount() * 5);
+    }
+    void Register() override
+    {
+        DoPrepareProc += AuraProcFn(spell_ext_flash_focus::FlashFocus);
+    }
+};
+
 void AddSC_elk_paladin_scripts()
 {
     RegisterSpellScript(spell_elk_crusader_strike_expert_aura);
@@ -665,4 +814,18 @@ void AddSC_elk_paladin_scripts()
     RegisterSpellScript(spell_elk_avenging_wrath_aura);
     RegisterSpellScript(spell_elk_avenging_wrath_falling_aura);
     RegisterSpellScript(spell_elk_inquisite_aura);
+
+
+    RegisterSpellScript(spell_ext_crusader_strike);
+    AddExtension(1000001, ExtensionObj(CrusaderStrike, 4, false));
+    RegisterSpellScript(spell_ext_exorcism);
+    AddExtension(1000002, ExtensionObj(Exorcism, 25, false));
+    RegisterSpellScript(spell_ext_divine_storm);
+    AddExtension(1000004, ExtensionObj(DivineStorm, 12, true));
+    RegisterSpellScript(spell_ext_avenging_wrath);
+    AddExtension(1000005, ExtensionObj(AvengingWrath, 10, true));
+    RegisterSpellScript(spell_ext_consecration);
+    AddExtension(1000006, ExtensionObj(Consecration, 30, true));
+    RegisterSpellScript(spell_ext_seal_of_silver);
+    AddExtension(1000007, ExtensionObj(SealOfSilver, -15, true));
 }

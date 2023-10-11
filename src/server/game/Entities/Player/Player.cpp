@@ -2095,7 +2095,7 @@ Creature* Player::GetNPCIfCanInteractWith(ObjectGuid guid, uint32 npcflagmask)
     return creature;
 }
 
-GameObject* Player::GetGameObjectIfCanInteractWith(ObjectGuid guid, GameobjectTypes type) const
+GameObject* Player::GetGameObjectIfCanInteractWith(ObjectGuid guid, GameobjectTypes type)
 {
     if (GameObject* go = GetMap()->GetGameObject(guid))
     {
@@ -2352,7 +2352,7 @@ void Player::GiveXP(uint32 xp, Unit* victim, float group_rate, bool isLFGReward)
     }
 
 
-    sScriptMgr->OnGivePlayerXP(this, xp, victim);
+    sScriptMgr->OnGivePlayerXP(this, xp, victim, 0);
 
 
     uint32 bonus_xp = 0;
@@ -14367,10 +14367,9 @@ void Player::_SaveCharacter(bool create, CharacterDatabaseTransaction trans)
         stmt->SetData(index++, GetByteValue(PLAYER_FIELD_BYTES, 2));
         stmt->SetData(index++, m_grantableLevels);
         stmt->SetData(index++, _innTriggerId);
-        stmt->SetData(index++, m_extraBonusTalentCount);
+        stmt->SetData(index++, m_developmentPoints);
 
         stmt->SetData(index++, IsInWorld() && !GetSession()->PlayerLogout() ? 1 : 0);
-        stmt->SetData(index++, m_developmentPoints);
         // Index
         stmt->SetData(index++, GetGUID().GetCounter());
     }

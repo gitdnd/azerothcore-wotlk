@@ -1095,7 +1095,7 @@ public:
 
     bool CanInteractWithQuestGiver(Object* questGiver);
     Creature* GetNPCIfCanInteractWith(ObjectGuid guid, uint32 npcflagmask);
-    [[nodiscard]] GameObject* GetGameObjectIfCanInteractWith(ObjectGuid guid, GameobjectTypes type) const;
+    [[nodiscard]] GameObject* GetGameObjectIfCanInteractWith(ObjectGuid guid, GameobjectTypes type);
 
     void ToggleAFK();
     void ToggleDND();
@@ -2731,7 +2731,7 @@ public:
     uint32 m_usedTalentCount;
     uint32 m_questLevel;
     uint32 m_developmentPoints;
-
+    Seconds m_creationTime;
     // Social
     PlayerSocial* m_social;
 

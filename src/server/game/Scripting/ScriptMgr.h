@@ -1047,6 +1047,9 @@ public:
     // Called when a player's money is modified (before the modification is done)
     virtual void OnMoneyChanged(Player* /*player*/, int32& /*amount*/) { }
 
+    // Called when a player's money is modified (before the modification is done)
+    virtual void OnGiveXP(Player* /*player*/, uint32& /*amount*/, Unit* /*victim*/) { }
+
     // Called before looted money is added to a player
     virtual void OnBeforeLootMoney(Player* /*player*/, Loot* /*loot*/) {}
 

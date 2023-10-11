@@ -383,7 +383,7 @@ SpellTargetSelector::SpellTargetSelector(Unit* caster, uint32 spellId) :
     ASSERT(_spellInfo);
 }
 
-bool SpellTargetSelector::operator()(Unit const* target) const
+bool SpellTargetSelector::operator()(Unit* target) const
 {
     if (!target)
         return false;

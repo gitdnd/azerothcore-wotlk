@@ -923,4 +923,5 @@ void AddSC_elk_spell_scripts()
     RegisterSpellScript(spell_elk_generic_finale);
     RegisterSpellScript(spell_elk_generic_finale_hit);
 
+    RegisterSpellScript(spell_extension_system);
 }

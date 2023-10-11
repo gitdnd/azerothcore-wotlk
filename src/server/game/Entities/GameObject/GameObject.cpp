@@ -3013,7 +3013,7 @@ GameObjectModel* GameObject::CreateModel()
     return GameObjectModel::Create(std::make_unique<GameObjectModelOwnerImpl>(this), sWorld->GetDataPath());
 }
 
-bool GameObject::IsAtInteractDistance(Player const* player, SpellInfo const* spell) const
+bool GameObject::IsAtInteractDistance(Player* player, SpellInfo const* spell) const
 {
     if (spell || (spell = GetSpellForLock(player)))
     {
@@ -3055,12 +3055,12 @@ bool GameObject::IsAtInteractDistance(Position const& pos, float radius) const
     return GetExactDist(&pos) <= radius;
 }
 
-bool GameObject::IsWithinDistInMap(Player const* player) const
+bool GameObject::IsWithinDistInMap(Player* player) const
 {
     return IsInMap(player) && InSamePhase(player) && IsAtInteractDistance(player);
 }
 
-SpellInfo const* GameObject::GetSpellForLock(Player const* player) const
+SpellInfo const* GameObject::GetSpellForLock(Player* player) const
 {
     if (!player)
     {

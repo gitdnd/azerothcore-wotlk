@@ -12,6 +12,19 @@
 #include "UnitAI.h"
 #include <MoveSplineInit.h>
 
+class spell_extension_system;
+
+struct ExtensionObj
+{
+    ExtensionObj(void(*Function)(spell_extension_system*, Spell*), int32 Cost, bool Unique) : Function(Function), Cost(Cost), Unique(Unique) {};
+    void(*Function)(spell_extension_system*, Spell*);
+    int32 Cost;
+    bool Unique;
+};
+
+#define ComboMap std::map<uint32, const ExtensionObj>
+#define AddExtension(x, y) spell_extension_system::Extensions.emplace(uint32(x), y)
+
 enum class MapDummy : uint8;
 
 inline uint32 RandomInt(uint32 min, uint32 max)
@@ -123,7 +136,10 @@ class ELKSpellScript : public SpellScript
 protected:
     void TriggerExtension()
     {
-        GetCaster()->AddAura(1000000, GetCaster());
+        Aura* aura = GetCaster()->GetAura(1000000);
+        if(!aura)
+            aura = GetCaster()->AddAura(1000000, GetCaster());
+        aura->RefreshDuration();
     }
     void AttackBegin()
     {
@@ -742,3 +758,70 @@ class spell_elk_spin_attack : public ELKSpellScript
     }
 
 };
+
+class spell_extension_system : public AuraScript
+{
+    PrepareAuraScript(spell_extension_system);
+
+
+    std::vector<std::pair<uint32, const ExtensionObj*>> CurrentExtensions = {};
+
+    void SpellCast(Spell* spell)
+    {
+        const uint32 id = spell->GetSpellInfo()->Id;
+        ComboMap::const_iterator it = Extensions.find(id);
+        if (it == Extensions.end())
+            return;
+
+        if (it->second.Unique == true)
+        {
+            for (std::pair<uint32, const ExtensionObj*> obj : CurrentExtensions)
+            {
+                if (obj.first == it->first)
+                    return;
+            }
+        }
+        std::pair<uint32, const ExtensionObj*> extension = std::make_pair(it->first, &it->second);
+        int32 mana;
+        CurrentExtensions.emplace_back(extension);
+        GetAura()->RefreshDuration();
+        for (auto ext : CurrentExtensions)
+        {
+            mana = GetUnitOwner()->GetCreateMana();
+
+            mana = int32(CalculatePct(mana, ext.second->Cost));
+            int32 currMana = GetUnitOwner()->GetPower(POWER_MANA);
+            if (currMana < mana)
+                return;
+            GetUnitOwner()->SetPower(POWER_MANA, currMana - mana);
+            (*ext.second->Function)(this, spell);
+        }
+    }
+    void IsCasting(AuraEffect const* aurEff)
+    {
+        if (GetUnitOwner()->GetCurrentSpell(CURRENT_GENERIC_SPELL))
+            return;
+        GetAura()->SetDuration(GetAura()->GetDuration() + 100);
+    }
+
+    void OnRemove(AuraEffect const* aurEff, AuraEffectHandleModes mode)
+    {
+
+    }
+    std::vector<std::pair<GUID, bool>> LastLaugh = {};
+    void OnDamage(AuraEffect const* aurEff, ProcEventInfo& procInfo)
+    {
+        uint32 victim = procInfo.GetDamageInfo()->GetVictim()->GetGUID();
+    }
+    void Register() override
+    {
+        OnSpellCast += OnSpellCastFn(spell_extension_system::SpellCast);
+        OnEffectPeriodic += AuraEffectPeriodicFn(spell_extension_system::IsCasting, EFFECT_0, SPELL_AURA_PERIODIC_DUMMY);
+        OnEffectRemove += AuraEffectRemoveFn(spell_extension_system::OnRemove, EFFECT_0, SPELL_AURA_PERIODIC_DUMMY, AURA_EFFECT_HANDLE_DEFAULT);
+        OnEffectProc += AuraEffectProcFn(spell_extension_system::OnDamage, EFFECT_0, SPELL_AURA_PERIODIC_DUMMY);
+    }
+public:
+
+    inline static ComboMap Extensions = {};
+};
+

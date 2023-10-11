@@ -286,7 +286,7 @@ public:
     bool IsFarDestTargetEffect() const;
     bool IsUnitOwnedAuraEffect() const;
 
-    int32 CalcValue(Unit const* caster = nullptr, int32 const* basePoints = nullptr, Unit const* target = nullptr, int16 bonusSpellPower = 0) const;
+    int32 CalcValue(Unit* caster = nullptr, int32 const* basePoints = nullptr, Unit const* target = nullptr, int16 bonusSpellPower = 0) const;
     int32 CalcBaseValue(int32 value) const;
     float CalcValueMultiplier(Unit* caster, Spell* spell = nullptr) const;
     float CalcDamageMultiplier(Unit* caster, Spell* spell = nullptr) const;
@@ -479,12 +479,12 @@ public:
 
     SpellCastResult CheckShapeshift(uint32 form) const;
     SpellCastResult CheckLocation(uint32 map_id, uint32 zone_id, uint32 area_id, Player* player = nullptr, bool strict = true) const;
-    SpellCastResult CheckTarget(Unit const* caster, WorldObject const* target, bool implicit = true) const;
+    SpellCastResult CheckTarget(Unit* caster, WorldObject* target, bool implicit = true) const;
     SpellCastResult CheckExplicitTarget(Unit const* caster, WorldObject const* target, Item const* itemTarget = nullptr) const;
     bool CheckTargetCreatureType(Unit const* target) const;
 
     // xinef: aura stacking
-    bool IsStrongerAuraActive(Unit const* caster, Unit const* target) const;
+    bool IsStrongerAuraActive(Unit* caster, Unit const* target) const;
     bool IsAuraEffectEqual(SpellInfo const* otherSpellInfo) const;
     bool ValidateAttribute6SpellDamageMods(Unit const* caster, const AuraEffect* auraEffect, bool isDot) const;
 

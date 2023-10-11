@@ -5381,8 +5381,7 @@ bool Player::LoadFromDB(ObjectGuid playerGuid, CharacterDatabaseQueryHolder cons
     _LoadMonthlyQuestStatus(holder.GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_MONTHLY_QUEST_STATUS));
     _LoadRandomBGStatus(holder.GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_RANDOM_BG));
 
-    // Extra Bonus Talent Points
-    m_extraBonusTalentCount = fields[73].Get<uint8>();
+
 
     // after spell, bonus talents, and quest load
     InitTalentForLevel();

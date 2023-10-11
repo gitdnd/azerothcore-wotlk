@@ -145,7 +145,7 @@ private:
     bool m_canBeRecalculated;
     bool m_isPeriodic;
 private:
-    float CalcPeriodicCritChance(Unit const* caster, Unit const* target) const;
+    float CalcPeriodicCritChance(Unit* caster, Unit const* target) const;
 
 public:
     // aura effect apply/remove handlers

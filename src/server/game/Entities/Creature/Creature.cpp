@@ -2232,7 +2232,7 @@ void Creature::LoadSpellTemplateImmunity()
     }
 }
 
-bool Creature::IsImmunedToSpell(SpellInfo const* spellInfo, Spell const* spell)
+bool Creature::IsImmunedToSpell(SpellInfo const* spellInfo, Spell* spell)
 {
     if (!spellInfo)
         return false;
@@ -3489,7 +3489,7 @@ void Creature::SetTarget(ObjectGuid guid)
         SetGuidValue(UNIT_FIELD_TARGET, guid);
 }
 
-void Creature::FocusTarget(Spell const* focusSpell, WorldObject const* target)
+void Creature::FocusTarget(Spell* focusSpell, WorldObject const* target)
 {
     // already focused
     if (_focusSpell)
@@ -3508,7 +3508,7 @@ void Creature::FocusTarget(Spell const* focusSpell, WorldObject const* target)
         SetInFront(target);
 }
 
-bool Creature::HasSpellFocus(Spell const* focusSpell) const
+bool Creature::HasSpellFocus(Spell* focusSpell) const
 {
     if (isDead()) // dead creatures cannot focus
     {
@@ -3518,7 +3518,7 @@ bool Creature::HasSpellFocus(Spell const* focusSpell) const
     return focusSpell ? (focusSpell == _spellFocusInfo.Spell) : (_spellFocusInfo.Spell || _spellFocusInfo.Delay);
 }
 
-void Creature::ReleaseFocus(Spell const* focusSpell)
+void Creature::ReleaseFocus(Spell* focusSpell)
 {
     // focused to something else
     if (focusSpell != _focusSpell)
