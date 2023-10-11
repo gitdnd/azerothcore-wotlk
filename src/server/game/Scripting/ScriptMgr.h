@@ -558,6 +558,9 @@ public:
     // Called from End of Creature Update.
     virtual void OnAllCreatureUpdate(Creature* /*creature*/, uint32 /*diff*/) { }
 
+    // Called just before the level of the creature is set.
+    virtual void OnBeforeCreatureSelectLevel(const CreatureTemplate* /*cinfo*/, Creature* /*creature*/, uint8& /*level*/) { }
+
     // Called from End of Creature SelectLevel.
     virtual void Creature_SelectLevel(const CreatureTemplate* /*cinfo*/, Creature* /*creature*/) { }
 
@@ -712,6 +715,9 @@ public:
     // Called when the game object is damaged (destructible buildings only).
     virtual void OnGameObjectDamaged(GameObject* /*go*/, Player* /*player*/) { }
 
+    // Called when the health of a game object is modified (destructible buildings only).
+    virtual void OnGameObjectModifyHealth(GameObject* /*go*/, Unit* /*attackerOrHealer*/, int32& /*change*/, SpellInfo const* /*spellInfo*/) { }
+
     // Called when the game object loot state is changed.
     virtual void OnGameObjectLootStateChanged(GameObject* /*go*/, uint32 /*state*/, Unit* /*unit*/) { }
 
@@ -793,6 +799,9 @@ public:
 
     // Called when the game object is damaged (destructible buildings only).
     virtual void OnDamaged(GameObject* /*go*/, Player* /*player*/) { }
+
+    // Called when the health of a game object is modified (destructible buildings only).
+    virtual void OnModifyHealth(GameObject* /*go*/, Unit* /*attackerOrHealer*/, int32& /*change*/, SpellInfo const* /*spellInfo*/) { }
 
     // Called when the game object loot state is changed.
     virtual void OnLootStateChanged(GameObject* /*go*/, uint32 /*state*/, Unit* /*unit*/) { }
@@ -1042,7 +1051,7 @@ public:
     virtual void OnBeforeLootMoney(Player* /*player*/, Loot* /*loot*/) {}
 
     // Called when a player gains XP (before anything is given)
-    virtual void OnGiveXP(Player* /*player*/, uint32& /*amount*/, Unit* /*victim*/) { }
+    virtual void OnGiveXP(Player* /*player*/, uint32& /*amount*/, Unit* /*victim*/, uint8 /*xpSource*/) { }
 
     // Called when a player's reputation changes (before it is actually changed)
     virtual bool OnReputationChange(Player* /*player*/, uint32 /*factionID*/, int32& /*standing*/, bool /*incremental*/) { return true; }
@@ -1191,6 +1200,9 @@ public:
     //After looting item
     virtual void OnLootItem(Player* /*player*/, Item* /*item*/, uint32 /*count*/, ObjectGuid /*lootguid*/) { }
 
+    //Before looting item
+    virtual void OnBeforeFillQuestLootItem(Player* /*player*/, LootItem& /*item*/) { }
+
     //After looting item (includes master loot).
     virtual void OnStoreNewItem(Player* /*player*/, Item* /*item*/, uint32 /*count*/) { }
 
@@ -1199,6 +1211,9 @@ public:
 
     // After receiving item as a quest reward
     virtual void OnQuestRewardItem(Player* /*player*/, Item* /*item*/, uint32 /*count*/) { }
+
+    // When placing a bid or buying out an auction
+    [[nodiscard]] virtual bool CanPlaceAuctionBid(Player* /*player*/, AuctionEntry* /*auction*/) { return true; }
 
     // After receiving item as a group roll reward
     virtual void OnGroupRollRewardItem(Player* /*player*/, Item* /*item*/, uint32 /*count*/, RollVote /*voteType*/, Roll* /*roll*/) { }
@@ -1277,6 +1292,29 @@ public:
     [[nodiscard]] virtual bool CanRepopAtGraveyard(Player* /*player*/) { return true; }
 
     virtual void OnGetMaxSkillValue(Player* /*player*/, uint32 /*skill*/, int32& /*result*/, bool /*IsPure*/) { }
+
+    /**
+     * @brief This hook called before gathering skill gain is applied to the character.
+     *
+     * @param player Contains information about the Player sender
+     * @param skill_id Contains information about the skill line
+     * @param current Contains the current skill level for skill
+     * @param gray Contains the gray skill level for current application
+     * @param green Contains the green skill level for current application
+     * @param yellow Contains the yellow skill level for current application
+     * @param gain Contains the amount of points that should be added to the Player
+     */
+    virtual void OnUpdateGatheringSkill(Player* /*player*/, uint32 /*skill_id*/, uint32 /*current*/, uint32 /*gray*/, uint32 /*green*/, uint32 /*yellow*/, uint32& /*gain*/) { }
+
+    /**
+     * @brief This hook is called before crafting skill gain is applied to the character.
+     *
+     * @param player Contains information about the Player sender
+     * @param skill Contains information about the skill line
+     * @param current_level Contains the current skill level for skill
+     * @param gain Contains the amount of points that should be added to the Player
+     */
+    virtual void OnUpdateCraftingSkill(Player* /*player*/, SkillLineAbilityEntry const* /*skill*/, uint32 /*current_level*/, uint32& /*gain*/) { }
 
     [[nodiscard]] virtual bool OnUpdateFishingSkill(Player* /*player*/, int32 /*skill*/, int32 /*zone_skill*/, int32 /*chance*/, int32 /*roll*/) { return true; }
 
@@ -1453,6 +1491,16 @@ public:
      */
     virtual void OnQuestAbandon(Player* /*player*/, uint32 /*questId*/) { }
 
+    /**
+     * @brief This hook called before other CanFlyChecks are applied
+     *
+     * @param player Contains information about the Player
+     * @param mapId Contains information about the current map id
+     * @param zoneId Contains information about the current zone
+     * @param bySpell Contains information about the spell that invoked the check
+     */
+    [[nodiscard]] virtual bool OnCanPlayerFlyInZone(Player* /*player*/, uint32 /*mapId*/, uint32 /*zoneId*/, SpellInfo const* /*bySpell*/) { return true; }
+
     // Passive Anticheat System
     virtual void AnticheatSetSkipOnePacketForASH(Player* /*player*/, bool /*apply*/) { }
     virtual void AnticheatSetCanFlybyServer(Player* /*player*/, bool /*apply*/) { }
@@ -1462,6 +1510,30 @@ public:
     virtual void AnticheatUpdateMovementInfo(Player* /*player*/, MovementInfo const& /*movementInfo*/) { }
     [[nodiscard]] virtual bool AnticheatHandleDoubleJump(Player* /*player*/, Unit* /*mover*/) { return true; }
     [[nodiscard]] virtual bool AnticheatCheckMovementInfo(Player* /*player*/, MovementInfo const& /*movementInfo*/, Unit* /*mover*/, bool /*jump*/) { return true; }
+
+    /**
+     * @brief This hook is called, to avoid displaying the error message that the body has already been stripped
+     *
+     * @param player Contains information about the Player
+     *
+     * @return true Avoiding displaying the error message that the loot has already been taken.
+     */
+    virtual bool CanSendErrorAlreadyLooted(Player* /*player*/) { return true; }
+
+    /**
+     * @brief It is used when an item is taken from a creature.
+     *
+     * @param player Contains information about the Player
+     *
+    */
+    virtual void OnAfterCreatureLoot(Player* /*player*/) { }
+
+    /**
+     * @brief After a creature's money is taken
+     *
+     * @param player Contains information about the Player
+     */
+    virtual void OnAfterCreatureLootMoney(Player* /*player*/) { }
 };
 
 class AccountScript : public ScriptObject
@@ -1579,6 +1651,7 @@ public:
 
     // loot
     virtual void OnAfterRefCount(Player const* /*player*/, LootStoreItem* /*LootStoreItem*/, Loot& /*loot*/, bool /*canRate*/, uint16 /*lootMode*/, uint32& /*maxcount*/, LootStore const& /*store*/) { }
+    virtual void OnAfterCalculateLootGroupAmount(Player const* /*player*/, Loot& /*loot*/, uint16 /*lootMode*/, uint32& /*groupAmount*/, LootStore const& /*store*/) { }
     virtual void OnBeforeDropAddItem(Player const* /*player*/, Loot& /*loot*/, bool /*canRate*/, uint16 /*lootMode*/, LootStoreItem* /*LootStoreItem*/, LootStore const& /*store*/) { }
     virtual bool OnItemRoll(Player const* /*player*/, LootStoreItem const* /*LootStoreItem*/, float& /*chance*/, Loot& /*loot*/, LootStore const& /*store*/) { return true; };
     virtual bool OnBeforeLootEqualChanced(Player const* /*player*/, LootStoreItemList /*EqualChanced*/, Loot& /*loot*/, LootStore const& /*store*/) { return true; }
@@ -1603,8 +1676,11 @@ public:
     // Called after loading spell dbc corrections
     virtual void OnLoadSpellCustomAttr(SpellInfo* /*spell*/) { }
 
-    // Called when checking if a player can see the creature loot
+    // Called when checking if a player can see the creature loot item
     virtual bool OnAllowedForPlayerLootCheck(Player const* /*player*/, ObjectGuid /*source*/) { return false; };
+
+    // Called when checking if a player can see the creature loot (if it can click the corpse f.e)
+    virtual bool OnAllowedToLootContainerCheck(Player const* /*player*/, ObjectGuid /*source*/) { return false; };
 
     // Called when instance id is removed from database (e.g. instance reset)
     virtual void OnInstanceIdRemoved(uint32 /*instanceId*/) { }
@@ -2174,6 +2250,7 @@ public: /* GameObjectScript */
     uint32 GetDialogStatus(Player* player, GameObject* go);
     void OnGameObjectDestroyed(GameObject* go, Player* player);
     void OnGameObjectDamaged(GameObject* go, Player* player);
+    void OnGameObjectModifyHealth(GameObject* go, Unit* attackerOrHealer, int32& change, SpellInfo const* spellInfo);
     void OnGameObjectLootStateChanged(GameObject* go, uint32 state, Unit* unit);
     void OnGameObjectStateChanged(GameObject* go, uint32 state);
     void OnGameObjectUpdate(GameObject* go, uint32 diff);
@@ -2249,7 +2326,7 @@ public: /* PlayerScript */
     void OnPlayerTalentsReset(Player* player, bool noCost);
     void OnPlayerMoneyChanged(Player* player, int32& amount);
     void OnBeforeLootMoney(Player* player, Loot* loot);
-    void OnGivePlayerXP(Player* player, uint32& amount, Unit* victim);
+    void OnGivePlayerXP(Player* player, uint32& amount, Unit* victim, uint8 xpSource);
     bool OnPlayerReputationChange(Player* player, uint32 factionID, int32& standing, bool incremental);
     void OnPlayerReputationRankChange(Player* player, uint32 factionID, ReputationRank newRank, ReputationRank oldRank, bool increased);
     void OnPlayerLearnSpell(Player* player, uint32 spellID);
@@ -2300,9 +2377,11 @@ public: /* PlayerScript */
     void GetCustomArenaPersonalRating(Player const* player, uint8 slot, uint32& rating) const;
     void OnGetMaxPersonalArenaRatingRequirement(Player const* player, uint32 minSlot, uint32& maxArenaRating) const;
     void OnLootItem(Player* player, Item* item, uint32 count, ObjectGuid lootguid);
+    void OnBeforeFillQuestLootItem(Player* player, LootItem& item);
     void OnStoreNewItem(Player* player, Item* item, uint32 count);
     void OnCreateItem(Player* player, Item* item, uint32 count);
     void OnQuestRewardItem(Player* player, Item* item, uint32 count);
+    bool CanPlaceAuctionBid(Player* player, AuctionEntry* auction);
     void OnGroupRollRewardItem(Player* player, Item* item, uint32 count, RollVote voteType, Roll* roll);
     bool OnBeforeOpenItem(Player* player, Item* item);
     bool OnBeforePlayerQuestComplete(Player* player, uint32 quest_id);
@@ -2339,6 +2418,8 @@ public: /* PlayerScript */
     void OnDeleteFromDB(CharacterDatabaseTransaction trans, uint32 guid);
     bool CanRepopAtGraveyard(Player* player);
     void OnGetMaxSkillValue(Player* player, uint32 skill, int32& result, bool IsPure);
+    void OnUpdateGatheringSkill(Player* player, uint32 skillId, uint32 currentLevel, uint32 gray, uint32 green, uint32 yellow, uint32& gain);
+    void OnUpdateCraftingSkill(Player* player, SkillLineAbilityEntry const* skill, uint32 currentLevel, uint32& gain);
     bool OnUpdateFishingSkill(Player* player, int32 skill, int32 zone_skill, int32 chance, int32 roll);
     bool CanAreaExploreAndOutdoor(Player* player);
     void OnVictimRewardBefore(Player* player, Player* victim, uint32& killer_title, uint32& victim_title);
@@ -2386,6 +2467,10 @@ public: /* PlayerScript */
     void OnPlayerEnterCombat(Player* player, Unit* enemy);
     void OnPlayerLeaveCombat(Player* player);
     void OnQuestAbandon(Player* player, uint32 questId);
+    bool CanSendErrorAlreadyLooted(Player* player);
+    void OnAfterCreatureLoot(Player* player);
+    void OnAfterCreatureLootMoney(Player* player);
+    bool OnCanPlayerFlyInZone(Player* player, uint32 mapId, uint32 zoneId, SpellInfo const* bySpell);
 
     // Anti cheat
     void AnticheatSetSkipOnePacketForASH(Player* player, bool apply);
@@ -2436,6 +2521,7 @@ public: /* GlobalScript */
     void OnGlobalMirrorImageDisplayItem(Item const* item, uint32& display);
     void OnBeforeUpdateArenaPoints(ArenaTeam* at, std::map<ObjectGuid, uint32>& ap);
     void OnAfterRefCount(Player const* player, Loot& loot, bool canRate, uint16 lootMode, LootStoreItem* LootStoreItem, uint32& maxcount, LootStore const& store);
+    void OnAfterCalculateLootGroupAmount(Player const* player, Loot& loot, uint16 lootMode, uint32& groupAmount, LootStore const& store);
     void OnBeforeDropAddItem(Player const* player, Loot& loot, bool canRate, uint16 lootMode, LootStoreItem* LootStoreItem, LootStore const& store);
     bool OnItemRoll(Player const* player, LootStoreItem const* LootStoreItem, float& chance, Loot& loot, LootStore const& store);
     bool OnBeforeLootEqualChanced(Player const* player, LootStoreItemList EqualChanced, Loot& loot, LootStore const& store);
@@ -2447,6 +2533,7 @@ public: /* GlobalScript */
     bool OnSpellHealingBonusTakenNegativeModifiers(Unit const* target, Unit const* caster, SpellInfo const* spellInfo, float& val);
     void OnLoadSpellCustomAttr(SpellInfo* spell);
     bool OnAllowedForPlayerLootCheck(Player const* player, ObjectGuid source);
+    bool OnAllowedToLootContainerCheck(Player const* player, ObjectGuid source);
     void OnInstanceIdRemoved(uint32 instanceId);
     void OnBeforeSetBossState(uint32 id, EncounterState newState, EncounterState oldState, Map* instance);
 
@@ -2486,6 +2573,7 @@ public: /* MovementHandlerScript */
 public: /* AllCreatureScript */
     //listener function (OnAllCreatureUpdate) is called by OnCreatureUpdate
     //void OnAllCreatureUpdate(Creature* creature, uint32 diff);
+    void OnBeforeCreatureSelectLevel(const CreatureTemplate* cinfo, Creature* creature, uint8& level);
     void Creature_SelectLevel(const CreatureTemplate* cinfo, Creature* creature);
     void OnCreatureSaveToDB(Creature* creature);
 

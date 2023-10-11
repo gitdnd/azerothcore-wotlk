@@ -15,16 +15,20 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AreaBoundary.h"
 #include "ScriptedCreature.h"
 #include "Cell.h"
 #include "CellImpl.h"
 #include "GameTime.h"
 #include "GridNotifiers.h"
-#include "GridNotifiersImpl.h"
 #include "ObjectMgr.h"
 #include "Spell.h"
 #include "TemporarySummon.h"
+
+/// @todo: this import is not necessary for compilation and marked as unused by the IDE
+//  however, for some reasons removing it would cause a damn linking issue
+//  there is probably some underlying problem with imports which should properly addressed
+//  see: https://github.com/azerothcore/azerothcore-wotlk/issues/9766
+#include "GridNotifiersImpl.h"
 
 // Spell summary for ScriptedAI::SelectSpell
 struct TSpellSummary
@@ -577,6 +581,7 @@ void BossAI::_Reset()
     events.Reset();
     scheduler.CancelAll();
     summons.DespawnAll();
+    _healthCheckEvents.clear();
     if (instance)
         instance->SetBossState(_bossId, NOT_STARTED);
 }
@@ -586,6 +591,7 @@ void BossAI::_JustDied()
     events.Reset();
     scheduler.CancelAll();
     summons.DespawnAll();
+    _healthCheckEvents.clear();
     if (instance)
     {
         instance->SetBossState(_bossId, DONE);
@@ -665,6 +671,47 @@ void BossAI::UpdateAI(uint32 diff)
     }
 
     DoMeleeAttackIfReady();
+}
+
+void BossAI::DamageTaken(Unit* /*attacker*/, uint32& damage, DamageEffectType /*damagetype*/, SpellSchoolMask /*damageSchoolMask*/)
+{
+    if (!_healthCheckEvents.empty())
+    {
+        _healthCheckEvents.remove_if([&](HealthCheckEventData data) -> bool
+        {
+            return _ProccessHealthCheckEvent(data._healthPct, damage, data._exec);
+        });
+    }
+}
+
+/**
+ * @brief Executes a function once the creature reaches the defined health point percent.
+ *
+ * @param healthPct The health percent at which the code will be executed.
+ * @param exec The fuction to be executed.
+ */
+void BossAI::ScheduleHealthCheckEvent(uint32 healthPct, std::function<void()> exec)
+{
+    _healthCheckEvents.push_back(HealthCheckEventData(healthPct, exec));
+};
+
+void BossAI::ScheduleHealthCheckEvent(std::initializer_list<uint8> healthPct, std::function<void()> exec)
+{
+    for (auto const& checks : healthPct)
+    {
+        _healthCheckEvents.push_back(HealthCheckEventData(checks, exec));
+    }
+}
+
+bool BossAI::_ProccessHealthCheckEvent(uint8 healthPct, uint32 damage, std::function<void()> exec) const
+{
+    if (me->HealthBelowPctDamaged(healthPct, damage))
+    {
+        exec();
+        return true;
+    }
+
+    return false;
 }
 
 // WorldBossAI - for non-instanced bosses

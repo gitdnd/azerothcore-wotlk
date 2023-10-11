@@ -22,7 +22,6 @@
 #include "Transport.h"
 #include "Vehicle.h"
 #include "WorldPacket.h"
-#include "WorldSession.h"
 #include "ulduar.h"
 
 class instance_ulduar : public InstanceMapScript
@@ -180,7 +179,7 @@ public:
 
                 if (m_algalonTimer <= 60)
                 {
-                    _events.RescheduleEvent(EVENT_UPDATE_ALGALON_TIMER, 60000);
+                    _events.RescheduleEvent(EVENT_UPDATE_ALGALON_TIMER, 1min);
                     algalon->AI()->DoAction(ACTION_INIT_ALGALON);
                 }
                 else // if (m_algalonTimer = TIMER_ALGALON_TO_SUMMON)
@@ -750,7 +749,7 @@ public:
                     DoUpdateWorldState(WORLD_STATE_ALGALON_TIMER_ENABLED, 1);
                     DoUpdateWorldState(WORLD_STATE_ALGALON_DESPAWN_TIMER, 60);
                     m_algalonTimer = 60;
-                    _events.RescheduleEvent(EVENT_UPDATE_ALGALON_TIMER, 60000);
+                    _events.RescheduleEvent(EVENT_UPDATE_ALGALON_TIMER, 1min);
                     SaveToDB();
                     return;
                 case DATA_ALGALON_SUMMON_STATE:
@@ -787,6 +786,18 @@ public:
                         go->SetGoState(data == IN_PROGRESS ? GO_STATE_ACTIVE : GO_STATE_READY);
                         go->EnableCollision(false);
                     }
+
+                    if (data == FAIL)
+                    {
+                        scheduler.Schedule(5s, [this](TaskContext)
+                        {
+                            if (m_algalonTimer && (m_algalonTimer <= 60 || m_algalonTimer == TIMER_ALGALON_TO_SUMMON))
+                            {
+                                instance->SummonCreature(NPC_ALGALON, AlgalonLandPos);
+                            }
+                        });
+                    }
+
                     break;
 
                 // Achievement
@@ -1061,6 +1072,7 @@ public:
         {
             data >> m_auiEncounter[0];
             data >> m_auiEncounter[1];
+            data >> m_auiEncounter[2];
             data >> m_auiEncounter[3];
             data >> m_auiEncounter[4];
             data >> m_auiEncounter[5];
@@ -1109,6 +1121,8 @@ public:
 
         void Update(uint32 diff) override
         {
+            InstanceScript::Update(diff);
+
             if (_events.Empty())
                 return;
 
@@ -1125,7 +1139,7 @@ public:
                     DoUpdateWorldState(WORLD_STATE_ALGALON_DESPAWN_TIMER, --m_algalonTimer);
                     if (m_algalonTimer)
                     {
-                        _events.RepeatEvent(60000);
+                        _events.Repeat(1min);
                         return;
                     }
 

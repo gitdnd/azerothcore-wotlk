@@ -39,7 +39,6 @@
 #include "GridNotifiersImpl.h"
 #include "Group.h"
 #include "InstanceSaveMgr.h"
-#include "InstanceScript.h"
 #include "Log.h"
 #include "MapMgr.h"
 #include "MoveSpline.h"
@@ -318,12 +317,6 @@ Unit::Unit(bool isWorldObject) : WorldObject(isWorldObject),
 
     m_serverSideVisibility.SetValue(SERVERSIDE_VISIBILITY_GHOST, GHOST_VISIBILITY_ALIVE);
 
-    m_last_notify_position.Relocate(-5000.0f, -5000.0f, -5000.0f, 0.0f);
-    m_last_notify_mstime = 0;
-    m_delayed_unit_relocation_timer = 0;
-    m_delayed_unit_ai_notify_timer = 0;
-    bRequestForcedVisibilityUpdate = false;
-
     m_applyResilience = false;
     _instantCast = false;
 
@@ -453,32 +446,6 @@ void Unit::Update(uint32 p_time)
 
     if (!IsInWorld())
         return;
-
-    // pussywizard:
-    if (GetTypeId() != TYPEID_PLAYER || (!ToPlayer()->IsBeingTeleported() && !bRequestForcedVisibilityUpdate))
-    {
-        if (m_delayed_unit_relocation_timer)
-        {
-            if (m_delayed_unit_relocation_timer <= p_time)
-            {
-                m_delayed_unit_relocation_timer = 0;
-                //ExecuteDelayedUnitRelocationEvent();
-                FindMap()->i_objectsForDelayedVisibility.insert(this);
-            }
-            else
-                m_delayed_unit_relocation_timer -= p_time;
-        }
-        if (m_delayed_unit_ai_notify_timer)
-        {
-            if (m_delayed_unit_ai_notify_timer <= p_time)
-            {
-                m_delayed_unit_ai_notify_timer = 0;
-                ExecuteDelayedUnitAINotifyEvent();
-            }
-            else
-                m_delayed_unit_ai_notify_timer -= p_time;
-        }
-    }
 
     _UpdateSpells( p_time );
 
@@ -684,7 +651,7 @@ void Unit::UpdateSplinePosition()
             transport->CalculatePassengerPosition(loc.x, loc.y, loc.z, &loc.orientation);
     }
 
-    // Xinef: this is bullcrap, if we had spline running update orientation along with position
+    // Xinef: if we had spline running update orientation along with position
     //if (HasUnitState(UNIT_STATE_CANNOT_TURN))
     //    loc.orientation = GetOrientation();
 
@@ -3845,6 +3812,8 @@ void Unit::_UpdateSpells(uint32 time)
     {
         if (i->second->IsExpired())
             RemoveOwnedAura(i, AURA_REMOVE_BY_EXPIRE);
+        else if (i->second->GetSpellInfo()->IsChanneled() && i->second->GetCasterGUID() != GetGUID() && !ObjectAccessor::GetWorldObject(*this, i->second->GetCasterGUID()))
+            RemoveOwnedAura(i, AURA_REMOVE_BY_CANCEL); // remove channeled auras when caster is not on the same map
         else
             ++i;
     }
@@ -4616,7 +4585,9 @@ void Unit::_UnapplyAura(AuraApplicationMap::iterator* i, AuraRemoveMode removeMo
 
     // only way correctly remove all auras from list
     //if (removedAuras != m_removedAurasCount) new aura may be added
-    (*i) = m_appliedAuras.begin();
+    i = m_appliedAuras.begin();
+
+    sScriptMgr->OnAuraRemove(this, aurApp, removeMode);
 }
 
 void Unit::_UnapplyAura(AuraApplication* aurApp, AuraRemoveMode removeMode)
@@ -4760,8 +4731,6 @@ void Unit::RemoveAura(AuraApplicationMap::iterator& i, AuraRemoveMode mode)
     // Remove aura - for Area and Target auras
     if (aura->GetOwner() == this)
         aura->Remove(mode);
-
-    sScriptMgr->OnAuraRemove(this, aurApp, mode);
 }
 
 void Unit::RemoveAura(uint32 spellId, ObjectGuid caster, uint8 reqEffMask, AuraRemoveMode removeMode)
@@ -4808,6 +4777,14 @@ void Unit::RemoveAura(AuraApplication* aurApp, AuraRemoveMode mode)
     {
         if (aurApp == iter->second)
         {
+            // Prevent Arena Preparation aura from being removed by player actions
+            // It's an invisibility spell so any interaction/spell cast etc. removes it.
+            // Should only be removed by the arena script, once the match starts.
+            if (aurApp->GetBase()->HasEffectType(SPELL_AURA_ARENA_PREPARATION))
+            {
+                return;
+            }
+
             RemoveAura(iter, mode);
             return;
         }
@@ -6546,11 +6523,12 @@ void Unit::SendAttackStateUpdate(uint32 HitInfo, Unit* target, uint8 /*SwingType
 }
 
 //victim may be nullptr
-bool Unit::HandleDummyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggeredByAura, SpellInfo const* procSpell, uint32 procFlag, uint32 procEx, uint32 cooldown, Spell const* spellProc /*= nullptr*/)
+bool Unit::HandleDummyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggeredByAura, SpellInfo const* procSpell, uint32 procFlag, uint32 procEx, uint32 cooldown, ProcEventInfo const& eventInfo)
 {
     SpellInfo const* dummySpell = triggeredByAura->GetSpellInfo();
     uint32 effIndex = triggeredByAura->GetEffIndex();
     int32  triggerAmount = triggeredByAura->GetAmount();
+    Spell const* spellProc = eventInfo.GetProcSpell();
 
     Item* castItem = triggeredByAura->GetBase()->GetCastItemGUID() && GetTypeId() == TYPEID_PLAYER
                      ? ToPlayer()->GetItemByGuid(triggeredByAura->GetBase()->GetCastItemGUID()) : nullptr;
@@ -7912,12 +7890,22 @@ bool Unit::HandleDummyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggere
                             if (!procSpell || !procSpell->IsPositive())
                                 return false;
 
-                            // heal amount
-                            basepoints0 = int32(CalculatePct(std::min(damage, GetMaxHealth() - GetHealth()), triggerAmount));
-                            target = this;
+                            HealInfo const* healInfo = eventInfo.GetHealInfo();
+                            if (!healInfo)
+                            {
+                                return false;
+                            }
 
-                            if (basepoints0)
-                                triggered_spell_id = 31786;
+                            uint32 effectiveHeal = healInfo->GetEffectiveHeal();
+                            if (effectiveHeal)
+                            {
+                                // heal amount
+                                basepoints0 = int32(CalculatePct(effectiveHeal, triggerAmount));
+                                target = this;
+
+                                if (basepoints0)
+                                    triggered_spell_id = 31786;
+                            }
                             break;
                         }
                     // Paladin Tier 6 Trinket (Ashtongue Talisman of Zeal)
@@ -8219,13 +8207,6 @@ bool Unit::HandleDummyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggere
                             CastCustomSpell(this, triggered_spell_id, &basepoints0, nullptr, nullptr, true, castItem, triggeredByAura, originalCaster);
                             break;
                         }
-                    // Shaman T8 Elemental 4P Bonus
-                    case 64928:
-                        {
-                            basepoints0 = CalculatePct(int32(damage), triggerAmount);
-                            triggered_spell_id = 64930;            // Electrified
-                            break;
-                        }
                     // Shaman T9 Elemental 4P Bonus
                     case 67228:
                         {
@@ -8365,6 +8346,12 @@ bool Unit::HandleDummyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggere
 
                     if (procEx & PROC_EX_CRITICAL_HIT)
                         damage /= 2;
+
+                    // do not proc off from itself
+                    if (procSpell->Id == 45297 || procSpell->Id == 45284)
+                    {
+                        return false;
+                    }
 
                     do
                     {
@@ -10332,7 +10319,11 @@ bool Unit::Attack(Unit* victim, bool meleeAttack)
 
         creature->SendAIReaction(AI_REACTION_HOSTILE);
 
-        creature->CallAssistance();
+        /// @todo: Implement aggro range, detection range and assistance range templates
+        if (!(creature->GetCreatureTemplate()->flags_extra & CREATURE_FLAG_EXTRA_DONT_CALL_ASSISTANCE))
+        {
+            creature->CallAssistance();
+        }
         creature->SetAssistanceTimer(sWorld->getIntConfig(CONFIG_CREATURE_FAMILY_ASSISTANCE_PERIOD));
 
         SetUInt32Value(UNIT_NPC_EMOTESTATE, EMOTE_ONESHOT_NONE);
@@ -10682,11 +10673,6 @@ void Unit::SetMinion(Minion* minion, bool apply)
 
         // PvP, FFAPvP
         minion->SetByteValue(UNIT_FIELD_BYTES_2, 1, GetByteValue(UNIT_FIELD_BYTES_2, 1));
-
-        // FIXME: hack, speed must be set only at follow
-        if (GetTypeId() == TYPEID_PLAYER && minion->IsPet())
-            for (uint8 i = 0; i < MAX_MOVE_TYPE; ++i)
-                minion->SetSpeed(UnitMoveType(i), m_speed_rate[i], true);
 
         // Ghoul pets have energy instead of mana (is anywhere better place for this code?)
         if (minion->IsPetGhoul() || minion->GetEntry() == 24207 /*ENTRY_ARMY_OF_THE_DEAD*/)
@@ -11167,16 +11153,18 @@ void Unit::UnsummonAllTotems(bool onDeath /*= false*/)
     }
 }
 
-void Unit::SendHealSpellLog(Unit* victim, uint32 SpellID, uint32 Damage, uint32 OverHeal, uint32 Absorb, bool critical)
+void Unit::SendHealSpellLog(HealInfo const& healInfo, bool critical)
 {
+    uint32 overheal = healInfo.GetHeal() - healInfo.GetEffectiveHeal();
+
     // we guess size
     WorldPacket data(SMSG_SPELLHEALLOG, (8 + 8 + 4 + 4 + 4 + 4 + 1 + 1));
-    data << victim->GetPackGUID();
+    data << healInfo.GetTarget()->GetPackGUID();
     data << GetPackGUID();
-    data << uint32(SpellID);
-    data << uint32(Damage);
-    data << uint32(OverHeal);
-    data << uint32(Absorb); // Absorb amount
+    data << uint32(healInfo.GetSpellInfo()->Id);
+    data << uint32(healInfo.GetHeal());
+    data << uint32(overheal);
+    data << uint32(healInfo.GetAbsorb()); // Absorb amount
     data << uint8(critical ? 1 : 0);
     data << uint8(0); // unused
     SendMessageToSet(&data, true);
@@ -11192,7 +11180,9 @@ int32 Unit::HealBySpell(HealInfo& healInfo, bool critical)
     CalcHealAbsorb(healInfo);
 
     int32 gain = Unit::DealHeal(healInfo.GetHealer(), healInfo.GetTarget(), healInfo.GetHeal());
-    SendHealSpellLog(healInfo.GetTarget(), healInfo.GetSpellInfo()->Id, healInfo.GetHeal(), uint32(healInfo.GetHeal() - gain), healInfo.GetAbsorb(), critical);
+    healInfo.SetEffectiveHeal(gain);
+
+    SendHealSpellLog(healInfo, critical);
     return gain;
 }
 
@@ -11209,12 +11199,12 @@ void Unit::SendEnergizeSpellLog(Unit* victim, uint32 spellID, uint32 damage, Pow
 
 void Unit::EnergizeBySpell(Unit* victim, uint32 spellID, uint32 damage, Powers powerType)
 {
-    victim->ModifyPower(powerType, damage, false);
+    int32 gainedPower = victim->ModifyPower(powerType, damage, false);
 
-    if (powerType != POWER_HAPPINESS)
+    if (powerType != POWER_HAPPINESS && gainedPower)
     {
         SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellID);
-        victim->getHostileRefMgr().threatAssist(this, float(damage) * 0.5f, spellInfo);
+        victim->getHostileRefMgr().threatAssist(this, float(gainedPower) * 0.5f, spellInfo);
     }
 
     SendEnergizeSpellLog(victim, spellID, damage, powerType);
@@ -11593,7 +11583,87 @@ uint32 Unit::SpellDamageBonusDone(Unit* victim, SpellInfo const* spellProto, uin
         DoneTotal += GetTotalAuraModifierByMiscMask(SPELL_AURA_MOD_FLAT_SPELL_DAMAGE_VERSUS, creatureTypeMask);
     }
 
-    // done scripted mod (take it from owner) 
+    // done scripted mod (take it from owner)
+    Unit* owner = GetOwner() ? GetOwner() : this;
+    int32 DoneAdvertisedBenefit = 0;
+    AuraEffectList const& mOverrideClassScript = owner->GetAuraEffectsByType(SPELL_AURA_OVERRIDE_CLASS_SCRIPTS);
+    for (AuraEffectList::const_iterator i = mOverrideClassScript.begin(); i != mOverrideClassScript.end(); ++i)
+    {
+        if (!(*i)->IsAffectedOnSpell(spellProto))
+            continue;
+
+        switch ((*i)->GetMiscValue())
+        {
+            case 4418: // Increased Shock Damage
+            case 4554: // Increased Lightning Damage
+            case 4555: // Improved Moonfire
+            case 5142: // Increased Lightning Damage
+            case 5147: // Improved Consecration / Libram of Resurgence
+            case 5148: // Idol of the Shooting Star
+            case 6008: // Increased Lightning Damage
+            case 8627: // Totem of Hex
+            {
+                DoneAdvertisedBenefit += (*i)->GetAmount();
+                break;
+            }
+        }
+    }
+
+    // Custom scripted damage
+    switch (spellProto->SpellFamilyName)
+    {
+        case SPELLFAMILY_DRUID:
+        {
+            // Insect Swarm vs Item - Druid T8 Balance Relic
+            if (spellProto->SpellFamilyFlags[0] & 0x00200000)
+            {
+                if (AuraEffect const* relicAurEff = GetAuraEffect(64950, EFFECT_0))
+                {
+                    DoneAdvertisedBenefit += relicAurEff->GetAmount();
+                }
+            }
+
+            // Nourish vs Idol of the Flourishing Life
+            if (spellProto->SpellFamilyFlags[1] & 0x02000000)
+            {
+                if (AuraEffect const* relicAurEff = GetAuraEffect(64949, EFFECT_0))
+                {
+                    DoneAdvertisedBenefit += relicAurEff->GetAmount();
+                }
+            }
+            break;
+        }
+        case SPELLFAMILY_DEATHKNIGHT:
+        {
+            // Sigil of the Vengeful Heart
+            if (spellProto->SpellFamilyFlags[0] & 0x2000)
+            {
+                if (AuraEffect* aurEff = GetAuraEffect(64962, EFFECT_1))
+                {
+                    AddPct(DoneTotal, aurEff->GetAmount());
+                }
+            }
+
+            // Impurity
+            if (AuraEffect* aurEff = GetDummyAuraEffect(SPELLFAMILY_DEATHKNIGHT, 1986, 0))
+            {
+                AddPct(ApCoeffMod, aurEff->GetAmount());
+            }
+
+            // Blood Boil - bonus for diseased targets
+            if ((spellProto->SpellFamilyFlags[0] & 0x00040000) && victim->GetAuraEffect(SPELL_AURA_PERIODIC_DAMAGE, SPELLFAMILY_DEATHKNIGHT, 0, 0, 0x00000002, GetGUID()))
+            {
+                DoneTotal += 95;
+                ApCoeffMod = 1.5835f;
+            }
+            break;
+        }
+        default:
+            break;
+    }
+
+    // Done fixed damage bonus auras
+    DoneAdvertisedBenefit += SpellBaseDamageBonusDone(spellProto->GetSchoolMask());
 
     // Done fixed damage bonus auras 
     SpellBonusEntry const* bonus = sSpellMgr->GetSpellBonusData(spellProto->Id);
@@ -12332,25 +12402,44 @@ uint32 Unit::SpellHealingBonusDone(Unit* victim, SpellInfo const* spellProto, ui
 
     // done scripted mod (take it from owner)
     Unit* owner = GetOwner() ? GetOwner() : this;
+    int32 DoneAdvertisedBenefit = 0;
     AuraEffectList const& mOverrideClassScript = owner->GetAuraEffectsByType(SPELL_AURA_OVERRIDE_CLASS_SCRIPTS);
     for (AuraEffectList::const_iterator i = mOverrideClassScript.begin(); i != mOverrideClassScript.end(); ++i)
     {
         if (!(*i)->IsAffectedOnSpell(spellProto))
             continue;
+
         switch ((*i)->GetMiscValue())
         {
             case 4415: // Increased Rejuvenation Healing
             case 4953:
-                DoneTotal += (*i)->GetAmount() / 5; // 5 ticks of Rejuvenation
+                DoneAdvertisedBenefit += (*i)->GetAmount();
                 break;
             case 3736: // Hateful Totem of the Third Wind / Increased Lesser Healing Wave / LK Arena (4/5/6) Totem of the Third Wind / Savage Totem of the Third Wind
-                DoneTotal += (*i)->GetAmount();
+                DoneAdvertisedBenefit += (*i)->GetAmount();
                 break;
         }
     }
 
-    // Done fixed damage bonus auras 
-     
+    switch (spellProto->SpellFamilyName)
+    {
+        case SPELLFAMILY_DEATHKNIGHT:
+        {
+            // Impurity
+            if (AuraEffect* aurEff = GetDummyAuraEffect(SPELLFAMILY_DEATHKNIGHT, 1986, 0))
+            {
+                AddPct(ApCoeffMod, aurEff->GetAmount());
+            }
+            break;
+        }
+        default:
+            break;
+    }
+
+    // Done fixed damage bonus auras
+    DoneAdvertisedBenefit += SpellBaseHealingBonusDone(spellProto->GetSchoolMask());
+    float coeff = spellProto->Effects[effIndex].BonusMultiplier;
+
     // Check for table values
     SpellBonusEntry const* bonus = sSpellMgr->GetSpellBonusData(spellProto->Id);
     if(bonus)
@@ -13725,6 +13814,9 @@ bool Unit::_IsValidAttackTarget(Unit const* target, SpellInfo const* bySpell, Wo
     // additional checks - only PvP case
     if (playerAffectingAttacker && playerAffectingTarget)
     {
+        if (!IsPvP() && bySpell && bySpell->IsAffectingArea() && !bySpell->HasAttribute(SPELL_ATTR5_IGNORE_AREA_EFFECT_PVP_CHECK))
+            return false;
+
         if (target->IsPvP())
             return true;
 
@@ -14094,7 +14186,17 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
         {
             // Set creature speed rate
             if (GetTypeId() == TYPEID_UNIT)
-                speed *= ToCreature()->GetCreatureTemplate()->speed_run; // at this point, MOVE_WALK is never reached
+            {
+                if (IsPet() && ToPet()->isControlled() && IsControlledByPlayer())
+                {
+                    // contant value for player pets
+                    speed *= 1.15f;
+                }
+                else
+                {
+                    speed *= ToCreature()->GetCreatureTemplate()->speed_run; // at this point, MOVE_WALK is never reached
+                }
+            }
 
             // Normalize speed by 191 aura SPELL_AURA_USE_NORMAL_MOVEMENT_SPEED if need
             /// @todo possible affect only on MOVE_RUN
@@ -14414,6 +14516,8 @@ void Unit::TauntApply(Unit* taunter)
         return;
 
     SetInFront(taunter);
+    SetGuidValue(UNIT_FIELD_TARGET, taunter->GetGUID());
+
     if (creature->IsAIEnabled)
         creature->AI()->AttackStart(taunter);
 
@@ -14452,6 +14556,7 @@ void Unit::TauntFadeOut(Unit* taunter)
 
     if (target && target != taunter)
     {
+        SetGuidValue(UNIT_FIELD_TARGET, target->GetGUID());
         SetInFront(target);
         if (creature->IsAIEnabled)
             creature->AI()->AttackStart(target);
@@ -15331,7 +15436,7 @@ void Unit::SetHealth(uint32 val)
     SetUInt32Value(UNIT_FIELD_HEALTH, val);
 
     // mobs that are now or were below 30% need to update their speed
-    if (GetTypeId() == TYPEID_UNIT && (prevHealthPct < 30.0 || HealthBelowPct(30)))
+    if (GetTypeId() == TYPEID_UNIT && !(IsPet() && ToPet()->isControlled() && IsControlledByPlayer()) && (prevHealthPct < 30.0 || HealthBelowPct(30)))
     {
         UpdateSpeed(MOVE_RUN, false);
     }
@@ -15831,6 +15936,27 @@ bool CharmInfo::AddSpellToActionBar(SpellInfo const* spellInfo, ActiveStates new
         if (!PetActionBar[i].GetAction() && PetActionBar[i].IsActionBarForSpell())
         {
             SetActionBar(i, spell_id, newstate == ACT_DECIDE ? spellInfo->IsAutocastable() ? ACT_DISABLED : ACT_PASSIVE : newstate);
+
+            if (_unit->GetCharmer() && _unit->GetCharmer()->IsPlayer())
+            {
+                if (Creature* creature = _unit->ToCreature())
+                {
+                    // Processing this packet needs to be delayed
+                    _unit->m_Events.AddEventAtOffset([creature, spell_id]()
+                    {
+                        if (uint32 cooldown = creature->GetSpellCooldown(spell_id))
+                        {
+                            WorldPacket data;
+                            creature->BuildCooldownPacket(data, SPELL_COOLDOWN_FLAG_NONE, spell_id, cooldown);
+                            if (creature->GetCharmer() && creature->GetCharmer()->IsPlayer())
+                            {
+                                creature->GetCharmer()->ToPlayer()->SendDirectMessage(&data);
+                            }
+                        }
+                    }, 500ms);
+                }
+            }
+
             return true;
         }
     }
@@ -16461,7 +16587,7 @@ void Unit::ProcDamageAndSpellFor(bool isVictim, Unit* target, uint32 procFlag, u
                     case SPELL_AURA_DUMMY:
                         {
                             LOG_DEBUG("spells.aura", "ProcDamageAndSpell: casting spell id {} (triggered by {} dummy aura of spell {})", spellInfo->Id, (isVictim ? "a victim's" : "an attacker's"), triggeredByAura->GetId());
-                            if (HandleDummyAuraProc(target, damage, triggeredByAura, procSpellInfo, procFlag, procExtra, cooldown, procSpell))
+                            if (HandleDummyAuraProc(target, damage, triggeredByAura, procSpellInfo, procFlag, procExtra, cooldown, eventInfo))
                                 takeCharges = true;
                             break;
                         }
@@ -17373,13 +17499,17 @@ void Unit::SetContestedPvP(Player* attackedPlayer, bool lookForNearContestedGuar
         player->AddUnitState(UNIT_STATE_ATTACK_PLAYER);
         player->SetPlayerFlag(PLAYER_FLAGS_CONTESTED_PVP);
         // call MoveInLineOfSight for nearby contested guards
-        AddToNotify(NOTIFY_AI_RELOCATION);
+        Acore::AIRelocationNotifier notifier(*this);
+        Cell::VisitWorldObjects(this, notifier, GetVisibilityRange());
     }
-    if (!HasUnitState(UNIT_STATE_ATTACK_PLAYER))
+    for (Unit* unit : m_Controlled)
     {
-        AddUnitState(UNIT_STATE_ATTACK_PLAYER);
-        // call MoveInLineOfSight for nearby contested guards
-        AddToNotify(NOTIFY_AI_RELOCATION);
+        if (!unit->HasUnitState(UNIT_STATE_ATTACK_PLAYER))
+        {
+            unit->AddUnitState(UNIT_STATE_ATTACK_PLAYER);
+            Acore::AIRelocationNotifier notifier(*unit);
+            Cell::VisitWorldObjects(this, notifier, GetVisibilityRange());
+        }
     }
 }
 
@@ -17910,8 +18040,10 @@ void Unit::Kill(Unit* killer, Unit* victim, bool durabilityLoss, WeaponAttackTyp
             sScriptMgr->OnCreatureKilledByPet( killer->GetCharmerOrOwnerPlayerOrPlayerItself(), victim->ToCreature());
         }
 
-    if (killer != victim && !victim->IsCritter())
+    if (killer != victim)
+    {
         Unit::ProcDamageAndSpell(killer, victim, killer ? PROC_FLAG_KILL : 0, PROC_FLAG_KILLED, PROC_EX_NONE, 0, attackType, spellProto, nullptr, -1, spell);
+    }
 
     // Proc auras on death - must be before aura/combat remove
     Unit::ProcDamageAndSpell(victim, nullptr, PROC_FLAG_DEATH, PROC_FLAG_NONE, PROC_EX_NONE, 0, attackType, spellProto, nullptr, -1, spell);
@@ -18034,7 +18166,6 @@ void Unit::Kill(Unit* killer, Unit* victim, bool durabilityLoss, WeaponAttackTyp
         if (CreatureAI* ai = creature->AI())
         {
             ai->JustDied(killer);
-            sScriptMgr->OnUnitDeath(creature, killer);
         }
 
         if (TempSummon* summon = creature->ToTempSummon())
@@ -18116,6 +18247,8 @@ void Unit::Kill(Unit* killer, Unit* victim, bool durabilityLoss, WeaponAttackTyp
                 sScriptMgr->OnPlayerKilledByCreature(killerCre, killed);
         }
     }
+
+    sScriptMgr->OnUnitDeath(victim, killer);
 }
 
 void Unit::SetControlled(bool apply, UnitState state, Unit* source /*= nullptr*/, bool isFear /*= false*/)
@@ -18504,15 +18637,15 @@ bool Unit::SetCharmedBy(Unit* charmer, CharmType type, AuraApplication const* au
     // Charmer stop charming
     if (playerCharmer)
     {
-        playerCharmer->StopCastingCharm();
-        playerCharmer->StopCastingBindSight();
+        playerCharmer->StopCastingCharm(aurApp ? aurApp->GetBase() : nullptr);
+        playerCharmer->StopCastingBindSight(aurApp ? aurApp->GetBase() : nullptr);
     }
 
     // Charmed stop charming
     if (GetTypeId() == TYPEID_PLAYER)
     {
-        ToPlayer()->StopCastingCharm();
-        ToPlayer()->StopCastingBindSight();
+        ToPlayer()->StopCastingCharm(aurApp ? aurApp->GetBase() : nullptr);
+        ToPlayer()->StopCastingBindSight(aurApp ? aurApp->GetBase() : nullptr);
     }
 
     // StopCastingCharm may remove a possessed pet?
@@ -18624,8 +18757,11 @@ bool Unit::SetCharmedBy(Unit* charmer, CharmType type, AuraApplication const* au
                         SetUInt32Value(UNIT_FIELD_PET_NAME_TIMESTAMP, uint32(GameTime::GetGameTime().count())); // cast can't be helped
                     }
                 }
-                GetMotionMaster()->MoveFollow(charmer, PET_FOLLOW_DIST, GetFollowAngle());
-                playerCharmer->CharmSpellInitialize();
+                if (playerCharmer->m_seer != this)
+                {
+                    GetMotionMaster()->MoveFollow(charmer, PET_FOLLOW_DIST, GetFollowAngle());
+                    playerCharmer->CharmSpellInitialize();
+                }
                 break;
             default:
                 break;
@@ -19225,7 +19361,7 @@ void Unit::SetPhaseMask(uint32 newPhaseMask, bool update)
     }
 }
 
-void Unit::UpdateObjectVisibility(bool forced, bool /*fromUpdate*/)
+void Unit::UpdateObjectVisibility(bool forced)
 {
     if (!forced)
         AddToNotify(NOTIFY_VISIBILITY_CHANGED);
@@ -19233,8 +19369,7 @@ void Unit::UpdateObjectVisibility(bool forced, bool /*fromUpdate*/)
     {
         WorldObject::UpdateObjectVisibility(true);
         Acore::AIRelocationNotifier notifier(*this);
-        float radius = 60.0f;
-        Cell::VisitAllObjects(this, notifier, radius);
+        Cell::VisitAllObjects(this, notifier, GetVisibilityRange());
     }
 }
 
@@ -19899,6 +20034,9 @@ void Unit::_ExitVehicle(Position const* exitPosition)
     Unit* vehicleBase = m_vehicle->GetBase();
     m_vehicle = nullptr;
 
+    if (!vehicleBase)
+        return;
+
     SetControlled(false, UNIT_STATE_ROOT);      // SMSG_MOVE_FORCE_UNROOT, ~MOVEMENTFLAG_ROOT
 
     Position pos;
@@ -19909,17 +20047,27 @@ void Unit::_ExitVehicle(Position const* exitPosition)
         pos = *exitPosition;
 
     // HACK
-    if (vehicle->GetVehicleInfo()->m_ID == 380) // Kologarn right arm
-        pos.Relocate(1776.0f, -24.0f, 448.75f, 0.0f);
-    else if (vehicle->GetVehicleInfo()->m_ID == 91) // Helsman's Ship
-        pos.Relocate(2802.18f, 7054.91f, -0.6f, 4.67f);
-    else if (vehicle->GetVehicleInfo()->m_ID == 349) // AT Mounts, dismount to the right
+    VehicleEntry const* vehicleInfo = vehicle->GetVehicleInfo();
+    if (vehicleInfo)
     {
-        float x = pos.GetPositionX() + 2.0f * cos(pos.GetOrientation() - M_PI / 2.0f);
-        float y = pos.GetPositionY() + 2.0f * std::sin(pos.GetOrientation() - M_PI / 2.0f);
-        float z = GetMapHeight(x, y, pos.GetPositionZ());
-        if (z > INVALID_HEIGHT)
-            pos.Relocate(x, y, z);
+        if (vehicleInfo->m_ID == 380) // Kologarn right arm
+        {
+            pos.Relocate(1776.0f, -24.0f, 448.75f, 0.0f);
+        }
+        else if (vehicleInfo->m_ID == 91) // Helsman's Ship
+        {
+            pos.Relocate(2802.18f, 7054.91f, -0.6f, 4.67f);
+        }
+        else if (vehicleInfo->m_ID == 349) // AT Mounts, dismount to the right
+        {
+            float x = pos.GetPositionX() + 2.0f * cos(pos.GetOrientation() - M_PI / 2.0f);
+            float y = pos.GetPositionY() + 2.0f * std::sin(pos.GetOrientation() - M_PI / 2.0f);
+            float z = GetMapHeight(x, y, pos.GetPositionZ());
+            if (z > INVALID_HEIGHT)
+            {
+                pos.Relocate(x, y, z);
+            }
+        }
     }
 
     AddUnitState(UNIT_STATE_MOVE);
@@ -19939,7 +20087,7 @@ void Unit::_ExitVehicle(Position const* exitPosition)
     }
 
     // xinef: hack for flameleviathan seat vehicle
-    if (vehicle->GetVehicleInfo()->m_ID != 341)
+    if (!vehicleInfo || vehicleInfo->m_ID != 341)
     {
         Movement::MoveSplineInit init(this);
         init.MoveTo(pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ());
@@ -19961,16 +20109,18 @@ void Unit::_ExitVehicle(Position const* exitPosition)
     }
 
     // xinef: move fall, should we support all creatures that exited vehicle in air? Currently Quest Drag and Drop only, Air Assault quest
-    if (GetTypeId() == TYPEID_UNIT && !CanFly() &&
-            (vehicle->GetVehicleInfo()->m_ID == 113 || vehicle->GetVehicleInfo()->m_ID == 8 || vehicle->GetVehicleInfo()->m_ID == 290 || vehicle->GetVehicleInfo()->m_ID == 298))
+    if (GetTypeId() == TYPEID_UNIT && !CanFly() && vehicleInfo && (vehicleInfo->m_ID == 113 || vehicleInfo->m_ID == 8 || vehicleInfo->m_ID == 290 || vehicleInfo->m_ID == 298))
+    {
         GetMotionMaster()->MoveFall();
-    //GetMotionMaster()->MoveFall();            // Enable this once passenger positions are calculater properly (see above)
+    }
 
     if ((!player || !(player->GetDelayedOperations() & DELAYED_VEHICLE_TELEPORT)) && vehicle->GetBase()->HasUnitTypeMask(UNIT_MASK_MINION))
         if (((Minion*)vehicleBase)->GetOwner() == this)
         {
-            if (vehicle->GetVehicleInfo()->m_ID != 349)
+            if (!vehicleInfo || vehicleInfo->m_ID != 349)
+            {
                 vehicle->Dismiss();
+            }
             else if (vehicleBase->GetTypeId() == TYPEID_UNIT)
             {
                 vehicle->Uninstall();
@@ -20001,7 +20151,10 @@ void Unit::_ExitVehicle(Position const* exitPosition)
     }
 
     if (player)
+    {
         player->ResummonPetTemporaryUnSummonedIfAny();
+        player->SetCanTeleport(true);
+    }
 }
 
 void Unit::BuildMovementPacket(ByteBuffer* data) const
@@ -20076,7 +20229,7 @@ bool Unit::CanSwim() const
     // Mirror client behavior, if this method returns false then client will not use swimming animation and for players will apply gravity as if there was no water
     if (HasUnitFlag(UNIT_FLAG_CANNOT_SWIM))
         return false;
-    if (HasUnitFlag(UNIT_FLAG_POSSESSED)) // is player
+    if (HasUnitFlag(UNIT_FLAG_POSSESSED) || HasUnitFlag(UNIT_FLAG_PLAYER_CONTROLLED)) // is player
         return true;
     if (HasUnitFlag2(UNIT_FLAG2_UNUSED_6))
         return false;
@@ -20593,124 +20746,6 @@ bool ConflagrateAuraStateDelayEvent::Execute(uint64 /*e_time*/, uint32  /*p_time
             m_owner->ModifyAuraState(AURA_STATE_CONFLAGRATE, true);
 
     return true;
-}
-
-void Unit::ExecuteDelayedUnitRelocationEvent()
-{
-    this->RemoveFromNotify(NOTIFY_VISIBILITY_CHANGED);
-    if (!this->IsInWorld() || this->IsDuringRemoveFromWorld())
-        return;
-
-    if (this->HasSharedVision())
-        for (SharedVisionList::const_iterator itr = this->GetSharedVisionList().begin(); itr != this->GetSharedVisionList().end(); ++itr)
-            if (Player* player = (*itr))
-            {
-                if (player->IsOnVehicle(this) || !player->IsInWorld() || player->IsDuringRemoveFromWorld()) // players on vehicles have their own event executed (due to passenger relocation)
-                    continue;
-                WorldObject* viewPoint = player;
-                if (player->m_seer && player->m_seer->IsInWorld())
-                    viewPoint = player->m_seer;
-                if (!viewPoint->IsPositionValid() || !player->IsPositionValid())
-                    continue;
-
-                if (Unit* active = viewPoint->ToUnit())
-                {
-                    //if (active->IsVehicle()) // always check original unit here, last notify position is not relocated
-                    //  active = player;
-
-                    float dx = active->m_last_notify_position.GetPositionX() - active->GetPositionX();
-                    float dy = active->m_last_notify_position.GetPositionY() - active->GetPositionY();
-                    float dz = active->m_last_notify_position.GetPositionZ() - active->GetPositionZ();
-                    float distsq = dx * dx + dy * dy + dz * dz;
-                    float mindistsq = DynamicVisibilityMgr::GetReqMoveDistSq(active->FindMap()->GetEntry()->map_type);
-                    if (distsq < mindistsq)
-                        continue;
-
-                    // this will be relocated below sharedvision!
-                    //active->m_last_notify_position.Relocate(active->GetPositionX(), active->GetPositionY(), active->GetPositionZ());
-                }
-
-                Acore::PlayerRelocationNotifier relocateNoLarge(*player, false); // visit only objects which are not large; default distance
-                Cell::VisitAllObjects(viewPoint, relocateNoLarge, player->GetSightRange() + VISIBILITY_INC_FOR_GOBJECTS);
-                relocateNoLarge.SendToSelf();
-                Acore::PlayerRelocationNotifier relocateLarge(*player, true);    // visit only large objects; maximum distance
-                Cell::VisitAllObjects(viewPoint, relocateLarge, MAX_VISIBILITY_DISTANCE);
-                relocateLarge.SendToSelf();
-            }
-
-    if (Player* player = this->ToPlayer())
-    {
-        WorldObject* viewPoint = player;
-        if (player->m_seer && player->m_seer->IsInWorld())
-            viewPoint = player->m_seer;
-
-        if (viewPoint->GetMapId() != player->GetMapId() || !viewPoint->IsPositionValid() || !player->IsPositionValid())
-            return;
-
-        if (Unit* active = viewPoint->ToUnit())
-        {
-            if (active->IsVehicle())
-                active = player;
-
-            if (!player->GetFarSightDistance())
-            {
-                float dx     = active->m_last_notify_position.GetPositionX() - active->GetPositionX();
-                float dy     = active->m_last_notify_position.GetPositionY() - active->GetPositionY();
-                float dz     = active->m_last_notify_position.GetPositionZ() - active->GetPositionZ();
-                float distsq = dx * dx + dy * dy + dz * dz;
-
-                float mindistsq = DynamicVisibilityMgr::GetReqMoveDistSq(active->FindMap()->GetEntry()->map_type);
-                if (distsq < mindistsq)
-                    return;
-
-                active->m_last_notify_position.Relocate(active->GetPositionX(), active->GetPositionY(), active->GetPositionZ());
-            }
-        }
-
-        Acore::PlayerRelocationNotifier relocateNoLarge(*player, false); // visit only objects which are not large; default distance
-        Cell::VisitAllObjects(viewPoint, relocateNoLarge, player->GetSightRange() + VISIBILITY_INC_FOR_GOBJECTS);
-        relocateNoLarge.SendToSelf();
-
-        if (!player->GetFarSightDistance())
-        {
-            Acore::PlayerRelocationNotifier relocateLarge(*player, true); // visit only large objects; maximum distance
-            Cell::VisitAllObjects(viewPoint, relocateLarge, MAX_VISIBILITY_DISTANCE);
-            relocateLarge.SendToSelf();
-        }
-
-        this->AddToNotify(NOTIFY_AI_RELOCATION);
-    }
-    else if (Creature* unit = this->ToCreature())
-    {
-        if (!unit->IsPositionValid())
-            return;
-
-        float dx = unit->m_last_notify_position.GetPositionX() - unit->GetPositionX();
-        float dy = unit->m_last_notify_position.GetPositionY() - unit->GetPositionY();
-        float dz = unit->m_last_notify_position.GetPositionZ() - unit->GetPositionZ();
-        float distsq = dx * dx + dy * dy + dz * dz;
-        float mindistsq = DynamicVisibilityMgr::GetReqMoveDistSq(unit->FindMap()->GetEntry()->map_type);
-        if (distsq < mindistsq)
-            return;
-
-        unit->m_last_notify_position.Relocate(unit->GetPositionX(), unit->GetPositionY(), unit->GetPositionZ());
-
-        Acore::CreatureRelocationNotifier relocate(*unit);
-        Cell::VisitAllObjects(unit, relocate, unit->GetVisibilityRange() + VISIBILITY_COMPENSATION);
-
-        this->AddToNotify(NOTIFY_AI_RELOCATION);
-    }
-}
-
-void Unit::ExecuteDelayedUnitAINotifyEvent()
-{
-    this->RemoveFromNotify(NOTIFY_AI_RELOCATION);
-    if (!this->IsInWorld() || this->IsDuringRemoveFromWorld())
-        return;
-
-    Acore::AIRelocationNotifier notifier(*this);
-    float radius = 60.0f;
-    Cell::VisitAllObjects(this, notifier, radius);
 }
 
 void Unit::SetInFront(WorldObject const* target)
@@ -21326,15 +21361,20 @@ bool Unit::CanRestoreMana(SpellInfo const* spellInfo) const
     // Aura of Despair exceptions
     switch (spellInfo->Id)
     {
+        case 16666: // Demonic Rune
+        case 27869: // Dark Rune
         case 30824: // Shamanistic Rage
         case 31786: // Spiritual Attunement
         case 31930: // Judgements of the Wise
         case 34075: // Aspect of the Viper
         case 34720: // Thrill of the hunt
         case 47755: // Rapture
+        case 54425: // Improved Felhunter
+        case 57319: // Blessing of Sanctuary
         case 63337: // Saronite Vapors (regenerate mana)
         case 63375: // Improved stormstrike
         case 64372: // Lifebloom
+        case 68285: // Improved Leader of the Pack
             return true;
         case 54428: // Divine Plea - only with talent Guarded by the Light
             return HasSpell(53583);

@@ -778,7 +778,7 @@ enum PlayerChatTag
     CHAT_TAG_AFK        = 0x01,
     CHAT_TAG_DND        = 0x02,
     CHAT_TAG_GM         = 0x04,
-    CHAT_TAG_COM        = 0x08, // Commentator
+    CHAT_TAG_COM        = 0x08, // Commentator tag. Do not exist in clean client
     CHAT_TAG_DEV        = 0x10,
 };
 
@@ -935,6 +935,16 @@ enum PlayerCommandStates
     CHEAT_COOLDOWN = 0x04,
     CHEAT_POWER = 0x08,
     CHEAT_WATERWALK = 0x10
+};
+
+// Used for OnGiveXP PlayerScript hook
+enum PlayerXPSource
+{
+    XPSOURCE_KILL = 0,
+    XPSOURCE_QUEST = 1,
+    XPSOURCE_QUEST_DF = 2,
+    XPSOURCE_EXPLORE = 3,
+    XPSOURCE_BATTLEGROUND = 4
 };
 
 enum InstantFlightGossipAction
@@ -1107,6 +1117,8 @@ public:
     void SendTaxiNodeStatusMultiple();
     // mount_id can be used in scripting calls
 
+    [[nodiscard]] bool IsCommentator() const { return HasPlayerFlag(PLAYER_FLAGS_COMMENTATOR2); }
+    void SetCommentator(bool on) { ApplyModFlag(PLAYER_FLAGS, PLAYER_FLAGS_COMMENTATOR2, on); }
     [[nodiscard]] bool IsDeveloper() const { return HasPlayerFlag(PLAYER_FLAGS_DEVELOPER); }
     void SetDeveloper(bool on) { ApplyModFlag(PLAYER_FLAGS, PLAYER_FLAGS_DEVELOPER, on); }
     [[nodiscard]] bool isAcceptWhispers() const { return m_ExtraFlags & PLAYER_EXTRA_ACCEPT_WHISPERS; }
@@ -1523,6 +1535,7 @@ public:
     void SaveToDB(CharacterDatabaseTransaction trans, bool create, bool logout);
     void SaveInventoryAndGoldToDB(CharacterDatabaseTransaction trans);                    // fast save function for item/money cheating preventing
     void SaveGoldToDB(CharacterDatabaseTransaction trans);
+    void _SaveSkills(CharacterDatabaseTransaction trans);
 
     static void Customize(CharacterCustomizeInfo const* customizeInfo, CharacterDatabaseTransaction trans);
     static void SavePositionInDB(uint32 mapid, float x, float y, float z, float o, uint32 zone, ObjectGuid guid);
@@ -1787,7 +1800,7 @@ public:
     {
         Unit::SetPvP(state);
         if (!m_Controlled.empty())
-            for (auto itr : m_Controlled)
+            for (auto& itr : m_Controlled)
                 itr->SetPvP(state);
     }
     void UpdatePvP(bool state, bool _override = false);
@@ -2010,7 +2023,7 @@ public:
     ReputationMgr&       GetReputationMgr()       { return *m_reputationMgr; }
     [[nodiscard]] ReputationMgr const& GetReputationMgr() const { return *m_reputationMgr; }
     [[nodiscard]] ReputationRank GetReputationRank(uint32 faction_id) const;
-    void RewardReputation(Unit* victim, float rate);
+    void RewardReputation(Unit* victim);
     void RewardReputation(Quest const* quest);
 
     float CalculateReputationGain(ReputationSource source, uint32 creatureOrQuestLevel, float rep, int32 faction, bool noQuestBonus = false);
@@ -2110,7 +2123,7 @@ public:
     void SendBGWeekendWorldStates();
     void SendBattlefieldWorldStates();
 
-    void GetAurasForTarget(Unit* target);
+    void GetAurasForTarget(Unit* target, bool force = false);
 
     PlayerMenu* PlayerTalkClass;
     std::vector<ItemSetEffect*> ItemSetEff;
@@ -2217,7 +2230,7 @@ public:
     }
     void HandleFall(MovementInfo const& movementInfo);
 
-    [[nodiscard]] bool canFlyInZone(uint32 mapid, uint32 zone, SpellInfo const* bySpell) const;
+    [[nodiscard]] bool canFlyInZone(uint32 mapid, uint32 zone, SpellInfo const* bySpell);
 
     void SetClientControl(Unit* target, bool allowMove, bool packetOnly = false);
 
@@ -2226,8 +2239,8 @@ public:
     void SetSeer(WorldObject* target) { m_seer = target; }
     void SetViewpoint(WorldObject* target, bool apply);
     [[nodiscard]] WorldObject* GetViewpoint() const;
-    void StopCastingCharm();
-    void StopCastingBindSight();
+    void StopCastingCharm(Aura* except = nullptr);
+    void StopCastingBindSight(Aura* except = nullptr);
 
     [[nodiscard]] uint32 GetSaveTimer() const { return m_nextSave; }
     void SetSaveTimer(uint32 timer) { m_nextSave = timer; }
@@ -2267,7 +2280,7 @@ public:
     bool IsVisibleGloballyFor(Player const* player) const;
 
     void GetInitialVisiblePackets(Unit* target);
-    void UpdateObjectVisibility(bool forced = true, bool fromUpdate = false) override;
+    void UpdateObjectVisibility(bool forced = true) override;
     void UpdateVisibilityForPlayer(bool mapChange = false);
     void UpdateVisibilityOf(WorldObject* target);
     void UpdateTriggerVisibility();
@@ -2391,6 +2404,9 @@ public:
     void CompletedAchievement(AchievementEntry const* entry);
     [[nodiscard]] AchievementMgr* GetAchievementMgr() const { return m_achievementMgr; }
 
+    void SetCreationTime(Seconds creationTime) { m_creationTime = creationTime; }
+    [[nodiscard]] Seconds GetCreationTime() const { return m_creationTime; }
+
     [[nodiscard]] bool HasTitle(uint32 bitIndex) const;
     bool HasTitle(CharTitlesEntry const* title) const { return HasTitle(title->bit_index); }
     void SetTitle(CharTitlesEntry const* title, bool lost = false);
@@ -2479,6 +2495,8 @@ public:
     // Settings
     [[nodiscard]] PlayerSetting GetPlayerSetting(std::string source, uint8 index);
     void UpdatePlayerSetting(std::string source, uint8 index, uint32 value);
+
+    void SendSystemMessage(std::string_view msg, bool escapeCharacters = false);
 
     std::string GetDebugInfo() const override;
 
@@ -2584,7 +2602,6 @@ public:
     void _SaveWeeklyQuestStatus(CharacterDatabaseTransaction trans);
     void _SaveMonthlyQuestStatus(CharacterDatabaseTransaction trans);
     void _SaveSeasonalQuestStatus(CharacterDatabaseTransaction trans);
-    void _SaveSkills(CharacterDatabaseTransaction trans);
     void _SaveSpells(CharacterDatabaseTransaction trans);
     void _SaveEquipmentSets(CharacterDatabaseTransaction trans);
     void _SaveEntryPoint(CharacterDatabaseTransaction trans);

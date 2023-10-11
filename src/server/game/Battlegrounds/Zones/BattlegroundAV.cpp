@@ -26,7 +26,6 @@
 #include "Player.h"
 #include "SpellAuras.h"
 #include "WorldPacket.h"
-#include "WorldSession.h"
 
 void BattlegroundAVScore::BuildObjectivesBlock(WorldPacket& data)
 {
@@ -1579,7 +1578,7 @@ void BattlegroundAV::ResetBGSubclass()
 
 bool BattlegroundAV::IsBothMinesControlledByTeam(TeamId teamId) const
 {
-    for (auto mine : m_Mine_Owner)
+    for (auto& mine : m_Mine_Owner)
         if (mine != teamId)
             return false;
 

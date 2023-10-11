@@ -142,8 +142,6 @@ enum WorldStates
     WS_DAILY_CALENDAR_DELETION_OLD_EVENTS_TIME = 20008                      // Next daily calendar deletions of old events time
 };
 
-#define WORLD_SLEEP_CONST 10
-
 // xinef: petitions storage
 struct PetitionData
 {
@@ -325,6 +323,10 @@ public:
     static float GetMaxVisibleDistanceInInstances()     { return _maxVisibleDistanceInInstances;  }
     static float GetMaxVisibleDistanceInBGArenas()      { return _maxVisibleDistanceInBGArenas;   }
 
+    static int32 GetVisibilityNotifyPeriodOnContinents() { return m_visibility_notify_periodOnContinents; }
+    static int32 GetVisibilityNotifyPeriodInInstances()  { return m_visibility_notify_periodInInstances;  }
+    static int32 GetVisibilityNotifyPeriodInBGArenas()   { return m_visibility_notify_periodInBGArenas;   }
+
     // our: needed for arena spectator subscriptions
     uint32 GetNextWhoListUpdateDelaySecs() override;
 
@@ -340,8 +342,6 @@ public:
     // used World DB version
     void LoadDBVersion() override;
     [[nodiscard]] char const* GetDBVersion() const override { return _dbVersion.c_str(); }
-
-    void LoadMotd() override;
 
     void UpdateAreaDependentAuras() override;
 
@@ -413,6 +413,10 @@ private:
     static float _maxVisibleDistanceOnContinents;
     static float _maxVisibleDistanceInInstances;
     static float _maxVisibleDistanceInBGArenas;
+
+    static int32 m_visibility_notify_periodOnContinents;
+    static int32 m_visibility_notify_periodInInstances;
+    static int32 m_visibility_notify_periodInBGArenas;
 
     std::string _realmName;
 

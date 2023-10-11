@@ -260,7 +260,7 @@ public:
         if (threatList.empty())
             return;
 
-        for (auto ref : threatList)
+        for (auto& ref : threatList)
         {
             if (predicate(ref->getTarget()))
             {

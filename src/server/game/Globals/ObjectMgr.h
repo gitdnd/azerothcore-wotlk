@@ -578,9 +578,9 @@ struct ReputationOnKillEntry
     uint32 RepFaction1;
     uint32 RepFaction2;
     uint32 ReputationMaxCap1;
-    int32 RepValue1;
+    float RepValue1;
     uint32 ReputationMaxCap2;
-    int32 RepValue2;
+    float RepValue2;
     bool IsTeamAward1;
     bool IsTeamAward2;
     bool TeamDependent;
@@ -1359,6 +1359,11 @@ public:
     [[nodiscard]] bool IsReservedName(std::string_view name) const;
     void AddReservedPlayerName(std::string const& name);
 
+    // profanity names
+    void LoadProfanityPlayersNames();
+    [[nodiscard]] bool IsProfanityName(std::string_view name) const;
+    void AddProfanityPlayerName(std::string const& name);
+
     // name with valid structure and symbols
     static uint8 CheckPlayerName(std::string_view name, bool create = false);
     static PetNameInvalidReason CheckPetName(std::string_view name);
@@ -1527,6 +1532,10 @@ private:
     //character reserved names
     typedef std::set<std::wstring> ReservedNamesContainer;
     ReservedNamesContainer _reservedNamesStore;
+
+    //character profanity names
+    typedef std::set<std::wstring> ProfanityNamesContainer;
+    ReservedNamesContainer _profanityNamesStore;
 
     GameTeleContainer _gameTeleStore;
 
