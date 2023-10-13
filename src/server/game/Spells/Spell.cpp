@@ -3789,6 +3789,8 @@ void Spell::cancel(bool bySelf)
     m_spellState = oldState;
 
     finish(false);
+    if (m_spellInfo->IsChanneled())
+        m_caster->DoOnSpellCastScripts(this);
 }
 
 void Spell::cast(bool skipCheck)
@@ -4587,7 +4589,8 @@ void Spell::finish(bool ok)
             m_caster->ToPlayer()->UpdatePotionCooldown(this); 
     }
     CallScriptAfterFullChannelHandlers();
-    CallScriptAfterCastHandlers();
+    CallScriptAfterCastHandlers(); // consider putting this back Idk where it was lmao
+    m_caster->DoOnSpellCastScripts(this);
 }
 
 void Spell::WriteCastResultInfo(WorldPacket& data, Player* caster, SpellInfo const* spellInfo, uint8 castCount, SpellCastResult result, SpellCustomErrors customError)

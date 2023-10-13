@@ -120,6 +120,138 @@ struct ExtensionObj
 #define ComboMap std::map<uint32, const ExtensionObj>
 #define AddExtension(a, b, c, d, e, f) spell_extension_system::Extensions.emplace(uint32(a), ExtensionObj(b,c,d,e,f))
 
+
+class spell_extension_system : public AuraScript
+{
+    PrepareAuraScript(spell_extension_system);
+
+
+    std::vector<std::pair<uint32, const ExtensionObj*>> CurrentExtensions = {};
+    std::map<ObjectGuid, bool> LastLaugh = {};
+    uint8 ticks = 0;
+
+    void SpellCast(Spell* spell)
+    {
+        if(!GetUnitOwner()->IsInCombat())
+            return;
+        const uint32 id = spell->GetSpellInfo()->Id;
+        ComboMap::const_iterator it = Extensions.find(id);
+        if (it == Extensions.end())
+            return;
+
+        bool uniqueFound = false;
+        if (it->second.Unique == true)
+        {
+            for (std::pair<uint32, const ExtensionObj*> obj : CurrentExtensions)
+            {
+                if (obj.first == it->first)
+                {
+                    uniqueFound = true;
+                    break;
+                }
+            }
+        }
+        if (!uniqueFound)
+        {
+            std::pair<uint32, const ExtensionObj*> extension = std::make_pair(it->first, &it->second);
+            CurrentExtensions.emplace_back(extension);
+            sort(CurrentExtensions.begin(), CurrentExtensions.end(),
+                [](const std::pair<uint32, const ExtensionObj*>& first, const std::pair<uint32, const ExtensionObj*>& second)
+                {
+                    return first.second->Cost < second.second->Cost;
+                }
+            );
+        }
+        ticks = 30;
+        int32 mana;
+        GetAura()->RefreshDuration();
+        for (auto ext : CurrentExtensions)
+        {
+            mana = GetUnitOwner()->GetCreateMana();
+
+            mana = int32(CalculatePct(mana, ext.second->Cost));
+            int32 currMana = GetUnitOwner()->GetPower(POWER_MANA);
+            if (currMana < mana)
+                return;
+            GetUnitOwner()->SetPower(POWER_MANA, currMana - mana);
+            (*ext.second->Function)(this, spell);
+        }
+    }
+    void IsCasting(AuraEffect const* aurEff)
+    {
+        if (ticks == 0 || !GetUnitOwner()->IsInCombat())
+            return;
+        if (!GetUnitOwner()->HasUnitState(UNIT_STATE_CASTING))
+            ticks -= 1;
+        if (ticks == 0)
+        {
+
+            uint16 totalCost = 0;
+            for (auto ext : CurrentExtensions)
+            {
+                totalCost += ext.second->Cost;
+            }
+            if (totalCost == 0)
+                return;
+            int16 dividedCost = float(totalCost) / LastLaugh.size();
+            for (auto ll : LastLaugh)
+            {
+                if (ll.second)
+                {
+                    GetUnitOwner()->HandleStatModifier(CurrentExtensions.back().second->Mod, TOTAL_VALUE, GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second, false);
+
+                    GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second += dividedCost;
+                    if (GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second > GetUnitOwner()->GetLevel() * 100)
+                        GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second = GetUnitOwner()->GetLevel() * 100;
+                    if (GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second < GetUnitOwner()->GetLevel() * -100)
+                        GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second = GetUnitOwner()->GetLevel() * -100;
+
+                    GetUnitOwner()->HandleStatModifier(CurrentExtensions.back().second->Mod, TOTAL_VALUE, GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second, true);
+                }
+                else
+                {
+                    GetUnitOwner()->HandleStatModifier(CurrentExtensions.back().second->Mod, TOTAL_VALUE, GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second, false);
+
+                    GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second -= dividedCost;
+                    if (GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second > GetUnitOwner()->GetLevel() * 100)
+                        GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second = GetUnitOwner()->GetLevel() * 100;
+                    if (GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second < GetUnitOwner()->GetLevel() * -100)
+                        GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second = GetUnitOwner()->GetLevel() * -100;
+
+                    GetUnitOwner()->HandleStatModifier(CurrentExtensions.back().second->Mod, TOTAL_VALUE, GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second, true);
+                }
+            }
+            LastLaugh.clear();
+            CurrentExtensions.clear();
+        }
+
+    }
+
+    void OnDamage(AuraEffect const* aurEff, ProcEventInfo& procInfo)
+    {
+        ObjectGuid victim = procInfo.GetDamageInfo()->GetVictim()->GetGUID();
+        if (victim != GetUnitOwner()->GetGUID())
+        {
+            LastLaugh[victim] = true;
+        }
+        else
+        {
+            victim = procInfo.GetDamageInfo()->GetAttacker()->GetGUID();
+            if (victim != GetUnitOwner()->GetGUID())
+                LastLaugh[victim] = false;
+        }
+    }
+    void Register() override
+    {
+        OnSpellCast += OnSpellCastFn(spell_extension_system::SpellCast);
+        OnEffectPeriodic += AuraEffectPeriodicFn(spell_extension_system::IsCasting, EFFECT_0, SPELL_AURA_PERIODIC_DUMMY);
+        OnEffectProc += AuraEffectProcFn(spell_extension_system::OnDamage, EFFECT_0, SPELL_AURA_PERIODIC_DUMMY);
+    }
+public:
+
+    inline static ComboMap Extensions = {};
+};
+
 class ELKAuraScript : public AuraScript
 {
 protected:
@@ -128,11 +260,6 @@ protected:
 class ELKSpellScript : public SpellScript
 {
 protected:
-    void TriggerExtension()
-    {
-        Aura* aura = GetCaster()->GetAura(1000000);
-        aura = GetCaster()->AddAura(1000000, GetCaster());
-    }
     void AttackBegin()
     {
         GetSpell()->SetBonusRange(GetCaster()->GetCombatReach());
@@ -474,130 +601,6 @@ class spell_elk_spin_attack : public ELKSpellScript
 
 };
 
-class spell_extension_system : public AuraScript
-{
-    PrepareAuraScript(spell_extension_system);
-
-
-    std::vector<std::pair<uint32, const ExtensionObj*>> CurrentExtensions = {};
-    std::map<ObjectGuid, bool> LastLaugh = {};
-
-    void SpellCast(Spell* spell)
-    {
-        const uint32 id = spell->GetSpellInfo()->Id;
-        ComboMap::const_iterator it = Extensions.find(id);
-        if (it == Extensions.end())
-            return;
-
-        bool uniqueFound = false;
-        if (it->second.Unique == true)
-        {
-            for (std::pair<uint32, const ExtensionObj*> obj : CurrentExtensions)
-            {
-                if (obj.first == it->first)
-                {
-                    uniqueFound = true;
-                    break;
-                }
-            }
-        }
-        if (!uniqueFound)
-        {
-            std::pair<uint32, const ExtensionObj*> extension = std::make_pair(it->first, &it->second);
-            CurrentExtensions.emplace_back(extension);
-            sort(CurrentExtensions.begin(), CurrentExtensions.end(),
-                [](const std::pair<uint32, const ExtensionObj*>& first, const std::pair<uint32, const ExtensionObj*>& second)
-                {
-                    return first.second->Cost < second.second->Cost;
-                }
-            );
-        }
-        int32 mana;
-        GetAura()->RefreshDuration();
-        for (auto ext : CurrentExtensions)
-        {
-            mana = GetUnitOwner()->GetCreateMana();
-
-            mana = int32(CalculatePct(mana, ext.second->Cost));
-            int32 currMana = GetUnitOwner()->GetPower(POWER_MANA);
-            if (currMana < mana)
-                return;
-            GetUnitOwner()->SetPower(POWER_MANA, currMana - mana);
-            (*ext.second->Function)(this, spell);
-        }
-    }
-    void IsCasting(AuraEffect const* aurEff)
-    {
-        if (!GetUnitOwner()->GetCurrentSpell(CURRENT_GENERIC_SPELL))
-            return;
-        GetAura()->SetDuration(GetAura()->GetDuration() + 100);
-    }
-
-    void OnRemove(AuraEffect const* aurEff, AuraEffectHandleModes mode)
-    {
-        if (!GetUnitOwner()->IsInCombat())
-            return;
-        uint16 totalCost = 0;
-        for (auto ext : CurrentExtensions)
-        {
-            totalCost += ext.second->Cost;
-        }
-        if (totalCost == 0)
-            return;
-        int16 dividedCost = float(totalCost) / LastLaugh.size();
-        for (auto ll : LastLaugh)
-        {
-            if (ll.second)
-            {
-                GetUnitOwner()->HandleStatModifier(CurrentExtensions.back().second->Mod, TOTAL_VALUE, GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second, false);
-
-                GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second += dividedCost;
-                if (GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second > GetUnitOwner()->GetLevel() * 100)
-                    GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second = GetUnitOwner()->GetLevel() * 100;
-                if (GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second < GetUnitOwner()->GetLevel() * -100)
-                    GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second = GetUnitOwner()->GetLevel() * -100;
-
-                GetUnitOwner()->HandleStatModifier(CurrentExtensions.back().second->Mod, TOTAL_VALUE, GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second, true);
-            }
-            else
-            {
-                GetUnitOwner()->HandleStatModifier(CurrentExtensions.back().second->Mod, TOTAL_VALUE, GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second, false);
-
-                GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second -= dividedCost;
-                if (GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second > GetUnitOwner()->GetLevel() * 100)
-                    GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second = GetUnitOwner()->GetLevel() * 100;
-                if (GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second < GetUnitOwner()->GetLevel() * -100)
-                    GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second = GetUnitOwner()->GetLevel() * -100;
-
-                GetUnitOwner()->HandleStatModifier(CurrentExtensions.back().second->Mod, TOTAL_VALUE, GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second, true);
-            }
-        }
-    }
-    void OnDamage(AuraEffect const* aurEff, ProcEventInfo& procInfo)
-    {
-        ObjectGuid victim = procInfo.GetDamageInfo()->GetVictim()->GetGUID();
-        if (victim != GetUnitOwner()->GetGUID())
-        {
-            LastLaugh[victim] = true;
-        }
-        else
-        {
-            victim = procInfo.GetDamageInfo()->GetAttacker()->GetGUID();
-            if (victim != GetUnitOwner()->GetGUID())
-                LastLaugh[victim] = false;
-        }
-    }
-    void Register() override
-    {
-        OnSpellCast += OnSpellCastFn(spell_extension_system::SpellCast);
-        OnEffectPeriodic += AuraEffectPeriodicFn(spell_extension_system::IsCasting, EFFECT_0, SPELL_AURA_PERIODIC_DUMMY);
-        OnEffectRemove += AuraEffectRemoveFn(spell_extension_system::OnRemove, EFFECT_0, SPELL_AURA_PERIODIC_DUMMY, AURA_EFFECT_HANDLE_DEFAULT);
-        OnEffectProc += AuraEffectProcFn(spell_extension_system::OnDamage, EFFECT_0, SPELL_AURA_PERIODIC_DUMMY);
-    }
-public:
-
-    inline static ComboMap Extensions = {};
-};
 
 
 class spell_combo_counter_aura : public AuraScript
@@ -628,7 +631,7 @@ class spell_combo_counter_aura : public AuraScript
     }
     void Register() override
     {
-        OnSpellCast += OnSpellCastFn(spell_combo_counter_aura::PreSpellCast);
+        BeforeSpellCast += BeforeSpellCastFn(spell_combo_counter_aura::PreSpellCast);
         OnSpellCast += OnSpellCastFn(spell_combo_counter_aura::PostSpellCast);
     }
 public:

@@ -66,7 +66,6 @@ class spell_elk_crusader_strike : public ELKSpellScript
     {
         BeforeSpellLoad += SpellCastFn(spell_elk_crusader_strike::SpellClick);
         AfterFullChannel += SpellCastFn(spell_elk_crusader_strike::AttackHit);
-        BeforeCast += SpellCastFn(spell_elk_crusader_strike::TriggerExtension);
     }
 };
 
@@ -106,7 +105,6 @@ class spell_elk_exorcism : public ELKSpellScript
 
     void Register() override
     {
-        BeforeCast += SpellCastFn(spell_elk_exorcism::TriggerExtension);
     }
 };
 
@@ -380,7 +378,6 @@ class spell_elk_divine_storm : public ELKSpellScript
         BeforeSpellLoad += SpellCastFn(spell_elk_divine_storm::SpellQue);
         AfterFullChannel += SpellCastFn(spell_elk_divine_storm::SpellFinish);
         AfterHit += SpellHitFn(spell_elk_divine_storm::SpellHit);
-        BeforeCast += SpellCastFn(spell_elk_divine_storm::TriggerExtension);
     }
 };
 
@@ -434,7 +431,6 @@ class spell_elk_avenging_wrath : public ELKSpellScript
 
     void Register() override
     {
-        BeforeCastTime += SpellCastFn(spell_elk_avenging_wrath::TriggerExtension);
     }
 };
 
@@ -523,7 +519,6 @@ class spell_elk_consecration : public ELKSpellScript
 
     void Register() override
     {
-        BeforeCast += SpellCastFn(spell_elk_consecration::TriggerExtension);
     }
 };
 
@@ -534,7 +529,6 @@ class spell_elk_seal_of_silver : public ELKSpellScript
 
     void Register() override
     {
-        BeforeCastTime += SpellCastFn(spell_elk_seal_of_silver::TriggerExtension);
     }
 };
 
@@ -545,7 +539,6 @@ class spell_elk_flash_heal : public ELKSpellScript
 
     void Register() override
     {
-        BeforeCast += SpellCastFn(spell_elk_flash_heal::TriggerExtension);
     }
 };
 
