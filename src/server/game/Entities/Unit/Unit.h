@@ -2876,9 +2876,6 @@ private:
 protected:
 
     const SpellInfo* _lastSpellUsed = nullptr;
-    uint32 _strikeAura = 0;
-
-    uint32 critTempo = 0;
 public:
     void DoOnAttackHitScripts(Unit* const target, DamageInfo const dmgInfo);
     void DoAfterAttackScripts();
@@ -2889,14 +2886,9 @@ public:
     void SetLastSpellUsed(const SpellInfo* spell) { _lastSpellUsed = spell; }
     const SpellInfo* GetLastSpellUsed() { return _lastSpellUsed; }
 
-    void SetStrikeAura(uint32 strikeAura) { _strikeAura = strikeAura; }
-    uint32 GetStrikeAura() { return _strikeAura; }
 
 
     uint32 ConsumePercentOffense(float percent) { uint32 ret = GetPower(POWER_RAGE) / 10; ModifyPowerPct(POWER_RAGE, -1.f * percent); return ret; }
-
-    uint32 GetCritTempo() { return critTempo; }
-    void ModCritTempo(int16 tempo) { critTempo += tempo; float check = GetFloatValue(PLAYER_CRIT_PERCENTAGE) * 10;  if (critTempo > uint16(check) && critTempo > 100) critTempo = uint16(check); }
 
     void DoDamageYourself(Unit* target, uint32 damage, const SpellInfo* spellInfo, uint8 effect);
 

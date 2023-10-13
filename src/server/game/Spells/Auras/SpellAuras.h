@@ -290,7 +290,7 @@ public:
     void SetDevelopment(uint8 dev) { development = dev; RecalculateAmountOfEffects(); }
     uint8 GetDevelopment() { return development; }
 
-    void ModSpellPowerBonus(int16 sPB) { spellPowerBonus += sPB; RecalculateAmountOfEffects(); }
+    void ModSpellPowerBonus(int16 sPB) { spellPowerBonus += sPB; if (spellPowerBonus > 10000) spellPowerBonus = 10000; if (spellPowerBonus < -10000) spellPowerBonus = -10000; RecalculateAmountOfEffects(); }
     int16 GetSpellPowerBonus() { return spellPowerBonus; }
 
     std::map<MapDummy, std::optional<std::any>> triggerDummy = {};

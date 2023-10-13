@@ -13,30 +13,21 @@
 #include <MoveSplineInit.h>
 
 class spell_extension_system;
-
-struct ExtensionObj
-{
-    ExtensionObj(void(*Function)(spell_extension_system*, Spell*), int32 Cost, bool Unique) : Function(Function), Cost(Cost), Unique(Unique) {};
-    void(*Function)(spell_extension_system*, Spell*);
-    int32 Cost;
-    bool Unique;
-};
-
-#define ComboMap std::map<uint32, const ExtensionObj>
-#define AddExtension(x, y) spell_extension_system::Extensions.emplace(uint32(x), y)
-
 enum class MapDummy : uint8;
+
 
 inline uint32 RandomInt(uint32 min, uint32 max)
 {
     uint32 ret = rand32() % max;
     return std::min(ret, min);
 }
+
 enum OutsideSpells
 {
 
 };
- enum Spells : uint32
+
+ enum class ELKSpells : uint32
 {
     ATTACK_HIT =                100002,
     ATTACK =                    100003,
@@ -66,8 +57,13 @@ enum OutsideSpells
     DEFLECTSHEILDBLOCK =        100038,
     DEFLECT2HL =                100039,
     SPIN_ATTACK_HIT =           100044,
-    SPIN_ATTACK =               100045, 
+    SPIN_ATTACK =               100045,
+
+    CRUSADER_STRIKE =           1000001,
+    FLASH_FOCUS =               1000012,
+    HOLY_POWER =                1000014,
 };
+#define ELKS(x) uint32(ELKSpells::x)
 enum SpellsC // Creature Spells.
 {
     MIND_FLAY =                 150001,
@@ -108,38 +104,33 @@ enum SpellsC // Creature Spells.
     GIGA_THUNDER_CLAP =         150038,
     GIGA_THUNDER_CLAP_HIT =     150039,
 };
-enum SpellsStrike : uint32
-{
-    SPELL_PLAGUE_SCOURGE_STRIKE =       200001,
-    SPELL_BLOOD_DEATH_STRIKE =          200002,
-    SPELL_FROST_STRIKE_OBLITERATE =     200003,
 
-    SPELL_CRUSADER_STRIKE =             210001,
-    SPELL_CRUSADER_STRIKE_BASIC =       210017,
-    SPELL_CRUSADER_STRIKE_EXPERT =      210030,
+struct ExtensionObj
+{
+    ExtensionObj(void(*Function)(spell_extension_system*, Spell*), int32 Cost, bool Unique, UnitMods Mod, float ModMulti) : Function(Function), Cost(Cost), Unique(Unique), Mod(Mod), ModMulti(ModMulti) {};
+
+    void(*Function)(spell_extension_system*, Spell*);
+    int32 Cost;
+    bool Unique;
+    UnitMods Mod;
+    float ModMulti;
 };
 
-enum SpellsELKPaladin : uint32
-{
-    SPELL_RETRIBUTION_AURA = 210002,
-    SPELL_RETRIBUTION_AURA_2 = 210003,
-    SPELL_HOLY_POWER = 210004,
+#define ComboMap std::map<uint32, const ExtensionObj>
+#define AddExtension(a, b, c, d, e, f) spell_extension_system::Extensions.emplace(uint32(a), ExtensionObj(b,c,d,e,f))
 
-    SUBSPELL_LONG_RETRIBUTION = 219999,
-};
 class ELKAuraScript : public AuraScript
 {
 protected:
 };
+
 class ELKSpellScript : public SpellScript
 {
 protected:
     void TriggerExtension()
     {
         Aura* aura = GetCaster()->GetAura(1000000);
-        if(!aura)
-            aura = GetCaster()->AddAura(1000000, GetCaster());
-        aura->RefreshDuration();
+        aura = GetCaster()->AddAura(1000000, GetCaster());
     }
     void AttackBegin()
     {
@@ -176,89 +167,57 @@ protected:
     }
 };
 
-class spell_elk_strike_aura : public AuraScript
-{
-
-    PrepareAuraScript(spell_elk_strike_aura);
-
-    void SpellApply(AuraEffect const* aurEff, AuraEffectHandleModes mode)
-    {
-        Unit* target= GetTarget();
-        if (!target)
-            return;
-        target->SetStrikeAura(GetSpellInfo()->Id);
-        target->RemoveAura(COMBO_COUNT);
-    }
-    void SpellRemove(AuraEffect const* aurEff, AuraEffectHandleModes mode)
-    {
-        Unit* target = GetTarget();
-        if (!target)
-            return;
-        target->SetStrikeAura(0);
-        target->RemoveAura(COMBO_COUNT);
-    }
-    void Register() override
-    {
-        OnEffectApply += AuraEffectApplyFn(spell_elk_strike_aura::SpellApply, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
-        OnEffectRemove += AuraEffectRemoveFn(spell_elk_strike_aura::SpellRemove, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
-    }
-};
 
 class spell_elk_attack : public ELKSpellScript
 {
     PrepareSpellScript(spell_elk_attack);
-    Unit* caster;
-    Spell* spell;
 
     uint8 comboLength = 0;
 
-
     void SpellClick()
     {
-        spell = GetSpell();
-        caster = GetCaster();
-        Spell* curAtk = caster->GetCurrentSpell(CURRENT_CHANNELED_SPELL);
+        Spell* curAtk = GetCaster()->GetCurrentSpell(CURRENT_CHANNELED_SPELL);
         if (curAtk)
         {
-            if (curAtk->m_spellInfo->Id == ATTACK)
+            if (curAtk->m_spellInfo->Id == ELKS(ATTACK))
             {
                 if (curAtk->GetSpellTimer() < 50)
                 {
-                    spell->skip = true;
-                    GetCaster()->AddSpellCooldown(spell->m_spellInfo->Id, 0, 100, false);
-                    QueSpell(caster);
+                    GetSpell()->skip = true;
+                    GetCaster()->AddSpellCooldown(GetSpell()->m_spellInfo->Id, 0, 100, false);
+                    QueSpell(GetCaster());
                     return;
                 }
                 else
                 {
-                    spell->skip = true;
-                    GetCaster()->AddSpellCooldown(spell->m_spellInfo->Id, 0, 100, false);
+                    GetSpell()->skip = true;
+                    GetCaster()->AddSpellCooldown(GetSpell()->m_spellInfo->Id, 0, 100, false);
                     return;
                 }
             }
         }
         else
         {
-            curAtk = caster->GetCurrentSpell(CURRENT_GENERIC_SPELL);
+            curAtk = GetCaster()->GetCurrentSpell(CURRENT_GENERIC_SPELL);
             if (curAtk)
             {
-                if (curAtk->m_spellInfo->Id == ATTACK_HIT && curAtk->GetSpellTimer() > 0)
+                if (curAtk->m_spellInfo->Id == ELKS(ATTACK_HIT) && curAtk->GetSpellTimer() > 0)
                 {
-                    spell->skip = true;
-                    GetCaster()->AddSpellCooldown(spell->m_spellInfo->Id, 0, 1, false);
-                    QueSpell(caster);
+                    GetSpell()->skip = true;
+                    GetCaster()->AddSpellCooldown(GetSpell()->m_spellInfo->Id, 0, 1, false);
+                    QueSpell(GetCaster());
                     return;
                 }
             }
         }
-        if (caster->IsPlayer())
+        if (GetCaster()->IsPlayer())
         {
-            Player* player = caster->ToPlayer();
+            Player* player = GetCaster()->ToPlayer();
             if (player)
             {
                 int weps = 0;
                 int anim = RandomInt(1, 4);
-                int animSpell = ATTACKUNARMED;
+                int animSpell = ELKS(ATTACKUNARMED);
                 auto wep1 = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND); 
                 auto wep2 = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND);
                 std::vector<const ItemTemplate*> weapons = {nullptr, nullptr};
@@ -275,27 +234,27 @@ class spell_elk_attack : public ELKSpellScript
                     case SKILL_AXES:
                     case SKILL_SWORDS:
                     case SKILL_MACES:
-                        animSpell = ATTACK1H;
+                        animSpell = ELKS(ATTACK1H);
                         break;
                     case SKILL_FISHING:
                     case SKILL_2H_AXES:
                     case SKILL_2H_SWORDS:
                     case SKILL_2H_MACES:
-                        animSpell = ATTACK;
+                        animSpell = ELKS(ATTACK);
                         break;
                     case SKILL_POLEARMS:
                     case SKILL_STAVES:
-                        animSpell = ATTACK2HL;
+                        animSpell = ELKS(ATTACK2HL);
                         break;
                     case SKILL_DAGGERS:
-                        animSpell = ATTACK1HP;
+                        animSpell = ELKS(ATTACK1HP);
                         break;
                     case SKILL_SHIELD:
-                        animSpell = ATTACKSHIELD;
+                        animSpell = ELKS(ATTACKSHIELD);
                         break;
                     case SKILL_FIST_WEAPONS:
                     default:
-                        animSpell = ATTACKUNARMED;
+                        animSpell = ELKS(ATTACKUNARMED);
                         break;
                     }
 
@@ -310,46 +269,46 @@ class spell_elk_attack : public ELKSpellScript
                     case SKILL_AXES:
                     case SKILL_SWORDS:
                     case SKILL_MACES:
-                        animSpell = ATTACKOFF;
+                        animSpell = ELKS(ATTACKOFF);
                         break;
                     case SKILL_FISHING:
                     case SKILL_2H_AXES:
                     case SKILL_2H_SWORDS:
                     case SKILL_2H_MACES:
-                        animSpell = ATTACKOFF;
+                        animSpell = ELKS(ATTACKOFF);
                         break;
                     case SKILL_POLEARMS:
                     case SKILL_STAVES:
-                        animSpell = ATTACKOFFP;
+                        animSpell = ELKS(ATTACKOFFP);
                         break;
                     case SKILL_DAGGERS:
-                        animSpell = ATTACKOFFP;
+                        animSpell = ELKS(ATTACKOFFP);
                         break;
                     case SKILL_SHIELD:
-                        animSpell = ATTACKSHIELD;
+                        animSpell = ELKS(ATTACKSHIELD);
                         break;
                     case SKILL_FIST_WEAPONS:
                     default:
-                        animSpell = ATTACKUNARMED;
+                        animSpell = ELKS(ATTACKUNARMED);
                         break;
                     }
                 } 
                 if (weps == 0)
-                    spell->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(ATTACKUNARMED));
+                    GetSpell()->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(ELKS(ATTACKUNARMED)));
                 else
-                    spell->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(animSpell));
+                    GetSpell()->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(animSpell));
 
             }
         }
         else
         {
-            Creature* creature = caster->ToCreature();
+            Creature* creature = GetCaster()->ToCreature();
             if (creature)
             {
 
                 int weps = 0;
                 int anim = RandomInt(1, 4);
-                int animSpell = ATTACKUNARMED;
+                int animSpell = ELKS(ATTACKUNARMED);
                 auto weapons = creature->GetWeaponEquippedEntry();
                  
                 if (weapons[0])
@@ -361,22 +320,22 @@ class spell_elk_attack : public ELKSpellScript
                     case SKILL_AXES:
                     case SKILL_SWORDS:
                     case SKILL_MACES:
-                        animSpell = ATTACK1H;
+                        animSpell = ELKS(ATTACK1H);
                     case SKILL_FISHING:
                     case SKILL_2H_AXES:
                     case SKILL_2H_SWORDS:
                     case SKILL_2H_MACES:
-                        animSpell = ATTACK;
+                        animSpell = ELKS(ATTACK);
                     case SKILL_POLEARMS:
                     case SKILL_STAVES:
-                        animSpell = ATTACK2HL;
+                        animSpell = ELKS(ATTACK2HL);
                     case SKILL_DAGGERS:
-                        animSpell = ATTACK1HP;
+                        animSpell = ELKS(ATTACK1HP);
                     case SKILL_SHIELD:
-                        animSpell = ATTACKSHIELD;
+                        animSpell = ELKS(ATTACKSHIELD);
                     case SKILL_FIST_WEAPONS:
                     default:
-                        animSpell = ATTACKUNARMED;
+                        animSpell = ELKS(ATTACKUNARMED);
                     }
 
                 }
@@ -390,41 +349,38 @@ class spell_elk_attack : public ELKSpellScript
                     case SKILL_AXES:
                     case SKILL_SWORDS:
                     case SKILL_MACES:
-                        animSpell = ATTACKOFF;
+                        animSpell = ELKS(ATTACKOFF);
                     case SKILL_FISHING:
                     case SKILL_2H_AXES:
                     case SKILL_2H_SWORDS:
                     case SKILL_2H_MACES:
-                        animSpell = ATTACKOFF;
+                        animSpell = ELKS(ATTACKOFF);
                     case SKILL_POLEARMS:
                     case SKILL_STAVES:
-                        animSpell = ATTACKOFFP;
+                        animSpell = ELKS(ATTACKOFFP);
                     case SKILL_DAGGERS:
-                        animSpell = ATTACKOFFP;
+                        animSpell = ELKS(ATTACKOFFP);
                     case SKILL_SHIELD:
-                        animSpell = ATTACKSHIELD;
+                        animSpell = ELKS(ATTACKSHIELD);
                     case SKILL_FIST_WEAPONS:
                     default:
-                        animSpell = ATTACKUNARMED;
+                        animSpell = ELKS(ATTACKUNARMED);
                     }
                 } 
-                spell->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(animSpell));
+                GetSpell()->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(animSpell));
 
             }
         }
         uint16 cd = 0;
-        if(caster->CanUseAttackType(BASE_ATTACK))
-            cd += caster->GetAttackTime(BASE_ATTACK);
-        if (caster->CanUseAttackType(OFF_ATTACK))
-            cd += caster->GetAttackTime(OFF_ATTACK);
-        spell->SetRuneCooldown(cd);
-        spell->SetRuneCost(1);
+        if(GetCaster()->CanUseAttackType(BASE_ATTACK))
+            cd += GetCaster()->GetAttackTime(BASE_ATTACK);
+        if (GetCaster()->CanUseAttackType(OFF_ATTACK))
+            cd += GetCaster()->GetAttackTime(OFF_ATTACK);
+        GetSpell()->SetRuneCooldown(cd);
+        GetSpell()->SetRuneCost(1);
 
-        if (auto aura = caster->GetAura(COMBO_COUNT))
+        if (auto aura = GetCaster()->GetAura(ELKS(COMBO_COUNT)))
             comboLength = aura->GetStackAmount();
-    }
-    void SpellBegin()
-    {
     }
     virtual void AttackUnique()
     {
@@ -432,245 +388,20 @@ class spell_elk_attack : public ELKSpellScript
     }
     void AttackHit()
     {
-        uint32 hitSpell = ATTACK_HIT;
-        caster->CastSpell(caster, hitSpell, false);
+        GetCaster()->CastSpell(GetCaster(), ELKS(ATTACK_HIT), false);
         AttackUnique();
-
-        auto curAtk = caster->GetCurrentSpell(CURRENT_GENERIC_SPELL);
-        if (curAtk)
-        {
-            if (curAtk->m_spellInfo->Id == hitSpell)
-            {
-                curAtk->GetTriggerDummy()[MapDummy::ComboLength] = comboLength;
-                return;
-            }
-        }
     }
     virtual void Register()
     {
         BeforeSpellLoad += SpellCastFn(spell_elk_attack::SpellClick);
-        BeforeCast += SpellCastFn(spell_elk_attack::SpellBegin);
         AfterFullChannel += SpellCastFn(spell_elk_attack::AttackHit);
     }
 
 };
 
-class spell_elk_critical_attack : public ELKSpellScript
-{
-    PrepareSpellScript(spell_elk_critical_attack);
-    Unit* caster;
-    Spell* spell;
-
-    uint8 comboLength = 0; 
-
-
-
-    void SpellClick()
-    {
-        spell = GetSpell();
-        caster = GetCaster();
-        if (caster->GetCritTempo() > 100)
-            caster->ModCritTempo(-100);
-        else
-        {
-            spell->skip = true;
-            GetCaster()->AddSpellCooldown(spell->m_spellInfo->Id, 0, 100, false);
-            return;
-        }
-
-        Spell* curAtk = caster->GetCurrentSpell(CURRENT_CHANNELED_SPELL);
-        if (curAtk)
-        {
-            if (curAtk->m_spellInfo->Id == ATTACK)
-            {
-                if (curAtk->GetSpellTimer() < 50)
-                {
-                    spell->skip = true;
-                    GetCaster()->AddSpellCooldown(spell->m_spellInfo->Id, 0, 100, false);
-                    QueSpell(caster);
-                    return;
-                }
-                else
-                {
-                    spell->skip = true;
-                    GetCaster()->AddSpellCooldown(spell->m_spellInfo->Id, 0, 100, false);
-                    return;
-                }
-            }
-        }
-        else
-        {
-            curAtk = caster->GetCurrentSpell(CURRENT_GENERIC_SPELL);
-            if (curAtk)
-            {
-                if (curAtk->m_spellInfo->Id == ATTACK_HIT && curAtk->GetSpellTimer() > 0)
-                {
-                    spell->skip = true;
-                    GetCaster()->AddSpellCooldown(spell->m_spellInfo->Id, 0, 1, false);
-                    QueSpell(caster);
-                    return;
-                }
-            }
-        }
-        if (caster->IsPlayer())
-        {
-            Player* player = caster->ToPlayer();
-            if (player)
-            {
-                int weps = 0;
-                int anim = RandomInt(1, 4);
-                int animSpell = ATTACKUNARMED;
-                auto wep1 = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
-                auto wep2 = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND);
-                std::vector<const ItemTemplate*> weapons = { nullptr, nullptr };
-                if (wep1)
-                    weapons[0] = wep1->GetTemplate();
-                if (wep2)
-                    weapons[1] = wep2->GetTemplate();
-
-                animSpell = CRITICAL_ATTACKUNARMED;
-                if (weapons[0])
-                {
-                    weps += 1;
-
-                    switch (weapons[0]->GetSkill())
-                    {
-                    case SKILL_AXES:
-                    case SKILL_SWORDS:
-                    case SKILL_MACES:
-                        animSpell = CRITICAL_ATTACK1H;
-                        break;
-                    case SKILL_FISHING:
-                    case SKILL_2H_AXES:
-                    case SKILL_2H_SWORDS:
-                    case SKILL_2H_MACES:
-                        animSpell = CRITICAL_ATTACK2H;
-                        break;
-                    case SKILL_POLEARMS:
-                    case SKILL_STAVES:
-                        animSpell = CRITICAL_ATTACK2H;
-                        break;
-                    case SKILL_DAGGERS:
-                        animSpell = CRITICAL_ATTACKMUTILATE;
-                        break;
-                    case SKILL_SHIELD:
-                        animSpell = CRITICAL_ATTACK1H;
-                        break;
-                    case SKILL_FIST_WEAPONS:
-                    default:
-                        animSpell = CRITICAL_ATTACKUNARMED;
-                        break;
-                    }
-
-                }
-
-                if (weps == 0)
-                    spell->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(ATTACKUNARMED));
-                else
-                    spell->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(animSpell));
-
-            }
-        }
-        else
-        {
-            Creature* creature = caster->ToCreature();
-            if (creature)
-            {
-
-                int weps = 0;
-                int anim = RandomInt(1, 4);
-                int animSpell = ATTACKUNARMED;
-                auto weapons = creature->GetWeaponEquippedEntry();
-                 
-                animSpell = CRITICAL_ATTACKUNARMED;
-                if (weapons[0])
-                {
-                    weps += 1;
-
-                    switch (weapons[0]->GetSkill())
-                    {
-                    case SKILL_AXES:
-                    case SKILL_SWORDS:
-                    case SKILL_MACES:
-                        animSpell = CRITICAL_ATTACK1H;
-                        break;
-                    case SKILL_FISHING:
-                    case SKILL_2H_AXES:
-                    case SKILL_2H_SWORDS:
-                    case SKILL_2H_MACES:
-                        animSpell = CRITICAL_ATTACK2H;
-                        break;
-                    case SKILL_POLEARMS:
-                    case SKILL_STAVES:
-                        animSpell = CRITICAL_ATTACK2H;
-                        break;
-                    case SKILL_DAGGERS:
-                        animSpell = CRITICAL_ATTACKMUTILATE;
-                        break;
-                    case SKILL_SHIELD:
-                        animSpell = CRITICAL_ATTACK1H;
-                        break;
-                    case SKILL_FIST_WEAPONS:
-                    default:
-                        animSpell = CRITICAL_ATTACKUNARMED;
-                        break;
-                    }
-
-                }
-                
-                spell->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(animSpell));
-
-            }
-        }
-        uint16 cd = 0;
-        if (caster->CanUseAttackType(BASE_ATTACK))
-            cd += caster->GetAttackTime(BASE_ATTACK);
-        if (caster->CanUseAttackType(OFF_ATTACK))
-            cd += caster->GetAttackTime(OFF_ATTACK);
-        spell->SetRuneCooldown(cd);
-        spell->SetRuneCost(1);
-
-        if (auto aura = caster->GetAura(COMBO_COUNT))
-            comboLength = aura->GetStackAmount();
-    }
-    void SpellBegin()
-    {
-    }
-    virtual void AttackUnique()
-    {
-
-    }
-    void AttackHit()
-    {
-        uint32 hitSpell = CRITICAL_ATTACK_HIT;
-        caster->CastSpell(caster, hitSpell, false);
-        AttackUnique();
-
-        auto curAtk = caster->GetCurrentSpell(CURRENT_GENERIC_SPELL);
-        if (curAtk)
-        {
-            if (curAtk->m_spellInfo->Id == hitSpell)
-            {
-                curAtk->GetTriggerDummy()[MapDummy::ComboLength] = comboLength;
-                return;
-            }
-        }
-    }
-    virtual void Register()
-    {
-        BeforeSpellLoad += SpellCastFn(spell_elk_critical_attack::SpellClick);
-        BeforeCast += SpellCastFn(spell_elk_critical_attack::SpellBegin);
-        AfterFullChannel += SpellCastFn(spell_elk_critical_attack::AttackHit);
-    }
-
-};
-
-
 class spell_elk_spin_attack : public ELKSpellScript
 {
     PrepareSpellScript(spell_elk_spin_attack);
-    Unit* caster;
-    Spell* spell;
 
     uint8 comboLength = 0;
 
@@ -678,82 +409,65 @@ class spell_elk_spin_attack : public ELKSpellScript
 
     void SpellClick()
     {
-        spell = GetSpell();
-        caster = GetCaster();
-
-        Spell* curAtk = caster->GetCurrentSpell(CURRENT_CHANNELED_SPELL);
+        Spell* curAtk = GetCaster()->GetCurrentSpell(CURRENT_CHANNELED_SPELL);
         if (curAtk)
         {
-            if (curAtk->m_spellInfo->Id == ATTACK)
+            if (curAtk->m_spellInfo->Id == ELKS(ATTACK))
             {
                 if (curAtk->GetSpellTimer() < 50)
                 {
-                    spell->skip = true;
-                    GetCaster()->AddSpellCooldown(spell->m_spellInfo->Id, 0, 100, false);
-                    QueSpell(caster);
+                    GetSpell()->skip = true;
+                    GetCaster()->AddSpellCooldown(GetSpell()->m_spellInfo->Id, 0, 100, false);
+                    QueSpell(GetCaster());
                     return;
                 }
                 else
                 {
-                    spell->skip = true;
-                    GetCaster()->AddSpellCooldown(spell->m_spellInfo->Id, 0, 100, false);
+                    GetSpell()->skip = true;
+                    GetCaster()->AddSpellCooldown(GetSpell()->m_spellInfo->Id, 0, 100, false);
                     return;
                 }
             }
         }
         else
         {
-            curAtk = caster->GetCurrentSpell(CURRENT_GENERIC_SPELL);
+            curAtk = GetCaster()->GetCurrentSpell(CURRENT_GENERIC_SPELL);
             if (curAtk)
             {
-                if (curAtk->m_spellInfo->Id == ATTACK_HIT && curAtk->GetSpellTimer() > 0)
+                if (curAtk->m_spellInfo->Id == ELKS(ATTACK_HIT) && curAtk->GetSpellTimer() > 0)
                 {
-                    spell->skip = true;
-                    GetCaster()->AddSpellCooldown(spell->m_spellInfo->Id, 0, 1, false);
-                    QueSpell(caster);
+                    GetSpell()->skip = true;
+                    GetCaster()->AddSpellCooldown(GetSpell()->m_spellInfo->Id, 0, 1, false);
+                    QueSpell(GetCaster());
                     return;
                 }
             }
         }
 
         uint16 cd = 0;
-        if (caster->CanUseAttackType(BASE_ATTACK))
-            cd += caster->GetAttackTime(BASE_ATTACK);
-        if (caster->CanUseAttackType(OFF_ATTACK))
-            cd += caster->GetAttackTime(OFF_ATTACK);
-        spell->SetRuneCooldown(cd);
-        spell->SetRuneCost(1);
+        if (GetCaster()->CanUseAttackType(BASE_ATTACK))
+            cd += GetCaster()->GetAttackTime(BASE_ATTACK);
+        if (GetCaster()->CanUseAttackType(OFF_ATTACK))
+            cd += GetCaster()->GetAttackTime(OFF_ATTACK);
+        GetSpell()->SetRuneCooldown(cd);
+        GetSpell()->SetRuneCost(1);
 
-        if (auto aura = caster->GetAura(COMBO_COUNT))
+        if (auto aura = GetCaster()->GetAura(ELKS(COMBO_COUNT)))
             comboLength = aura->GetStackAmount();
     }
-    void SpellBegin()
-    {
-    }
+
     virtual void AttackUnique()
     {
 
     }
     void AttackHit()
     {
-        uint32 hitSpell = SPIN_ATTACK_HIT;
-        caster->CastSpell(caster, hitSpell, false);
+        GetCaster()->CastSpell(GetCaster(), ELKS(SPIN_ATTACK_HIT), false);
         AttackUnique();
-
-        auto curAtk = caster->GetCurrentSpell(CURRENT_GENERIC_SPELL);
-        if (curAtk)
-        {
-            if (curAtk->m_spellInfo->Id == hitSpell)
-            {
-                curAtk->GetTriggerDummy()[MapDummy::ComboLength] = comboLength;
-                return;
-            }
-        }
     }
     virtual void Register()
     {
         BeforeSpellLoad += SpellCastFn(spell_elk_spin_attack::SpellClick);
-        BeforeCast += SpellCastFn(spell_elk_spin_attack::SpellBegin);
         AfterFullChannel += SpellCastFn(spell_elk_spin_attack::AttackHit);
     }
 
@@ -765,6 +479,7 @@ class spell_extension_system : public AuraScript
 
 
     std::vector<std::pair<uint32, const ExtensionObj*>> CurrentExtensions = {};
+    std::map<ObjectGuid, bool> LastLaugh = {};
 
     void SpellCast(Spell* spell)
     {
@@ -773,17 +488,30 @@ class spell_extension_system : public AuraScript
         if (it == Extensions.end())
             return;
 
+        bool uniqueFound = false;
         if (it->second.Unique == true)
         {
             for (std::pair<uint32, const ExtensionObj*> obj : CurrentExtensions)
             {
                 if (obj.first == it->first)
-                    return;
+                {
+                    uniqueFound = true;
+                    break;
+                }
             }
         }
-        std::pair<uint32, const ExtensionObj*> extension = std::make_pair(it->first, &it->second);
+        if (!uniqueFound)
+        {
+            std::pair<uint32, const ExtensionObj*> extension = std::make_pair(it->first, &it->second);
+            CurrentExtensions.emplace_back(extension);
+            sort(CurrentExtensions.begin(), CurrentExtensions.end(),
+                [](const std::pair<uint32, const ExtensionObj*>& first, const std::pair<uint32, const ExtensionObj*>& second)
+                {
+                    return first.second->Cost < second.second->Cost;
+                }
+            );
+        }
         int32 mana;
-        CurrentExtensions.emplace_back(extension);
         GetAura()->RefreshDuration();
         for (auto ext : CurrentExtensions)
         {
@@ -799,19 +527,64 @@ class spell_extension_system : public AuraScript
     }
     void IsCasting(AuraEffect const* aurEff)
     {
-        if (GetUnitOwner()->GetCurrentSpell(CURRENT_GENERIC_SPELL))
+        if (!GetUnitOwner()->GetCurrentSpell(CURRENT_GENERIC_SPELL))
             return;
         GetAura()->SetDuration(GetAura()->GetDuration() + 100);
     }
 
     void OnRemove(AuraEffect const* aurEff, AuraEffectHandleModes mode)
     {
+        if (!GetUnitOwner()->IsInCombat())
+            return;
+        uint16 totalCost = 0;
+        for (auto ext : CurrentExtensions)
+        {
+            totalCost += ext.second->Cost;
+        }
+        if (totalCost == 0)
+            return;
+        int16 dividedCost = float(totalCost) / LastLaugh.size();
+        for (auto ll : LastLaugh)
+        {
+            if (ll.second)
+            {
+                GetUnitOwner()->HandleStatModifier(CurrentExtensions.back().second->Mod, TOTAL_VALUE, GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second, false);
 
+                GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second += dividedCost;
+                if (GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second > GetUnitOwner()->GetLevel() * 100)
+                    GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second = GetUnitOwner()->GetLevel() * 100;
+                if (GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second < GetUnitOwner()->GetLevel() * -100)
+                    GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second = GetUnitOwner()->GetLevel() * -100;
+
+                GetUnitOwner()->HandleStatModifier(CurrentExtensions.back().second->Mod, TOTAL_VALUE, GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second, true);
+            }
+            else
+            {
+                GetUnitOwner()->HandleStatModifier(CurrentExtensions.back().second->Mod, TOTAL_VALUE, GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second, false);
+
+                GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second -= dividedCost;
+                if (GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second > GetUnitOwner()->GetLevel() * 100)
+                    GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second = GetUnitOwner()->GetLevel() * 100;
+                if (GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second < GetUnitOwner()->GetLevel() * -100)
+                    GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second = GetUnitOwner()->GetLevel() * -100;
+
+                GetUnitOwner()->HandleStatModifier(CurrentExtensions.back().second->Mod, TOTAL_VALUE, GetUnitOwner()->ExtensionSpellPower[CurrentExtensions.back().first].second, true);
+            }
+        }
     }
-    std::vector<std::pair<GUID, bool>> LastLaugh = {};
     void OnDamage(AuraEffect const* aurEff, ProcEventInfo& procInfo)
     {
-        uint32 victim = procInfo.GetDamageInfo()->GetVictim()->GetGUID();
+        ObjectGuid victim = procInfo.GetDamageInfo()->GetVictim()->GetGUID();
+        if (victim != GetUnitOwner()->GetGUID())
+        {
+            LastLaugh[victim] = true;
+        }
+        else
+        {
+            victim = procInfo.GetDamageInfo()->GetAttacker()->GetGUID();
+            if (victim != GetUnitOwner()->GetGUID())
+                LastLaugh[victim] = false;
+        }
     }
     void Register() override
     {
@@ -824,4 +597,162 @@ public:
 
     inline static ComboMap Extensions = {};
 };
+
+
+#define CRITICAL_ANIMATION_SEARCH_BLOCK { if (GetCaster()->IsPlayer())\
+{ \
+Player * player = GetCaster()->ToPlayer(); \
+if (player) \
+{ \
+int weps = 0; \
+int anim = RandomInt(1, 4); \
+int animSpell = ELKS(ATTACKUNARMED); \
+auto wep1 = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND); \
+auto wep2 = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND); \
+std::vector<const ItemTemplate*> weapons = { nullptr, nullptr }; \
+if (wep1) \
+weapons[0] = wep1->GetTemplate(); \
+if (wep2) \
+weapons[1] = wep2->GetTemplate(); \
+\
+animSpell = ELKS(CRITICAL_ATTACKUNARMED); \
+if (weapons[0]) \
+{ \
+weps += 1; \
+\
+switch (weapons[0]->GetSkill()) \
+{ \
+case SKILL_AXES: \
+case SKILL_SWORDS: \
+case SKILL_MACES: \
+    animSpell = ELKS(CRITICAL_ATTACK1H); \
+    break; \
+case SKILL_FISHING: \
+case SKILL_2H_AXES: \
+case SKILL_2H_SWORDS: \
+case SKILL_2H_MACES: \
+    animSpell = ELKS(CRITICAL_ATTACK2H); \
+    break; \
+case SKILL_POLEARMS: \
+case SKILL_STAVES: \
+    animSpell = ELKS(CRITICAL_ATTACK2H); \
+    break; \
+case SKILL_DAGGERS: \
+    animSpell = ELKS(CRITICAL_ATTACKMUTILATE); \
+    break; \
+case SKILL_SHIELD: \
+    animSpell = ELKS(CRITICAL_ATTACK1H); \
+    break; \
+case SKILL_FIST_WEAPONS: \
+default: \
+    animSpell = ELKS(CRITICAL_ATTACKUNARMED); \
+    break; \
+}\
+\
+}\
+\
+if (weps == 0) \
+GetSpell()->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(ELKS(ATTACKUNARMED))); \
+else \
+GetSpell()->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(animSpell)); \
+\
+} \
+} \
+else \
+{ \
+Creature * creature = GetCaster()->ToCreature(); \
+if (creature) \
+{\
+\
+int weps = 0; \
+int anim = RandomInt(1, 4); \
+int animSpell = ELKS(ATTACKUNARMED); \
+auto weapons = creature->GetWeaponEquippedEntry(); \
+\
+animSpell = ELKS(CRITICAL_ATTACKUNARMED); \
+if (weapons[0]) \
+{ \
+weps += 1; \
+\
+switch (weapons[0]->GetSkill()) \
+{ \
+case SKILL_AXES: \
+case SKILL_SWORDS: \
+case SKILL_MACES: \
+    animSpell = ELKS(CRITICAL_ATTACK1H); \
+    break; \
+case SKILL_FISHING: \
+case SKILL_2H_AXES: \
+case SKILL_2H_SWORDS: \
+case SKILL_2H_MACES: \
+    animSpell = ELKS(CRITICAL_ATTACK2H); \
+    break; \
+case SKILL_POLEARMS: \
+case SKILL_STAVES: \
+    animSpell = ELKS(CRITICAL_ATTACK2H); \
+    break; \
+case SKILL_DAGGERS: \
+    animSpell = ELKS(CRITICAL_ATTACKMUTILATE); \
+    break; \
+case SKILL_SHIELD: \
+    animSpell = ELKS(CRITICAL_ATTACK1H); \
+    break; \
+case SKILL_FIST_WEAPONS: \
+default: \
+    animSpell = ELKS(CRITICAL_ATTACKUNARMED); \
+    break; \
+}\
+\
+}\
+\
+GetSpell()->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(animSpell)); \
+\
+} \
+} \
+}
+
+
+#define CRITICAL_ATTACK_HIT_BLOCK(x_class) bool WasInAir = false; \
+uint32 strike = 0; \
+uint8 targetsHit = 0; \
+void SpellBegin() \
+{ \
+    AttackBegin(); \
+} \
+void SpellHit() \
+{ \
+    GetCaster()->ModifyPower(POWER_MANA, GetCaster()->GetStat(STAT_SPIRIT)); \
+    if (WasInAir) \
+    { \
+        CustomSpellValues values; \
+        values.AddSpellMod(SPELLVALUE_AURA_DURATION, 2000); \
+        GetCaster()->CastCustomSpell(ELKS(ATTACK_SLOW_DEBUFF), values, GetCaster(), TRIGGERED_FULL_MASK); \
+    } \
+    else \
+    { \
+        GetCaster()->CastSpell(GetHitUnit(), ELKS(ATTACK_SLOW_DEBUFF), true); \
+    } \
+     \
+    targetsHit++; \
+    DamageComponent(); \
+} \
+void SpellFinish() \
+{ \
+    if (!(GetCaster())) \
+        return; \
+     \
+    AfterAttack(); \
+     \
+     \
+    if (targetsHit) \
+    { \
+        GetCaster()->AddAura(ELKS(COMBO_COUNT), GetCaster()); \
+    } \
+} \
+void Register() override \
+{ \
+    BeforeCast += SpellCastFn(x_class::SpellBegin); \
+    AfterCast += SpellCastFn(x_class::SpellFinish); \
+    AfterHit += SpellHitFn(x_class::SpellHit); \
+} 
 

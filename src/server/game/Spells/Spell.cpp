@@ -3537,6 +3537,7 @@ SpellCastResult Spell::prepare(SpellCastTargets const* targets, AuraEffect const
     CallScriptBeforeSpellLoadHandlers();
     if (skip)
     {
+        SendCastResult(SPELL_FAILED_TRY_AGAIN);
         finish(false);
         cancel();
         return SPELL_FAILED_UNKNOWN;

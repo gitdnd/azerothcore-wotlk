@@ -13652,24 +13652,16 @@ void Unit::SetInCombatState(bool PvP, Unit* enemy, uint32 duration)
 
 void Unit::ClearInCombat()
 {
-    if (ExtensionSpellPower.size() > 0)
-    {
-        std::set<UnitMods> mods = {};
-        for (auto it : ExtensionSpellPower)
-        {
-            mods.insert(it.second.first);
-        }
-        ExtensionSpellPower = {};
-        for (auto mod : mods)
-        {
-            
-        }
-    }
-    
-
-
     m_CombatTimer = 0;
     RemoveUnitFlag(UNIT_FLAG_IN_COMBAT);
+
+    for (auto stat : ExtensionSpellPower)
+    {
+        HandleStatModifier(stat.second.first, TOTAL_VALUE, stat.second.second, false);
+    }
+    ExtensionSpellPower.clear();
+    RemoveAura(1000000);
+
 
     // Player's state will be cleared in Player::UpdateContestedPvP
     if (Creature* creature = ToCreature())
@@ -15174,21 +15166,10 @@ float Unit::GetTotalStatValue(Stats stat, float additionalValue) const
     if (m_auraModifiersGroup[unitMod][TOTAL_PCT] <= 0.0f)
         return 0.0f;
 
-    std::vector<float> negExtensionMods = {};
+
     // value = ((base_value * base_pct) + total_value) * total_pct
     float value  = m_auraModifiersGroup[unitMod][BASE_VALUE] + GetCreateStat(stat);
     value *= m_auraModifiersGroup[unitMod][BASE_PCT];
-
-    for (const auto& ext : ExtensionSpellPower)
-    {
-        if (ext.second.first != unitMod)
-            continue;
-        if (ext.second.second >= 0)
-            value += ext.second.second;
-        else
-            negExtensionMods.push_back(-1 * ext.second.second);
-    }
-
     value += m_auraModifiersGroup[unitMod][TOTAL_VALUE] + additionalValue;
     value += GetDerivedModifier(unitMod);
     value *= m_auraModifiersGroup[unitMod][TOTAL_PCT];
@@ -15209,15 +15190,7 @@ float Unit::GetTotalStatValue(Stats stat, float additionalValue) const
             value += key * (value / ogVal);
         }
     }
-    for (auto& val : negExtensionMods)
-    {
-        if (value <= 0.0f)
-            return 0.0f;
-        value += val * (value / ogVal);
-    }
 
-    if (value <= 0.0f)
-        return 0.0f;
     return value;
 }
 
