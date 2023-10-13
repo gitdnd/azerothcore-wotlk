@@ -3909,9 +3909,6 @@ void Unit::SetCurrentCastedSpell(Spell* pSpell)
 
     bool bySelf = m_currentSpells[CSpellType] && m_currentSpells[CSpellType]->m_spellInfo->Id == pSpell->m_spellInfo->Id;
 
-    // break same type spell if it is not delayed
-    InterruptSpell(CSpellType, false, true, bySelf);
-
     // special breakage effects:
     switch (CSpellType)
     {

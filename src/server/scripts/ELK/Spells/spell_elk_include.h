@@ -62,6 +62,7 @@ enum OutsideSpells
     CRUSADER_STRIKE =           1000001,
     FLASH_FOCUS =               1000012,
     HOLY_POWER =                1000014,
+    CRUSADER_STRIKE_HIT =       1000021,
 };
 #define ELKS(x) uint32(ELKSpells::x)
 enum SpellsC // Creature Spells.
@@ -599,6 +600,41 @@ public:
 };
 
 
+class spell_combo_counter_aura : public AuraScript
+{
+    PrepareAuraScript(spell_combo_counter_aura);
+
+    uint32 dur = 0;
+    uint8 combo = 0;
+    void PreSpellCast(Spell* spell)
+    {
+        if (GetCaster()->HasUnitState(UNIT_STATE_CASTING) && dur == 0)
+        {
+            dur = GetAura()->GetDuration();
+            combo = GetAura()->GetStackAmount();
+            GetAura()->SetOverrideDuration(100000);
+        }
+    }
+    void PostSpellCast(Spell* spell)
+    {
+        if (!GetCaster()->HasUnitState(UNIT_STATE_CASTING) && dur > 0)
+        {
+            if (GetAura()->GetStackAmount() > combo)
+                GetAura()->SetDuration(GetAura()->GetSpellInfo()->GetMaxDuration());
+            else
+                GetAura()->SetDuration(dur);
+            dur = 0;
+        }
+    }
+    void Register() override
+    {
+        OnSpellCast += OnSpellCastFn(spell_combo_counter_aura::PreSpellCast);
+        OnSpellCast += OnSpellCastFn(spell_combo_counter_aura::PostSpellCast);
+    }
+public:
+
+    inline static ComboMap Extensions = {};
+};
 #define CRITICAL_ANIMATION_SEARCH_BLOCK { if (GetCaster()->IsPlayer())\
 { \
 Player * player = GetCaster()->ToPlayer(); \
@@ -746,7 +782,11 @@ void SpellFinish() \
      \
     if (targetsHit) \
     { \
-        GetCaster()->AddAura(ELKS(COMBO_COUNT), GetCaster()); \
+        Aura* aura = GetCaster()->GetAura(ELKS(COMBO_COUNT)); \
+        if (!aura) \
+            GetCaster()->AddAura(ELKS(COMBO_COUNT), GetCaster()); \
+        else \
+            aura->SetStackAmount(aura->GetStackAmount() + 1); \
     } \
 } \
 void Register() override \

@@ -3,7 +3,6 @@
 class spell_elk_crusader_strike : public ELKSpellScript
 {
     PrepareSpellScript(spell_elk_crusader_strike);
-    uint8 comboLength = 0;
 
     void SpellClick()
     {
@@ -52,8 +51,7 @@ class spell_elk_crusader_strike : public ELKSpellScript
         GetSpell()->SetRuneCooldown(cd);
         GetSpell()->SetRuneCost(1);
 
-        if (auto aura = GetCaster()->GetAura(ELKS(COMBO_COUNT)))
-            comboLength = aura->GetStackAmount();
+        GetCaster()->AddSpellCooldown(ELKS(CRUSADER_STRIKE), 0, 10000);
     }
 
     virtual void AttackUnique()
@@ -62,13 +60,7 @@ class spell_elk_crusader_strike : public ELKSpellScript
     }
     void AttackHit()
     {
-        GetCaster()->CastSpell(GetCaster(), ELKS(CRITICAL_ATTACK_HIT), false);
-        Spell* spell = GetCaster()->GetCurrentSpell(CURRENT_CHANNELED_SPELL);
-        if (!spell)
-            return;
-        auto auraMap = spell->GetTriggerDummy();
-        auraMap.emplace(MapDummy::TriggeringSpell, std::optional<uint32>(ELKS(CRUSADER_STRIKE)));
-        AttackUnique();
+        GetCaster()->CastSpell(GetCaster(), ELKS(CRUSADER_STRIKE_HIT), false);
     }
     virtual void Register()
     {
@@ -364,6 +356,7 @@ class spell_elk_divine_storm : public ELKSpellScript
         damageInfo.damages[0].damageSchoolMask = GetSpellInfo()->GetSchoolMask();
         GetCaster()->CalculateMeleeDamage(victim, &damageInfo); 
         damageInfo.HitInfo |= HITINFO_NO_ANIMATION; 
+        damageInfo.damages[0].damage /= 2;
         damageInfo.damages[0].damage *= combo;
         Unit::DealDamageMods(victim, damageInfo.damages[0].damage, &damageInfo.damages[0].absorb);
 
@@ -441,7 +434,7 @@ class spell_elk_avenging_wrath : public ELKSpellScript
 
     void Register() override
     {
-        BeforeCast += SpellCastFn(spell_elk_avenging_wrath::TriggerExtension);
+        BeforeCastTime += SpellCastFn(spell_elk_avenging_wrath::TriggerExtension);
     }
 };
 
@@ -541,7 +534,7 @@ class spell_elk_seal_of_silver : public ELKSpellScript
 
     void Register() override
     {
-        BeforeCast += SpellCastFn(spell_elk_seal_of_silver::TriggerExtension);
+        BeforeCastTime += SpellCastFn(spell_elk_seal_of_silver::TriggerExtension);
     }
 };
 

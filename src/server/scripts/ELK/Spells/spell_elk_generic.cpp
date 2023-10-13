@@ -39,7 +39,11 @@ class spell_elk_attack_hit : public ELKSpellScript
 
         if (targetsHit)
         {
-            GetCaster()->AddAura(ELKS(COMBO_COUNT), GetCaster());
+            Aura* aura = GetCaster()->GetAura(ELKS(COMBO_COUNT));
+            if (!aura)
+                GetCaster()->AddAura(ELKS(COMBO_COUNT), GetCaster());
+            else
+                aura->SetStackAmount(aura->GetStackAmount() + 1);
         }
     }
     void Register() override
@@ -134,7 +138,11 @@ class spell_elk_spin_attack_hit : public ELKSpellScript
 
         if (targetsHit)
         {
-            GetCaster()->AddAura(ELKS(COMBO_COUNT), GetCaster());
+            Aura* aura = GetCaster()->GetAura(ELKS(COMBO_COUNT));
+            if (!aura)
+                GetCaster()->AddAura(ELKS(COMBO_COUNT), GetCaster());
+            else
+                aura->SetStackAmount(aura->GetStackAmount() + 1);
         }
     }
     void Register() override
@@ -169,7 +177,11 @@ class spell_elk_deflect_aura : public AuraScript
                     GetCaster()->SetRuneCooldown(i, (cd > 15000) ? cd - 15000 : 0);
                 }
                 success = true;
-                GetCaster()->AddAura(ELKS(COMBO_COUNT), GetCaster());
+                Aura* aura = GetCaster()->GetAura(ELKS(COMBO_COUNT));
+                if (!aura)
+                    GetCaster()->AddAura(ELKS(COMBO_COUNT), GetCaster());
+                else
+                    aura->SetStackAmount(aura->GetStackAmount() + 1);
             }
             GetCaster()->PlayDirectSound(20000);
             dmgInfo.AbsorbDamage(-1 * dmgInfo.GetDamage());
@@ -179,9 +191,16 @@ class spell_elk_deflect_aura : public AuraScript
             }
         }
     }
+    void End(AuraEffect const* aurEff, AuraEffectHandleModes mode)
+    {
+        Spell* spell = GetCaster()->GetCurrentSpell(CURRENT_CHANNELED_SPELL);
+        if (spell && (spell->m_spellInfo->Id == ELKS(SPELL_DEFLECT) || spell->m_spellInfo->Id == ELKS(SPELL_DEFLECT_SHORT)));
+            GetCaster()->InterruptSpell(CURRENT_CHANNELED_SPELL);
+    }
     void Register() override
     {
         OnEffectAbsorb += AuraEffectAbsorbFn(spell_elk_deflect_aura::Absorb, EFFECT_0);
+        AfterEffectRemove += AuraEffectRemoveFn(spell_elk_deflect_aura::End, EFFECT_0, SPELL_AURA_SCHOOL_ABSORB, AURA_EFFECT_HANDLE_REAL);
     }
 };
 
@@ -215,7 +234,7 @@ class spell_elk_deflect : public SpellScript
     } 
     void Register() override
     {
-        
+     
         BeforeCastTime += SpellCastFn(spell_elk_deflect::SpamCheck);
     }
 };
@@ -521,7 +540,11 @@ class spell_elk_generic_finale_hit : public ELKSpellScript
 
         if (targetsHit)
         {
-            GetCaster()->AddAura(ELKS(COMBO_COUNT), GetCaster());
+            Aura* aura = GetCaster()->GetAura(ELKS(COMBO_COUNT));
+            if (!aura)
+                GetCaster()->AddAura(ELKS(COMBO_COUNT), GetCaster());
+            else
+                aura->SetStackAmount(aura->GetStackAmount() + 1);
         }
 
         switch (strike)
@@ -556,5 +579,6 @@ void AddSC_elk_spell_scripts()
     RegisterSpellScript(spell_elk_generic_finale);
     RegisterSpellScript(spell_elk_generic_finale_hit);
 
+    RegisterSpellScript(spell_combo_counter_aura);
     RegisterSpellScript(spell_extension_system);
 }

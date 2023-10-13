@@ -892,6 +892,11 @@ void Aura::SetDuration(int32 duration, bool withMods)
         m_duration = GetMaxDuration();
     SetNeedClientUpdateForTargets();
 }
+void Aura::SetOverrideDuration(int32 duration)
+{
+    m_duration = duration;
+    SetNeedClientUpdateForTargets();
+}
 
 void Aura::RefreshDuration(bool withMods)
 {

@@ -2,6 +2,7 @@ REPLACE INTO `spell_script_names` (`spell_id`, `ScriptName`) VALUES
 	(100002, 'spell_elk_attack_hit'),
 	(100003, 'spell_elk_attack'),
 	(100006, 'spell_elk_deflect'),
+	(100007, 'spell_combo_counter_aura'),
 	(100008, 'spell_elk_deflect'),
 	(100009, 'spell_elk_critical_attack_hit'),
 	(100010, 'spell_elk_critical_attack'),

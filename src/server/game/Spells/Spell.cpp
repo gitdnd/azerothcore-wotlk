@@ -4091,7 +4091,6 @@ void Spell::_cast(bool skipCheck)
         }
     }
 
-    CallScriptAfterCastHandlers();
 
     if (modOwner)
         modOwner->SetSpellModTakingSpell(this, false);
@@ -4588,6 +4587,7 @@ void Spell::finish(bool ok)
             m_caster->ToPlayer()->UpdatePotionCooldown(this); 
     }
     CallScriptAfterFullChannelHandlers();
+    CallScriptAfterCastHandlers();
 }
 
 void Spell::WriteCastResultInfo(WorldPacket& data, Player* caster, SpellInfo const* spellInfo, uint8 castCount, SpellCastResult result, SpellCustomErrors customError)
