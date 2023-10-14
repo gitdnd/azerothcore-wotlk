@@ -420,6 +420,29 @@ void Player::Update(uint32 p_time)
         m_delayed_unit_relocation_timer = 0;
         RemoveFromNotify(NOTIFY_VISIBILITY_CHANGED);
     }
+    if (ambushCooldown < p_time)
+        ambushCooldown = 0;
+    else
+        ambushCooldown -= p_time;
+    if (ambushCreature)
+    {
+        if (ambushDelay < p_time)
+        {
+            ambushDelay = 0;
+            TempSummon* summon = SummonCreature(ambushCreature, GetRandomNearPosition(20.f), TEMPSUMMON_TIMED_DESPAWN, 100000);
+            if (summon->IsHostileTo(this))
+            {
+                summon->CombatStart(this);
+            }
+            else
+            {
+                summon->SetOwnerGUID(GetGUID());
+            }
+            ambushCreature = 0;
+        }
+        else
+            ambushDelay -= p_time;
+    }
 }
 
 void Player::UpdateMirrorTimers()

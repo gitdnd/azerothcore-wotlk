@@ -2350,6 +2350,8 @@ void Player::GiveXP(uint32 xp, Unit* victim, float group_rate, bool isLFGReward)
         return;
     }
 
+    Ambush(true);
+
     if (HasPlayerFlag(PLAYER_FLAGS_NO_XP_GAIN))
     {
         return;
@@ -16234,4 +16236,35 @@ std::string Player::GetDebugInfo() const
     std::stringstream sstr;
     sstr << Unit::GetDebugInfo();
     return sstr.str();
+}
+
+
+void Player::Ambush(bool onKill)
+{
+    std::vector<REVAmbush>* ambushes = sObjectMgr->GetREVAmbush(GetZoneId());
+    for (const REVAmbush& ambush : *ambushes)
+    {
+        if (ambush.lvlMax > GetLevel() &&
+            ambush.lvlMin < GetLevel() &&
+            ambush.hpPct < GetHealthPct() &&
+            ambushCooldown == 0 &&
+            ambushDelay == 0 &&
+            (
+                (ambush.hostile && GetReputationMgr().GetState(ambush.repId)->Standing <= ambush.repCutoff)
+                ||
+                (!ambush.hostile && GetReputationMgr().GetState(ambush.repId)->Standing > ambush.repCutoff)
+            )
+            &&
+            (
+                (onKill && ambush.spawnKill < rand() % 100)
+                ||
+                (!onKill && ambush.spawnArea < rand() % 100)
+            )
+            )
+        {
+            ambushCooldown = (float(rand() % 100) / 100.f) * ambush.cooldown * 100;
+            ambushCreature = ambush.creature_guid;
+            ambushDelay = (float(rand() % 100) / 100.f) * ambush.delay * 100;
+        }
+    }
 }

@@ -518,6 +518,7 @@ typedef std::unordered_map<uint32, PointOfInterestLocale> PointOfInterestLocaleC
 typedef std::multimap<uint32, uint32> QuestRelations;
 typedef std::pair<QuestRelations::const_iterator, QuestRelations::const_iterator> QuestRelationBounds;
 
+
 struct PetLevelInfo
 {
     PetLevelInfo()
@@ -663,6 +664,38 @@ struct QuestPOI
     QuestPOI(uint32 id, int32 objIndex, uint32 mapId, uint32 areaId, uint32 floorId, uint32 unk3, uint32 unk4) : Id(id), ObjectiveIndex(objIndex), MapId(mapId), AreaId(areaId), FloorId(floorId), Unk3(unk3), Unk4(unk4) {}
 };
 
+struct REVAmbush
+{
+    uint32 id{ 0 };
+    uint8 spawnArea{ 0 };
+    uint8 spawnKill{ 0 };
+    uint32 creature_guid{ 0 };
+    bool hostile{ 0 };
+    uint32 repId{ 0 };
+    uint8 repCutoff{ 0 };
+    uint16 delay{ 0 };
+    uint8 hpPct{ 0 };
+    uint8 lvlMin{ 0 };
+    uint8 lvlMax{ 0 };
+    uint16 cooldown{ 0 };
+
+    REVAmbush() = default;
+    REVAmbush(uint64 id, uint8 spawnArea, uint8 spawnKill, uint32 creature_guid, bool hostile, uint32 repId, uint8 repCutoff , uint32 delay, uint8 hpPct, uint8 lvlMin, uint8 lvlMax, uint16 cooldown) :
+        id(id),
+        spawnArea(spawnArea),
+        spawnKill(spawnKill),
+        creature_guid(creature_guid),
+        hostile(hostile),
+        repCutoff(repCutoff),
+        repId(repId),
+        delay(delay),
+        hpPct(hpPct),
+        lvlMin(lvlMin),
+        lvlMax(lvlMax),
+        cooldown(cooldown)
+    {}
+};
+
 typedef std::vector<QuestPOI> QuestPOIVector;
 typedef std::unordered_map<uint32, QuestPOIVector> QuestPOIContainer;
 
@@ -673,6 +706,9 @@ typedef std::unordered_map<uint32, TrainerSpellData> CacheTrainerSpellContainer;
 typedef std::unordered_map<uint32, ServerMail> ServerMailContainer;
 
 typedef std::vector<uint32> CreatureCustomIDsContainer;
+
+typedef std::map<uint32, std::vector<REVAmbush>> REVAmbushContainer;
+
 
 enum SkillRangeType
 {
@@ -1098,6 +1134,9 @@ public:
 
     void LoadVendors();
     void LoadTrainerSpell();
+
+    void REVLoadAmbush();
+
     void AddSpellToTrainer(uint32 entry, uint32 spell, uint32 spellCost, uint32 reqSkill, uint32 reqSkillValue, uint32 reqLevel, uint32 reqSpell);
 
     std::string GeneratePetName(uint32 entry);
@@ -1445,6 +1484,14 @@ public:
     uint8 GetInstanceSavedGameobjectState(uint32 id, uint32 guid);
     void SetInstanceSavedGameobjectState(uint32 id, uint32 guid, uint8 state);
     void NewInstanceSavedGameobjectState(uint32 id, uint32 guid, uint8 state);
+
+    std::vector<REVAmbush>* GetREVAmbush(uint32 entry)
+    {
+        if(!_revAmbushContainer.contains(entry))
+            return nullptr;
+
+        return &_revAmbushContainer[entry];
+    }
 private:
     // first free id for selected id type
     uint32 _auctionId; // pussywizard: accessed by a single thread
@@ -1603,6 +1650,8 @@ private:
     CacheTrainerSpellContainer _cacheTrainerSpellStore;
 
     ServerMailContainer _serverMailStore;
+
+    REVAmbushContainer _revAmbushContainer;
 
     std::set<uint32> _difficultyEntries[MAX_DIFFICULTY - 1]; // already loaded difficulty 1 value in creatures, used in CheckCreatureTemplate
     std::set<uint32> _hasDifficultyEntries[MAX_DIFFICULTY - 1]; // already loaded creatures with difficulty 1 values, used in CheckCreatureTemplate

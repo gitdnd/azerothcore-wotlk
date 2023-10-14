@@ -93,6 +93,9 @@ void WorldDatabaseConnection::DoPrepareStatements()
     PrepareStatement(WORLD_UPD_CREATURE_ZONE_AREA_DATA, "UPDATE creature SET zoneId = ?, areaId = ? WHERE guid = ?", CONNECTION_ASYNC);
     PrepareStatement(WORLD_UPD_GAMEOBJECT_ZONE_AREA_DATA, "UPDATE gameobject SET zoneId = ?, areaId = ? WHERE guid = ?", CONNECTION_ASYNC);
     PrepareStatement(WORLD_INS_GAMEOBJECT_ADDON, "INSERT INTO gameobject_addon (guid, invisibilityType, invisibilityValue) VALUES (?, 0, 0)", CONNECTION_ASYNC);
+
+    PrepareStatement(REV_SEL_AMBUSH, "SELECT rev_ambush_id, spawnArea, spawnKill, creature_guid, hostile, repId, repCutoff, delay, hpPct, lvlMin, lvlMax, cooldown, area FROM rev_ambush WHERE rev_ambush_id = ?", CONNECTION_SYNCH);
+
     // 0: uint8
     PrepareStatement(WORLD_SEL_REQ_XP, "SELECT Experience FROM player_xp_for_level WHERE Level = ?", CONNECTION_SYNCH);
 }

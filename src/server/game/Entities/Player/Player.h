@@ -2937,6 +2937,13 @@ private:
     bool _wasOutdoor;
 
     PlayerSettingMap m_charSettingsMap;
+
+public:
+    void Ambush(bool onKill);
+protected:
+    uint32 ambushCooldown = 0;
+    uint32 ambushCreature = 0;
+    uint32 ambushDelay = 0;
 };
 
 void AddItemsSetItem(Player* player, Item* item);

@@ -29,7 +29,7 @@ DELETE FROM `player_classlevelstats`;
 /*!40000 ALTER TABLE `player_classlevelstats` DISABLE KEYS */;
 INSERT INTO `player_classlevelstats` (`class`, `level`, `basehp`, `basemana`) VALUES
 	(1, 1, 20, 0),
-	(1, 2, 29, 0),
+	(1, 2, 29, 0), 
 	(1, 3, 38, 0),
 	(1, 4, 47, 0),
 	(1, 5, 56, 0),

@@ -1971,6 +1971,9 @@ void World::SetInitialWorldSettings()
     LOG_INFO("server.loading", "Loading GM Surveys...");
     sTicketMgr->LoadSurveys();
 
+    LOG_INFO("server.loading", "Loading REVELATIONS Ambush...");
+    sObjectMgr->REVLoadAmbush();
+
     LOG_INFO("server.loading", "Loading Client Addons...");
     AddonMgr::LoadFromDB();
 

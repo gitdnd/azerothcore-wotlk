@@ -1171,6 +1171,9 @@ void WorldObject::ProcessPositionDataChanged(PositionFullTerrainStatus const& da
     _outdoors   = data.outdoors;
     _floorZ     = data.floorZ;
     _liquidData = data.liquidInfo;
+
+    if(Player* player = ToPlayer())
+        player->Ambush(false);
 }
 
 void WorldObject::AddToWorld()

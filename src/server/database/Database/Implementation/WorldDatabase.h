@@ -101,6 +101,8 @@ enum WorldDatabaseStatements : uint32
     WORLD_SEL_REQ_XP,
     WORLD_INS_GAMEOBJECT_ADDON,
 
+    REV_SEL_AMBUSH,
+
     MAX_WORLDDATABASE_STATEMENTS
 };
 

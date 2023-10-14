@@ -1228,6 +1228,14 @@ public:
         handler->SendGlobalGMSysMessage("DB table `game_graveyard` reloaded.");
         return true;
     }
+
+    static bool HandleReloadAmbushCommand(ChatHandler* handler)
+    {
+        LOG_INFO("server.loading", "Reloading rev_ambush table...");
+        sObjectMgr->REVLoadAmbush();
+        handler->SendGlobalGMSysMessage("DB table `rev_ambush` reloaded.");
+        return true;
+    }
 };
 
 void AddSC_reload_commandscript()

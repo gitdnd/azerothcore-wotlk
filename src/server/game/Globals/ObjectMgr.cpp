@@ -427,6 +427,10 @@ ObjectMgr::~ObjectMgr()
             delete difficultiesItr->second;
         }
     }
+
+    for(auto& vec : _revAmbushContainer)
+        vec.second.clear();
+    _revAmbushContainer.clear();
 }
 
 ObjectMgr* ObjectMgr::instance()
@@ -9005,6 +9009,54 @@ void ObjectMgr::LoadTrainerSpell()
 
     LOG_INFO("server.loading", ">> Loaded {} Trainers in {} ms", count, GetMSTimeDiffToNow(oldMSTime));
     LOG_INFO("server.loading", " ");
+}
+
+void ObjectMgr::REVLoadAmbush()
+{
+	uint32 oldMSTime = getMSTime();
+
+	// For reload case
+    _revAmbushContainer.clear();
+
+    QueryResult result = WorldDatabase.Query("SELECT rev_ambush_id, spawnArea, spawnKill, creature_guid, hostile, repId, repCutoff, delay, hpPct, lvlMin, lvlMax, cooldown, area FROM rev_ambush");
+
+	if (!result)
+	{
+		LOG_WARN("server.loading", ">> Loaded 0 Ambushes. DB table `rev_ambush` is empty!");
+		LOG_INFO("server.loading", " ");
+		return;
+	}
+
+	uint32 count = 0;
+    _revAmbushContainer = {};
+
+	do
+	{
+		Field* fields = result->Fetch();
+
+            
+        uint64 id = fields[0].Get<uint64>();
+        uint8 spawnArea = fields[1].Get<uint8>();
+        uint8 spawnKill = fields[2].Get<uint8>();
+        uint64 creature_guid = fields[3].Get<uint64>();
+        bool hostile = fields[4].Get<bool>();
+        uint32 repId = fields[5].Get<uint32>();
+        uint8 repCutoff = fields[6].Get<uint8>();
+        uint32 delay = fields[7].Get<uint32>();
+        uint8 hpPct = fields[8].Get<uint8>();
+        uint8 lvlMin = fields[9].Get<uint8>();
+        uint8 lvlMax = fields[10].Get<uint8>();
+        uint16 cooldown = fields[11].Get<uint16>();
+        uint16 area = fields[12].Get<uint16>();
+
+        if (!_revAmbushContainer.contains(area))
+            _revAmbushContainer.emplace(area, std::vector<REVAmbush>());
+        _revAmbushContainer[area].push_back(REVAmbush(id, spawnArea, spawnKill, creature_guid, hostile, repId, repCutoff, delay, hpPct, lvlMin, lvlMax, cooldown));
+		++count;
+	} while (result->NextRow());
+
+	LOG_INFO("server.loading", ">> Loaded {} Ambushes in {} ms", count, GetMSTimeDiffToNow(oldMSTime));
+	LOG_INFO("server.loading", " ");
 }
 
 int ObjectMgr::LoadReferenceVendor(int32 vendor, int32 item, std::set<uint32>* skip_vendors)
