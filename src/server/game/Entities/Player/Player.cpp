@@ -16261,9 +16261,9 @@ void Player::Ambush(bool onKill)
             ambushCooldown == 0 &&
             ambushDelay == 0 &&
             (
-                (ambush.hostile && GetReputationMgr().GetReputationRank(ambush.repId) <= ambush.repCutoff)
+                (ambush.hostile && GetReputationRank(ambush.repId) <= ambush.repCutoff)
                 ||
-                (!ambush.hostile && GetReputationMgr().GetReputationRank(ambush.repId) > ambush.repCutoff)
+                (!ambush.hostile && GetReputationRank(ambush.repId) > ambush.repCutoff)
             )
             &&
             (
