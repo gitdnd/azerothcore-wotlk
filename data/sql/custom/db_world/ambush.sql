@@ -25,5 +25,5 @@ CALL rev_ambush_create_table();;
 DROP PROCEDURE  rev_ambush_create_table;;
 
 INSERT INTO `rev_ambush` (`rev_ambush_id`, `spawnArea`, `spawnKill`, `creature_guid`, `hostile`, `repId`, `repCutoff`, `delay`, `hpPct`, `lvlMin`, `lvlMax`, `cooldown`, `area`) VALUES
-	(1, 20, 35, 15643, false, 69, 0, 20, 20, 1, 40, 400, 14),
-	(2, 20, 35, 24207, true, 76, 0, 20, 20, 1, 40, 400, 14);
+	(1, 20, 35, 15643, false, 76, 0, 20, 20, 1, 40, 400, 14),
+	(2, 20, 35, 24207, true, 69, 0, 20, 20, 1, 40, 400, 14);
