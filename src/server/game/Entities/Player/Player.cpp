@@ -16241,6 +16241,8 @@ std::string Player::GetDebugInfo() const
 
 void Player::Ambush(bool onKill)
 {
+    if (IsInFlight() || IsFlying())
+        return;
     std::vector<REVAmbush>* ambushes = sObjectMgr->GetREVAmbush(GetZoneId());
     for (const REVAmbush& ambush : *ambushes)
     {
