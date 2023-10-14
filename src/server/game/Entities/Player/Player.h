@@ -2944,6 +2944,9 @@ protected:
     uint32 ambushCooldown = 0;
     uint32 ambushCreature = 0;
     uint32 ambushDelay = 0;
+    bool ambushHostile = false;
+
+    std::vector<TempSummon*> ambushers = {};
 };
 
 void AddItemsSetItem(Player* player, Item* item);

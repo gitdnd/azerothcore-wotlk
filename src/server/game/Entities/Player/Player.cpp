@@ -457,6 +457,12 @@ Player::~Player()
             u->RemovePlayerFromVision(this);
         } while (!m_isInSharedVisionOf.empty());
     }
+    for (auto* ambusher : ambushers)
+    {
+        ambusher->CombatStop();
+        ambusher->DeleteFromDB();
+        ambusher->AddObjectToRemoveList();
+    }
 }
 
 void Player::CleanupsBeforeDelete(bool finalCleanup)
@@ -16267,6 +16273,7 @@ void Player::Ambush(bool onKill)
             ambushCooldown = (float(rand() % 100) / 100.f) * ambush.cooldown * 100;
             ambushCreature = ambush.creature_guid;
             ambushDelay = (float(rand() % 100) / 100.f) * ambush.delay * 100;
+            ambushHostile = ambush.hostile;
         }
     }
 }
