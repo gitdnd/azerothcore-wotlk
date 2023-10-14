@@ -16257,7 +16257,7 @@ void Player::Ambush(bool onKill)
     {
         if (ambush.lvlMax > GetLevel() &&
             ambush.lvlMin < GetLevel() &&
-            ambush.hpPct < GetHealthPct() &&
+            ambush.hpPct > GetHealthPct() &&
             ambushCooldown == 0 &&
             ambushDelay == 0 &&
             (
