@@ -16250,6 +16250,8 @@ void Player::Ambush(bool onKill)
     if (IsInFlight() || IsFlying())
         return;
     std::vector<REVAmbush>* ambushes = sObjectMgr->GetREVAmbush(GetZoneId());
+    if (!ambushes)
+        return;
     for (const REVAmbush& ambush : *ambushes)
     {
         if (ambush.lvlMax > GetLevel() &&

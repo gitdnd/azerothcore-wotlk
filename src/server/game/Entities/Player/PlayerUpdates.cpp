@@ -431,13 +431,13 @@ void Player::Update(uint32 p_time)
             ambushDelay = 0;
             if (ambushHostile)
             {
-                TempSummon* summon = SummonCreature(ambushCreature, GetRandomNearPosition(20.f), TEMPSUMMON_TIMED_DESPAWN, 100000);
+                TempSummon* summon = SummonCreature(ambushCreature, GetRandomNearPosition(20.f), TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 100000);
                 summon->CombatStart(this);
                 ambushers.push_back(summon);
             }
             else
             {
-                TempSummon* summon = SummonCreature(ambushCreature, GetRandomNearPosition(20.f), TEMPSUMMON_TIMED_DESPAWN, 100000, 0, sSummonPropertiesStore.LookupEntry(687));
+                TempSummon* summon = SummonCreature(ambushCreature, GetRandomNearPosition(20.f), TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 100000, 0, sSummonPropertiesStore.LookupEntry(687));
                 summon->SetOwnerGUID(GetGUID());
                 ((Minion*)summon)->SetFollowAngle(frand(0.f, 7.f));
 
