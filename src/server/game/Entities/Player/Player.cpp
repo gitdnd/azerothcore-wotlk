@@ -16252,6 +16252,7 @@ void Player::Ambush(bool onKill)
     std::vector<REVAmbush>* ambushes = sObjectMgr->GetREVAmbush(GetZoneId());
     if (!ambushes)
         return;
+
     for (const REVAmbush& ambush : *ambushes)
     {
         if (ambush.lvlMax > GetLevel() &&
@@ -16260,9 +16261,9 @@ void Player::Ambush(bool onKill)
             ambushCooldown == 0 &&
             ambushDelay == 0 &&
             (
-                (ambush.hostile && GetReputationMgr().GetState(ambush.repId)->Standing <= ambush.repCutoff)
+                (ambush.hostile && GetReputationMgr().GetReputationRank(ambush.repId) <= ambush.repCutoff)
                 ||
-                (!ambush.hostile && GetReputationMgr().GetState(ambush.repId)->Standing > ambush.repCutoff)
+                (!ambush.hostile && GetReputationMgr().GetReputationRank(ambush.repId) > ambush.repCutoff)
             )
             &&
             (
