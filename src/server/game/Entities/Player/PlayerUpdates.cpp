@@ -433,7 +433,7 @@ void Player::Update(uint32 p_time)
             {
                 TempSummon* summon = SummonCreature(ambushCreature, GetRandomNearPosition(20.f), TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 100000);
                 summon->CombatStart(this);
-                ambushers.push_back(summon);
+                ambushers.push_back(summon->GetGUID());
             }
             else
             {
@@ -445,7 +445,7 @@ void Player::Update(uint32 p_time)
                 summon->GetMotionMaster()->MoveFollow(this, PET_FOLLOW_DIST, summon->GetFollowAngle(), MOTION_SLOT_ACTIVE);
                 summon->SetFaction(this->GetFaction());
 
-                ambushers.push_back(summon);
+                ambushers.push_back(summon->GetGUID());
             }
             ambushCreature = 0;
         }

@@ -413,6 +413,15 @@ Player::Player(WorldSession* session): Unit(true), m_mover(this)
 
 Player::~Player()
 {
+    for (auto& ambusher : ambushers)
+    {
+        Creature* unit = ObjectAccessor::GetCreature(*this, ambusher);
+        if (!unit)
+            continue;
+        unit->CombatStop();
+        unit->DeleteFromDB();
+        unit->AddObjectToRemoveList();
+    }
     sScriptMgr->OnDestructPlayer(this);
 
     // it must be unloaded already in PlayerLogout and accessed only for loggined player
@@ -456,12 +465,6 @@ Player::~Player()
             Unit* u = *(m_isInSharedVisionOf.begin());
             u->RemovePlayerFromVision(this);
         } while (!m_isInSharedVisionOf.empty());
-    }
-    for (auto* ambusher : ambushers)
-    {
-        ambusher->CombatStop();
-        ambusher->DeleteFromDB();
-        ambusher->AddObjectToRemoveList();
     }
 }
 
@@ -16253,30 +16256,38 @@ void Player::Ambush(bool onKill)
     if (!ambushes)
         return;
 
-    for (const REVAmbush& ambush : *ambushes)
+    std::vector<REVAmbush*> ambushApproved = {};
+    for (uint32 i = 0; i < ambushes->size(); i++)
     {
-        if (ambush.lvlMax > GetLevel() &&
-            ambush.lvlMin < GetLevel() &&
-            ambush.hpPct > GetHealthPct() &&
+        REVAmbush* ambush = &(*ambushes)[i];
+        if (ambush->lvlMax > GetLevel() &&
+            ambush->lvlMin < GetLevel() &&
+            ambush->hpPct > GetHealthPct() &&
             ambushCooldown == 0 &&
             ambushDelay == 0 &&
             (
-                (ambush.hostile && GetReputationRank(ambush.repId) <= ambush.repCutoff)
+                (ambush->hostile && GetReputationRank(ambush->repId) <= ambush->repCutoff)
                 ||
-                (!ambush.hostile && GetReputationRank(ambush.repId) > ambush.repCutoff)
+                (!ambush->hostile && GetReputationRank(ambush->repId) > ambush->repCutoff)
             )
             &&
             (
-                (onKill && ambush.spawnKill < rand() % 100)
+                (onKill && ambush->spawnKill < rand() % 100)
                 ||
-                (!onKill && ambush.spawnArea < rand() % 100)
+                (!onKill && ambush->spawnArea < rand() % 100)
             )
             )
         {
-            ambushCooldown = (float(rand() % 100) / 100.f) * ambush.cooldown * 100;
-            ambushCreature = ambush.creature_guid;
-            ambushDelay = (float(rand() % 100) / 100.f) * ambush.delay * 100;
-            ambushHostile = ambush.hostile;
+            ambushApproved.push_back(ambush);
         }
+    }
+    if (ambushApproved.size() > 0)
+    {
+        REVAmbush* ambush = ambushApproved[rand() % ambushApproved.size()];
+
+        ambushCooldown = (float(rand() % 100) / 100.f) * ambush->cooldown * 100;
+        ambushCreature = ambush->creature_guid;
+        ambushDelay = (float(rand() % 100) / 100.f) * ambush->delay * 100;
+        ambushHostile = ambush->hostile;
     }
 }

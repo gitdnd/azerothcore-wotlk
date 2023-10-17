@@ -2946,7 +2946,7 @@ protected:
     uint32 ambushDelay = 0;
     bool ambushHostile = false;
 
-    std::vector<TempSummon*> ambushers = {};
+    std::vector<ObjectGuid> ambushers = {};
 };
 
 void AddItemsSetItem(Player* player, Item* item);
