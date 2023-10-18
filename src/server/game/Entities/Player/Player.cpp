@@ -5633,6 +5633,7 @@ void Player::CheckAreaExploreAndOutdoor()
     if (IsInFlight())
         return;
 
+
     bool isOutdoor = IsOutdoors();
     uint32 areaId = GetAreaId();
     AreaTableEntry const* areaEntry = sAreaTableStore.LookupEntry(areaId);
@@ -16272,9 +16273,9 @@ void Player::Ambush(bool onKill)
             )
             &&
             (
-                (onKill && ambush->spawnKill < rand() % 100)
+                (onKill && ambush->spawnKill < (rand() % 100))
                 ||
-                (!onKill && ambush->spawnArea < rand() % 100)
+                (!onKill && ambush->spawnArea < (rand() % 100))
             )
             )
         {

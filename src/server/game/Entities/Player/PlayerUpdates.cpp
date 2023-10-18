@@ -1154,6 +1154,8 @@ bool Player::UpdatePosition(float x, float y, float z, float orientation,
         GetZoneAndAreaId(newZone, newArea);
         UpdateZone(newZone, newArea);
         m_needZoneUpdate = false;
+        Ambush(false);
+
     }
 
     if (GetGroup())
