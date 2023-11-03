@@ -508,6 +508,8 @@ class spell_elk_avenging_wrath_falling_aura : public AuraScript
     {
         OnEffectRemove += AuraEffectRemoveFn(spell_elk_avenging_wrath_falling_aura::Removed, EFFECT_2, SPELL_AURA_PERIODIC_DUMMY, AURA_EFFECT_HANDLE_REAL);
         OnMovementPacket += OnMovementPacketFn(spell_elk_avenging_wrath_falling_aura::MovePacket);
+        AfterEffectApply += AuraEffectApplyFn(AuraScript::_OnMovePacketAdd, EFFECT_2, SPELL_AURA_PERIODIC_DUMMY, AURA_EFFECT_HANDLE_REAL);
+        AfterEffectRemove += AuraEffectRemoveFn(AuraScript::_OnMovePacketRemove, EFFECT_2, SPELL_AURA_PERIODIC_DUMMY, AURA_EFFECT_HANDLE_REAL);
         OnEffectPeriodic += AuraEffectPeriodicFn(spell_elk_avenging_wrath_falling_aura::Tick, EFFECT_2, SPELL_AURA_PERIODIC_DUMMY);
     }
 };

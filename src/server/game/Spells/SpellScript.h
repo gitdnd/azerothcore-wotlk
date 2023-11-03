@@ -542,6 +542,18 @@ class AuraScript : public _SpellScript
     // internal use classes & functions
     // DO NOT THESE IN SCRIPTS
 public:
+
+    void _OnMovePacketAdd(AuraEffect const* aurEff, AuraEffectHandleModes mode)
+    {
+        if (GetTarget()->OnMovePacketAura)
+            GetTarget()->RemoveAura(GetTarget()->OnMovePacketAura);
+        GetTarget()->OnMovePacketAura = GetAura();
+    }
+    void _OnMovePacketRemove(AuraEffect const* aurEff, AuraEffectHandleModes mode)
+    {
+        if (GetTarget()->OnMovePacketAura == GetAura())
+            GetTarget()->OnMovePacketAura = nullptr;
+    }
 #define AURASCRIPT_FUNCTION_TYPE_DEFINES(CLASSNAME) \
         typedef bool(CLASSNAME::*AuraCheckAreaTargetFnType)(Unit* target); \
         typedef void(CLASSNAME::*AuraDispelFnType)(DispelInfo* dispelInfo); \
@@ -966,8 +978,9 @@ public:
     // example: OnMovementPacket += OnMovementPacketFn(class::function);
     // where function is: void function();
     HookList<OnMovementPacketHandler> OnMovementPacket;
-#define OnMovementPacketFn(F) OnMovementPacketFunction(&F)
+#define OnMovementPacketFn(F) OnMovementPacketFunction(&F);
 
+    
 	// executed on attack hit
 	// example: OnAttackHit += OnAttackHitFn(class::function);
 	// where function is: void function();

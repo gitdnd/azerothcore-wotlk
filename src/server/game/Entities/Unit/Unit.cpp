@@ -384,6 +384,8 @@ void GlobalCooldownMgr::CancelGlobalCooldown(SpellInfo const* spellInfo)
 // Methods of class Unit
 Unit::~Unit()
 {
+    if (OnMovePacketAura)
+        RemoveAura(OnMovePacketAura);
     // set current spells as deletable
     for (uint8 i = 0; i < CURRENT_MAX_SPELL; ++i)
         if (m_currentSpells[i])
@@ -432,7 +434,8 @@ void Unit::Relocate(float x, float y)
     m_positionYprev = m_positionY;
     Position::Relocate(x, y);
 
-    CallScriptIteration(CallScriptOnMovementPacket());
+    if (OnMovePacketAura)
+        OnMovePacketAura->CallScriptOnMovementPacket();
 }
 
 void Unit::Update(uint32 p_time)

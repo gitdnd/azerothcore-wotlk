@@ -1909,7 +1909,7 @@ public:
     virtual bool UpdatePosition(float x, float y, float z, float ang, bool teleport = false);
     // returns true if unit's position really changed
     bool UpdatePosition(const Position& pos, bool teleport = false) { return UpdatePosition(pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ(), pos.GetOrientation(), teleport); }
-    void UpdateOrientation(float orientation);
+    virtual void UpdateOrientation(float orientation);
     void UpdateHeight(float newZ);
 
     void KnockbackFrom(float x, float y, float speedXY, float speedZ);
@@ -2907,6 +2907,7 @@ public:
 
     std::map<uint32, std::pair<UnitMods, int16>> ExtensionSpellPower = {};
 
+    Aura* OnMovePacketAura = nullptr;
 };
 
 

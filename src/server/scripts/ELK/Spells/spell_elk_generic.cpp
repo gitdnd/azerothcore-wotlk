@@ -290,6 +290,8 @@ class spell_elk_sprint_aura : public AuraScript
     {
         OnEffectPeriodic += AuraEffectPeriodicFn(spell_elk_sprint_aura::EnergyCheck, EFFECT_1, SPELL_AURA_PERIODIC_ENERGIZE);
         OnMovementPacket += OnMovementPacketFn(spell_elk_sprint_aura::MovePacket);
+        AfterEffectApply += AuraEffectApplyFn(AuraScript::_OnMovePacketAdd, EFFECT_0, SPELL_AURA_MOD_INCREASE_SPEED, AURA_EFFECT_HANDLE_REAL);
+        AfterEffectRemove += AuraEffectRemoveFn(AuraScript::_OnMovePacketRemove, EFFECT_0, SPELL_AURA_MOD_INCREASE_SPEED, AURA_EFFECT_HANDLE_REAL);
     }
 };
 
@@ -320,6 +322,8 @@ class spell_elk_dash_aura : public AuraScript
     {
         OnEffectApply += AuraEffectApplyFn(spell_elk_dash_aura::Cast, EFFECT_0, SPELL_AURA_MOD_INCREASE_SPEED, AURA_EFFECT_HANDLE_REAL);
         OnMovementPacket += OnMovementPacketFn(spell_elk_dash_aura::MovePacket);
+        AfterEffectApply += AuraEffectApplyFn(AuraScript::_OnMovePacketAdd, EFFECT_0, SPELL_AURA_MOD_INCREASE_SPEED, AURA_EFFECT_HANDLE_REAL);
+        AfterEffectRemove += AuraEffectRemoveFn(AuraScript::_OnMovePacketRemove, EFFECT_0, SPELL_AURA_MOD_INCREASE_SPEED, AURA_EFFECT_HANDLE_REAL);
         OnEffectAbsorb += AuraEffectAbsorbFn(spell_elk_dash_aura::Absorb, EFFECT_1);
     }
 

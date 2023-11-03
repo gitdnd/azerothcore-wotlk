@@ -1,0 +1,162 @@
+{
+  "name": "amani_berserker",
+  "reinforcementCall": "0",
+  "chanceAtk": "5",
+  "chanceDef": "2",
+  "chanceSpell": "3",
+  "SpellPowerBonus": "300",
+  "ATTACK": {
+    "SPIN_BREAK": [
+      {
+        "max_dist": 3,
+        "id": 100003,
+        "delay": 700
+      },
+      {
+        "id": 100045,
+        "delay": 300
+      },
+      {
+        "id": 100003,
+        "delay": 1000
+      },
+      {
+        "id": 100003,
+        "delay": 700
+      },
+      {
+        "id": 100045,
+        "delay": 300
+      },
+      {
+        "id": 100003
+      }
+    ],
+    "SPIN_WIN": [
+      {
+        "max_dist": 3,
+        "id": 100003,
+        "delay": 700
+      },
+      {
+        "id": 100045,
+        "delay": 300
+      },
+      {
+        "id": 100045,
+        "delay": 300
+      },
+      {
+        "id": 100045,
+        "delay": 300
+      },
+      {
+        "id": 100045,
+        "delay": 300
+      }
+    ],
+    "SPIN_WIN_REACT": [
+      {
+        "max_dist": 3,
+        "id": 100003,
+        "delay": 700
+      },
+      {
+        "id": 100045,
+        "delay": 300
+      },
+      {
+        "id": 100045,
+        "delay": 300
+      },
+      {
+        "id": 100045,
+        "delay": 300
+      },
+      {
+        "id": 100045,
+        "delay": 300
+      }
+    ]
+  },
+  "DEFENSE": {
+    "DEFLECT": [
+      {
+        "max_dist": 3,
+        "weight": "3",
+        "id": 100006
+      }
+    ],
+    "JUMP_1": [
+      {
+        "id": "JUMP",
+        "target": "VICTIM",
+        "angle": "1.67",
+        "speedXY": "1",
+        "speedZ": "5"
+      },
+      {
+        "id": "JUMP",
+        "target": "VICTIM",
+        "angle": "3.14",
+        "speedXY": "1",
+        "speedZ": "5"
+      }
+    ],
+    "JUMP_2": [
+      {
+        "id": "JUMP",
+        "target": "VICTIM",
+        "angle": "1.67",
+        "speedXY": "1",
+        "speedZ": "5"
+      }
+    ]
+  },
+  "SPELL": {
+    "GIGA_CLAP": [
+      {
+        "max_dist": 3,
+        "id": "JUMP",
+        "target": "VICTIM",
+        "angle": "0",
+        "speedXY": "1",
+        "speedZ": "8"
+      },
+      { // need to remember to store this into "on mutate" with appropraite id
+        "id": 150038,
+        "max_dist": 3
+      }
+    ],
+    "THROW_TWICE": [
+      {
+        "id": 150004,
+        "min_dist": 3,
+        "max_dist": 7,
+        "delay": 300
+      },
+      {
+        "id": 150004
+      }
+    ],
+    "THROW_LEAP": [
+      {
+        "id": 150004,
+        "min_dist": 3,
+        "max_dist": 7,
+        "delay": 600
+      },
+      {
+        "id": "JUMP",
+        "target": "VICTIM",
+        "angle": "0",
+        "speedXY": "1",
+        "speedZ": "8"
+      }
+    ]
+  }
+}
+
+
+
+

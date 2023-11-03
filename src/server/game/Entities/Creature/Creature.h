@@ -48,6 +48,8 @@ public:
     explicit Creature(bool isWorldObject = false);
     ~Creature() override;
 
+    void SetOrientation(float orientation) override;
+
     void AddToWorld() override;
     void RemoveFromWorld() override;
 

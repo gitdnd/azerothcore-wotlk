@@ -1,6 +1,7 @@
 #pragma once 
 
 #include <sstream>
+#include <ELK/nlohmann/json.hpp>
 
 #include "ScriptMgr.h"
 #include "ScriptedCreature.h"
@@ -12,6 +13,14 @@
 #include "../Spells/spell_elk_include.h" 
 
 #define DoComboIfAvailable(x) if(EasyCast(x)) return
+
+#define ExtractJson(val, json, index) if (json.find(index) != json.end())	\
+{																			\
+	val = json[index];														\
+}
+
+using json = nlohmann::json;
+
 enum Events : uint16
 {
     NONE,
@@ -533,3 +542,47 @@ public:
 
 };
 */
+
+class ELKCreatureTemplate
+{
+    struct ELKCAction
+    {
+        std::string name;
+        uint8 min_dist;
+        uint8 max_dist;
+        uint16 delay;
+        uint8 weight;
+        // enum target;
+    };
+    struct ELKCAJump : ELKCAction
+    {
+        float angle;
+        float speedXY;
+        float speedZ;
+    };
+    struct ELKCASpell : ELKCAction
+    {
+        uint32 id;
+    };
+    // Per action, first uint8 is action starting index, second number amount of actions - calculated by Actions[first + 0...second - 1]
+    std::map<enum ActionType, std::map<uint8, uint8> Combos = {};
+    std::vector<ELKAction> Actions = {};
+    "reinforcementCall": "0",
+        "chanceAtk" : "5",
+        "chanceDef" : "2",
+        "chanceSpell" : "3",
+        "SpellPowerBonus" : "300",
+
+    static inline std::map <std::string, ELKCreatureTemplate*> = {};
+    ELKCreatureTemplate(std::string Name)
+    {
+        if (json.find(index) != json.end())	\
+        {																			\
+            val = json[index];														\
+        }
+    }
+}
+
+
+
+
