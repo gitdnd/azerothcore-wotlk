@@ -227,6 +227,10 @@ bool LoginQueryHolder::Initialize()
     stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_CHEST_FLAGS);
     stmt->SetData(0, lowGuid);
     res &= SetPreparedQuery(PLAYER_LOGIN_QUERY_LOAD_CHEST_FLAGS, stmt);
+    
+    stmt = CharacterDatabase.GetPreparedStatement(CHAR_SELECT_WARBAND);
+    stmt->SetData(0, lowGuid);
+    res &= SetPreparedQuery(PLAYER_LOGIN_QUERY_LOAD_WARBAND, stmt);
 
     return res;
 }

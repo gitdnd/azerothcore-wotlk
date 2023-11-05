@@ -829,6 +829,7 @@ enum PlayerLoginQueryIndex
     PLAYER_LOGIN_QUERY_LOAD_DEVELOPMENT_POINTS      = 38,
     PLAYER_LOGIN_QUERY_LOAD_QUEST_STAGE_FLAGS       = 39,
     PLAYER_LOGIN_QUERY_LOAD_CHEST_FLAGS             = 40,
+    PLAYER_LOGIN_QUERY_LOAD_WARBAND                 = 41,
     MAX_PLAYER_LOGIN_QUERY
 };
 
@@ -2885,6 +2886,10 @@ public:
         {4449, 2486}
     };
     static const uint32 GetPetFakeReal(uint32 entry) { auto it = Player::petFakeReal.find(entry);  if (it != Player::petFakeReal.end()) return it->second; return entry; }
+    // WARBANDS
+    uint32 Warband[4] = { 0,0,0,0 };
+    void _LoadWarband(PreparedQueryResult result);
+    void _SaveWarband(CharacterDatabaseTransaction trans);
 };
 
 void AddItemsSetItem(Player* player, Item* item);
