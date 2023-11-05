@@ -608,6 +608,12 @@ void CharacterDatabaseConnection::DoPrepareStatements()
     PrepareStatement(CHAR_INSERT_INSTANCE_SAVED_DATA, "INSERT INTO instance_saved_go_state_data (id, guid, state) VALUES (?, ?, ?)", CONNECTION_ASYNC);
     PrepareStatement(CHAR_DELETE_INSTANCE_SAVED_DATA, "DELETE FROM instance_saved_go_state_data WHERE id = ?", CONNECTION_ASYNC);
     PrepareStatement(CHAR_SANITIZE_INSTANCE_SAVED_DATA, "DELETE FROM instance_saved_go_state_data WHERE id NOT IN (SELECT instance.id FROM instance)", CONNECTION_ASYNC);
+
+    // Warband
+    PrepareStatement(CHAR_SELECT_WARBAND, "SELECT warband_1_id, warband_2_id, warband_3_id, warband_4_id FROM warband WHERE character_id = ?", CONNECTION_SYNCH);
+    PrepareStatement(CHAR_REPLACE_WARBAND, "REPLACE INTO warband (character_id, warband_1_id, warband_2_id, warband_3_id, warband_4_id) VALUES (?, ?, ?, ?, ?)", CONNECTION_ASYNC);
+    PrepareStatement(CHAR_DELETE_WARBAND, "DELETE FROM warband WHERE character_id = ?", CONNECTION_ASYNC);
+
 }
 
 CharacterDatabaseConnection::CharacterDatabaseConnection(MySQLConnectionInfo& connInfo) : MySQLConnection(connInfo)

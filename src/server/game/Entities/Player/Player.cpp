@@ -690,6 +690,7 @@ bool Player::Create(ObjectGuid::LowType guidlow, CharacterCreateInfo* createInfo
 
     CheckAllAchievementCriteria();
 
+
     return true;
 }
 
@@ -4221,6 +4222,10 @@ void Player::DeleteFromDB(ObjectGuid::LowType lowGuid, uint32 accountId, bool up
                 trans->Append(stmt);
 
                 stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_CHAR_SETTINGS);
+                stmt->SetData(0, lowGuid);
+                trans->Append(stmt);
+
+                stmt = CharacterDatabase.GetPreparedStatement(CHAR_DELETE_WARBAND);
                 stmt->SetData(0, lowGuid);
                 trans->Append(stmt);
 

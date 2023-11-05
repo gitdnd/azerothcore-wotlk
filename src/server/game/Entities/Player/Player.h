@@ -887,6 +887,7 @@ enum PlayerLoginQueryIndex
     PLAYER_LOGIN_QUERY_LOAD_CORPSE_LOCATION         = 35,
     PLAYER_LOGIN_QUERY_LOAD_CHARACTER_SETTINGS      = 36,
     PLAYER_LOGIN_QUERY_LOAD_PET_SLOTS               = 37,
+    PLAYER_LOGIN_QUERY_LOAD_WARBAND                 = 38,
     MAX_PLAYER_LOGIN_QUERY
 };
 
@@ -2937,6 +2938,11 @@ private:
     bool _wasOutdoor;
 
     PlayerSettingMap m_charSettingsMap;
+
+    // WARBANDS
+    uint32 Warband[4] = { 0,0,0,0 };
+    void _LoadWarband(PreparedQueryResult result);
+    void _SaveWarband(CharacterDatabaseTransaction trans);
 };
 
 void AddItemsSetItem(Player* player, Item* item);
