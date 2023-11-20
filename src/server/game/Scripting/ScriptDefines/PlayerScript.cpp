@@ -216,6 +216,14 @@ void ScriptMgr::OnRuneResync(Player* player)
         });
 }
 
+void ScriptMgr::LandlordGossip(Player* player, Creature* creature)
+{
+    ExecuteScript<PlayerScript>([&](PlayerScript* script)
+        {
+            script->LandlordGossip(player, creature);
+        });
+}
+
 void ScriptMgr::OnPlayerForgotSpell(Player* player, uint32 spellID)
 {
     ExecuteScript<PlayerScript>([&](PlayerScript* script)

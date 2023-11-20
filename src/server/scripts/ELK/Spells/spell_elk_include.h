@@ -65,7 +65,7 @@ enum OutsideSpells
     CRUSADER_STRIKE_HIT =       1000021,
 };
 #define ELKS(x) uint32(ELKSpells::x)
-enum SpellsC // Creature Spells.
+enum class SpellsC // Creature Spells.
 {
     MIND_FLAY =                 150001,
     REJUVINATION =              150002,
@@ -505,7 +505,6 @@ class spell_elk_attack : public ELKSpellScript
         if (GetCaster()->CanUseAttackType(OFF_ATTACK))
             cd += GetCaster()->GetAttackTime(OFF_ATTACK);
         GetSpell()->SetRuneCooldown(cd);
-        GetSpell()->SetRuneCost(1);
 
         if (auto aura = GetCaster()->GetAura(ELKS(COMBO_COUNT)))
             comboLength = aura->GetStackAmount();
@@ -578,7 +577,7 @@ class spell_elk_spin_attack : public ELKSpellScript
         if (GetCaster()->CanUseAttackType(OFF_ATTACK))
             cd += GetCaster()->GetAttackTime(OFF_ATTACK);
         GetSpell()->SetRuneCooldown(cd);
-        GetSpell()->SetRuneCost(1);
+
 
         if (auto aura = GetCaster()->GetAura(ELKS(COMBO_COUNT)))
             comboLength = aura->GetStackAmount();

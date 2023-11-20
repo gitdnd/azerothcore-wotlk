@@ -254,12 +254,6 @@ Creature::~Creature()
 
 void Creature::SetOrientation(float orientation)
 {
-    if (orientation > GetOrientation())
-        if (orientation - GetOrientation() > 0.1f)
-            orientation = 0.1f;
-    else
-        if (GetOrientation() - orientation < 0.1f)
-            orientation = GetOrientation() - 0.1f;
     Unit::SetOrientation(orientation);
 }
 

@@ -49,7 +49,7 @@ class spell_elk_crusader_strike : public ELKSpellScript
         if (GetCaster()->CanUseAttackType(OFF_ATTACK))
             cd += GetCaster()->GetAttackTime(OFF_ATTACK);
         GetSpell()->SetRuneCooldown(cd);
-        GetSpell()->SetRuneCost(1);
+
 
         GetCaster()->AddSpellCooldown(ELKS(CRUSADER_STRIKE), 0, 10000);
     }
@@ -337,7 +337,7 @@ class spell_elk_divine_storm : public ELKSpellScript
                 aura->Remove();
             }
             spell->SetRuneCooldown(cd * 2);
-            spell->SetRuneCost(2);
+
             AttackBegin();
         }
         else

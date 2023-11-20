@@ -1010,6 +1010,7 @@ void Spell::SelectEffectImplicitTargets(SpellEffIndex effIndex, SpellImplicitTar
                             ASSERT(false && "Spell::SelectEffectImplicitTargets: received not implemented select target reference type for TARGET_TYPE_OBJECT_DEST");
                             break;
                     }
+                    // HERE
                     break;
                 default:
                     switch (targetType.GetReferenceType())
@@ -2432,7 +2433,6 @@ void Spell::AddUnitTarget(Unit* target, uint32 effectMask, bool checkIfValid /*=
     targetInfo.processed  = false;                              // Effects not apply on target
     targetInfo.alive      = target->IsAlive();
     targetInfo.damage     = 0;
-    targetInfo.crit       = false;
     targetInfo.scaleAura  = false;
     if (m_auraScaleMask && targetInfo.effectMask == m_auraScaleMask && m_caster != target)
     {
@@ -2781,10 +2781,9 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
     // Do healing and triggers
     if (m_healing > 0)
     {
-        bool crit = target->crit;
         uint32 addhealth = m_healing;
 
-        if (crit)
+        if (Crit)
         {
             procEx |= PROC_EX_CRITICAL_HIT;
             addhealth = Unit::SpellCriticalHealingBonus(caster, m_spellInfo, addhealth, nullptr);
@@ -2797,11 +2796,11 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
         // Xinef: override with forced crit, only visual result
         if (GetSpellValue()->ForcedCritResult)
         {
-            crit = true;
+            Crit = true;
             procEx |= PROC_EX_CRITICAL_HIT;
         }
 
-        int32 gain = caster->HealBySpell(healInfo, crit);
+        int32 gain = caster->HealBySpell(healInfo, Crit);
         unitTarget->getHostileRefMgr().threatAssist(caster, float(gain) * 0.5f, m_spellInfo);
         m_healing = gain;
 
@@ -2827,10 +2826,10 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
         if (m_caster->GetEntry() == 27893)
         {
             if (Unit* owner = m_caster->GetOwner())
-                owner->CalculateSpellDamageTaken(&damageInfo, m_damage, m_spellInfo, m_attackType,  target->crit);
+                owner->CalculateSpellDamageTaken(&damageInfo, m_damage, m_spellInfo, m_attackType,  Crit);
         }
         else
-            caster->CalculateSpellDamageTaken(&damageInfo, m_damage, m_spellInfo, m_attackType,  target->crit);
+            caster->CalculateSpellDamageTaken(&damageInfo, m_damage, m_spellInfo, m_attackType,  Crit);
 
         // xinef: override miss info after absorb / block calculations
         if (missInfo == SPELL_MISS_NONE && damageInfo.damage == 0)
@@ -4011,7 +4010,7 @@ void Spell::_cast(bool skipCheck)
                 continue;
             }
 
-            if (!ihit->crit)
+            if (!Crit)
             {
                 continue;
             }
@@ -4366,7 +4365,7 @@ void Spell::_handle_finish_phase()
                 continue;
             }
 
-            if (!ihit->crit)
+            if (!Crit)
             {
                 continue;
             }
@@ -4482,6 +4481,18 @@ void Spell::update(uint32 difftime)
                         {
                             m_timer -= difftime;
                             CallScriptWhileCastHandlers();
+                            if (Crit)
+                                if (Player* player = GetCaster()->ToPlayer())
+                                {
+                                    if (auto it{ player->CritData.find(m_spellInfo->Id) }; it != std::end(player->CritData))
+                                    {
+                                        TriggerCastFlags static const flags = TriggerCastFlags(TRIGGERED_IGNORE_GCD | TRIGGERED_IGNORE_CAST_IN_PROGRESS | TRIGGERED_CAST_DIRECTLY | TRIGGERED_IGNORE_SET_FACING | TRIGGERED_DONT_REPORT_CAST_ERROR);
+                                        if (m_targets.GetUnitTarget())
+                                            player->CastSpell(m_targets.GetUnitTarget(), it->second, flags);
+                                        else if (WorldLocation const* pos = m_targets.GetDstPos())
+                                            player->CastSpell(pos->GetPositionX(), pos->GetPositionY(), pos->GetPositionZ(), it->second, flags);
+                                    }
+                                }
                         }
                     }
                 }
@@ -4591,6 +4602,19 @@ void Spell::finish(bool ok)
     CallScriptAfterFullChannelHandlers();
     CallScriptAfterCastHandlers(); // consider putting this back Idk where it was lmao
     m_caster->DoOnSpellCastScripts(this);
+
+    if (Crit)
+        if (Player* player = GetCaster()->ToPlayer())
+        {
+            if (auto it{ player->CritData.find(m_spellInfo->Id) }; it != std::end(player->CritData))
+            {
+                TriggerCastFlags static const flags = TriggerCastFlags(TRIGGERED_IGNORE_GCD | TRIGGERED_IGNORE_CAST_IN_PROGRESS | TRIGGERED_CAST_DIRECTLY | TRIGGERED_IGNORE_SET_FACING | TRIGGERED_DONT_REPORT_CAST_ERROR);
+                if (m_targets.GetUnitTarget())
+                    player->CastSpell(m_targets.GetUnitTarget(), it->second, flags);
+                else if(WorldLocation const* pos = m_targets.GetDstPos())
+                    player->CastSpell(pos->GetPositionX(), pos->GetPositionY(), pos->GetPositionZ(), it->second, flags);
+            }
+        }
 }
 
 void Spell::WriteCastResultInfo(WorldPacket& data, Player* caster, SpellInfo const* spellInfo, uint8 castCount, SpellCastResult result, SpellCustomErrors customError)
@@ -8257,6 +8281,9 @@ void Spell::HandleLaunchPhase()
         DoAllEffectOnLaunchTarget(target, multiplier);
     }
 
+    float critChance = m_caster->SpellDoneCritChance(m_targets.GetUnitTarget(), m_spellInfo, m_spellSchoolMask, m_attackType, false);
+    Crit = roll_chance_f(std::max(0.0f, critChance));
+
     FinishTargetProcessing();
 }
 
@@ -8304,20 +8331,6 @@ void Spell::DoAllEffectOnLaunchTarget(TargetInfo& targetInfo, float* multiplier)
             targetInfo.damage += m_damage;
         }
     }
-
-    // xinef: totem's inherit owner crit chance and dancing rune weapon
-    Unit* caster = m_caster;
-    if (m_caster->IsTotem() || m_caster->GetEntry() == 27893)
-    {
-        if (Unit* owner = m_caster->GetOwner())
-            caster = owner;
-    }
-    else if (m_originalCaster)
-        caster = m_originalCaster;
-
-    float critChance = caster->SpellDoneCritChance(unit, m_spellInfo, m_spellSchoolMask, m_attackType, false);
-    critChance = unit->SpellTakenCritChance(caster, m_spellInfo, m_spellSchoolMask, critChance, m_attackType, false);
-    targetInfo.crit = roll_chance_f(std::max(0.0f, critChance));
 }
 
 SpellCastResult Spell::CanOpenLock(uint32 effIndex, uint32 lockId, SkillType& skillId, int32& reqSkillValue, int32& skillValue)

@@ -515,7 +515,7 @@ class spell_dk_rune_of_the_fallen_crusader : public SpellScript
         std::list<TargetInfo>* targetsInfo = GetSpell()->GetUniqueTargetInfo();
         for (std::list<TargetInfo>::iterator ihit = targetsInfo->begin(); ihit != targetsInfo->end(); ++ihit)
             if (ihit->targetGUID == GetCaster()->GetGUID())
-                ihit->crit = roll_chance_f(GetCaster()->GetFloatValue(PLAYER_CRIT_PERCENTAGE));
+                GetSpell()->SetCrit(roll_chance_f(GetCaster()->GetFloatValue(PLAYER_CRIT_PERCENTAGE)));
     }
 
     void Register() override

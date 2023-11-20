@@ -13,12 +13,10 @@ void Player::_LoadWarband(PreparedQueryResult result)
     {
         do
         {
-            Field* fields = result->Fetch();
-
-            uint32 member1 = fields[0].Get<uint32>();
-            uint32 member2 = fields[1].Get<uint32>();
-            uint32 member3 = fields[2].Get<uint32>();
-            uint32 member4 = fields[3].Get<uint32>();
+            uint32 member1 = (*result)[0].Get<uint32>();
+            uint32 member2 = (*result)[1].Get<uint32>();
+            uint32 member3 = (*result)[2].Get<uint32>();
+            uint32 member4 = (*result)[3].Get<uint32>();
 
             Warband[0] = member1;
             Warband[1] = member2;

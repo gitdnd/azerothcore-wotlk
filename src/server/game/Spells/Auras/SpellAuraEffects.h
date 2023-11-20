@@ -103,9 +103,6 @@ public:
     // add/remove SPELL_AURA_MOD_SHAPESHIFT (36) linked auras
     void HandleShapeshiftBoosts(Unit* target, bool apply) const;
 
-    // xinef: storing initial crit chance
-    float GetCritChance() const { return m_critChance; }
-    void SetCritChance(float crit) { m_critChance = crit; }
     uint8 GetCasterLevel() const { return m_casterLevel; }
     bool CanApplyResilience() const { return m_applyResilience; }
     float GetPctMods() const { return m_pctMods; }
@@ -125,7 +122,6 @@ private:
     bool m_applyResilience;
     uint8 m_casterLevel;
     int32 m_amount;
-    float m_critChance;
     float m_pctMods;
 
     // xinef: stacking
@@ -144,8 +140,6 @@ private:
     uint8 const m_effIndex;
     bool m_canBeRecalculated;
     bool m_isPeriodic;
-private:
-    float CalcPeriodicCritChance(Unit* caster, Unit const* target) const;
 
 public:
     // aura effect apply/remove handlers

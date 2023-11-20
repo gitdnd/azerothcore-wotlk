@@ -1066,7 +1066,13 @@ public:
     virtual void OnLearnSpell(Player* /*player*/, uint32 /*spellID*/) {}
 
     // Called when a player learned new spell
+    virtual void OnCritSet(Player* /*player*/, uint32 /*spellX*/, uint32 /*spellY*/) {}
+
+    // Called when a player learned new spell
     virtual void OnRuneResync(Player* /*player*/) {}
+
+    // Called when a player learned new spell
+    virtual void LandlordGossip(Player* /*player*/, Creature* /*creature*/) {}
 
     // Called when a player forgot spell
     virtual void OnForgotSpell(Player* /*player*/, uint32 /*spellID*/) {}
@@ -2334,6 +2340,7 @@ public: /* PlayerScript */
     void OnPlayerReputationRankChange(Player* player, uint32 factionID, ReputationRank newRank, ReputationRank oldRank, bool increased);
     void OnPlayerLearnSpell(Player* player, uint32 spellID);
     void OnRuneResync(Player* player);
+    void LandlordGossip(Player* player, Creature* creature);
     void OnPlayerForgotSpell(Player* player, uint32 spellID);
     void OnPlayerDuelRequest(Player* target, Player* challenger);
     void OnPlayerDuelStart(Player* player1, Player* player2);

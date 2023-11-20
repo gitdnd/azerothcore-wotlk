@@ -1,7 +1,9 @@
 #pragma once 
 
+
 #include <sstream>
-#include <ELK/nlohmann/json.hpp>
+#include <utility>
+
 
 #include "ScriptMgr.h"
 #include "ScriptedCreature.h"
@@ -12,14 +14,6 @@
 #include "../Quest/QuestStageFlags.h"
 #include "../Spells/spell_elk_include.h" 
 
-#define DoComboIfAvailable(x) if(EasyCast(x)) return
-
-#define ExtractJson(val, json, index) if (json.find(index) != json.end())	\
-{																			\
-	val = json[index];														\
-}
-
-using json = nlohmann::json;
 
 enum Events : uint16
 {
@@ -42,13 +36,83 @@ enum Events : uint16
     REGULAR_CHECK,
     RETURN_CHECK,
     DYNAMIC_MOVEMENT_1,
+    ACTION_PROGRESS,
+
 };
+
+enum class ELKCAType : uint8
+{
+    NONE,
+    SPELL,
+    JUMP
+};
+enum class  ELKCATarget : uint8
+{
+    NONE,
+    VICTIM,
+    VICTIMAWAY,
+};
+struct ELKCAction
+{
+    std::string name = "";
+    uint8 min_dist = 0;
+    uint8 max_dist = 0;
+    uint16 delay = 0;
+    uint8 weight = 0;
+    float angle = 0.f;
+    float speedXY = 0.f;
+    float speedZ = 0.f;
+    float distance = 0.f;
+    uint32 id = 0;
+    ELKCAType type = ELKCAType::NONE;
+    ELKCATarget target = ELKCATarget::NONE;
+    bool on_mutate = false;
+    uint8 runeCost = false;
+};
+struct ELKCCombo
+{
+    uint8 runeCost = 0;
+    std::vector<uint8> actions = {};
+};
+
 struct ELKAI;
+
+enum class ELKActionType : uint8
+{
+    NONE,
+    ATTACK,
+    DEFEND,
+    SPELL
+};
+
+
+
 
 class ELKCreatureScript : public CreatureScript
 {
+public:
+    std::map<ELKActionType, std::vector<ELKCCombo>> Combos = {
+        {ELKActionType::ATTACK, {}},
+        {ELKActionType::DEFEND, {}},
+        {ELKActionType::SPELL, {}}
+    };
+    std::map<uint8, ELKCAction> Actions = {};
+
+    uint8 reinforcementCall = 0;
+    uint8 chanceAtk = 1;
+    uint8 chanceDef = 1;
+    uint8 chanceSpell = 1;
+    uint16 SpellPowerBonus = 0;
+
+    uint32 regularCheck = 3500;
+    uint32 regularCheckHP = 0;
+    static inline std::map<std::string, ELKCreatureScript*> ELKCreatureScripts = {};
+
 protected:
-    ELKCreatureScript(const char* name) : CreatureScript(name) {}
+    ELKCreatureScript(const char* name) : CreatureScript(name)
+    {
+        ELKCreatureScripts.emplace(name, this);
+    }
 
     struct DialogueLine
     {
@@ -160,264 +224,460 @@ protected:
             }
         }
     };
-};
-struct ELKAI : public ScriptedAI
-{
-    ELKAI(Creature* creature) : ScriptedAI(creature)
+
+    struct ELKAI : public ScriptedAI
     {
-        reinforcementEntries.push_back(me->GetEntry());
-    }
-    EventMap events;
-
-    uint8 comboing = 0;
-    std::vector<WorldLocation> positions{me->GetWorldLocation()};
-
-    uint8 reinforcementCall = RandomInt(1, 2);
-
-    uint8 chanceAtk = RandomInt(2,3);
-    uint8 chanceDef = RandomInt(0, 1);
-    uint8 chanceSpell = 0;
-    uint8 chanceBuff = 0;
-
-    uint8 optionAtk = 0;
-    uint8 optionDef = 0;
-    uint8 optionSpell = 0;
-    uint8 optionBuff = 0;
-    uint8 mode = 0;
-
-    uint8 lastCategory = 0;
-    uint8 lastChoice = 0;
-
-    std::map<uint32, uint16> baseCooldowns;
-    std::map<uint32, uint16> baseCost;
-
-    std::vector<uint32> reinforcementEntries;
-
-    void Reset() override
-    {
-        ResetExtra();
-        events.Reset();
-        comboing = 0;
-
-        lastCategory = 0;
-        lastChoice = 0;
-    }
-
-    virtual void ResetExtra() {};
-
-    void DelayAttack()
-    {
-        me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
-    }
-    bool EasyAttack(uint32 spell, uint16 event, uint16 delay)
-    {
-        SpellCastResult ret = me->CastSpell(me, spell, false);
-        if (ret == SPELL_CAST_OK)
+        ELKAI(Creature* creature, const ELKCreatureScript* s) : ScriptedAI(creature)
         {
-            comboing++;
-            events.ScheduleEvent(event, delay);
-            return true;
+            reinforcementEntries.push_back(me->GetEntry());
+            script = s;
+            ResetExtra();
         }
-        comboing = 0;
-        return false;
-    }
-    bool EasyCast(uint32 spell)
-    {
-        
-        SpellCastResult ret = me->CastSpell(me, spell, false);
-        if (ret == SPELL_CAST_OK)
+        const ELKCreatureScript* script;
+        EventMap events;
+
+        std::vector<WorldLocation> positions{ me->GetWorldLocation() };
+
+        uint8 reinforcementCall = RandomInt(1, 2);
+
+        uint8 chanceAtk = RandomInt(2, 3);
+        uint8 chanceDef = RandomInt(0, 1);
+        uint8 chanceSpell = 0;
+
+        uint8 mode = 0;
+
+        uint8 lastCategory = 0;
+        uint8 lastChoice = 0;
+
+        uint32 regularCheck = 2500;
+
+        struct DynamicMovement
         {
-            me->AddSpellCooldown(spell, 0, baseCooldowns[spell]);
-            return true;
+            uint16 moveTime = 0;
+            float angleMulti = 0.f;
+            float angleRaw = 0.f;
+            float dist = 0.f;
+        };
+        DynamicMovement dynamicMovement;
+
+        std::map<uint32, uint16> baseCooldowns;
+        std::map<uint32, uint16> baseCost;
+
+        std::vector<uint32> reinforcementEntries;
+
+        void Reset() override
+        {
+            ResetExtra();
+            events.Reset();
+            ResetCombo();
+            ResetCC();
+            chanceAtk = script->chanceAtk;
+            chanceDef = script->chanceDef;
+            chanceSpell = script->chanceSpell;
+            regularCheck = script->regularCheck;
+
+            lastCategory = 0;
+            lastChoice = 0;
         }
-        return false;
-    }
-    bool EasyCastLocation(uint32 spell, Position point)
-    {
-        auto target = me->GetVictim();
-        if (!target || me->GetSpellCooldown(spell))
+
+        virtual void ResetExtra() {};
+
+        void DelayAttack()
+        {
+            me->setAttackTimer(BASE_ATTACK, me->GetAttackTime(BASE_ATTACK));
+        }
+        bool EasyCast(uint32 spell)
+        {
+
+            SpellCastResult ret = me->CastSpell(me, spell, false);
+            if (ret == SPELL_CAST_OK)
+            {
+                me->AddSpellCooldown(spell, 0, baseCooldowns[spell]);
+                return true;
+            }
             return false;
-        SpellCastResult ret = me->CastSpell(point.GetPositionX(), point.GetPositionY(), point.GetPositionZ(), spell, false);
-        if (ret == SPELL_CAST_OK)
-        {
-            me->AddSpellCooldown(spell, 0, baseCooldowns[spell]);
-            return true;
         }
-        return false;
-    }
-    bool EasyCastTarget(uint32 spell)
-    {
-        auto target = me->GetVictim();
-        if (!target || me->GetSpellCooldown(spell))
+        bool EasyCastLocation(uint32 spell, Position point)
+        {
+            auto target = me->GetVictim();
+            if (!target || me->GetSpellCooldown(spell))
+                return false;
+            SpellCastResult ret = me->CastSpell(point.GetPositionX(), point.GetPositionY(), point.GetPositionZ(), spell, false);
+            if (ret == SPELL_CAST_OK)
+            {
+                me->AddSpellCooldown(spell, 0, baseCooldowns[spell]);
+                return true;
+            }
             return false;
-        SpellCastResult ret = me->CastSpell(target, spell, false);
-        if (ret == SPELL_CAST_OK)
+        }
+        bool EasyCastVictim(uint32 spell)
         {
-            me->AddSpellCooldown(spell, 0, baseCooldowns[spell]);
+            auto target = me->GetVictim();
+            if (!target || me->GetSpellCooldown(spell))
+                return false;
+            SpellCastResult ret = me->CastSpell(target, spell, false);
+            if (ret == SPELL_CAST_OK)
+            {
+                me->AddSpellCooldown(spell, 0, baseCooldowns[spell]);
+                return true;
+            }
+            return false;
+        }
+        void ReinforcementCall()
+        {
+            auto target = me->GetVictim();
+            if (!target)
+                return;
+            uint16 fighting = target->GetThreatMgr().GetThreatListSize();
+            if (fighting < reinforcementCall)
+            {
+                std::list<Creature*> cList;
+
+                for (auto i : reinforcementEntries)
+                {
+                    me->GetCreaturesWithEntryInRange(cList, 40.0f, i);
+                }
+                for (auto cre : cList)
+                {
+                    if (cre->IsInCombat() == false and cre->IsAlive() == true)
+                    {
+                        fighting++;
+                        cre->CombatStart(target);
+                        cre->AddThreat(target, 1.0f);
+                        target->AddThreat(cre, 1.0f);
+                    }
+                    if (fighting >= reinforcementCall)
+                        break;
+                }
+            }
+        }
+        virtual void EnterCombatCustom(Unit* /*who*/)
+        {
+
+        }
+        void JustEngagedWith(Unit* who) override
+        {
+            EnterCombatCustom(who);
+            ReinforcementCall();
+        }
+        uint8 RandomOrder()
+        {
+            uint8 result = rand() % (chanceAtk + chanceDef + chanceSpell);
+            if (result < chanceAtk)
+                return 1;
+            result -= chanceAtk;
+            if (result < chanceDef)
+                return 2;
+            result -= chanceDef;
+            if (result < chanceSpell)
+                return 3;
+            return 0;
+        }
+        virtual void MovementInform(uint32 type, uint32 point)
+        {
+            if (type != POINT_MOTION_TYPE)
+                return;
+        }
+
+        void RandomAction()
+        {
+            uint8 action = RandomOrder();
+
+            switch (action)
+            {
+            case 1:
+            {
+                uint8 option = script->Combos.find(ELKActionType::ATTACK)->second.size();
+                if (!option)
+                    break;
+                uint8 rnd = rand() % option;
+                for (uint8 i = 0; i < option; i++)
+                {
+                    uint8 choice = (i + rnd) % (option);
+                    if (action == lastCategory && lastChoice == choice)
+                        continue;
+                    bool exit = false;
+                    RandomCombo({ ELKActionType::ATTACK, choice }, exit);
+                    if (exit)
+                    {
+                        lastCategory = action;
+                        lastChoice = choice;
+                        break;
+                    }
+                }
+                break;
+            }
+            case 2:
+            {
+                uint8 option = script->Combos.find(ELKActionType::DEFEND)->second.size();
+                if (!option)
+                    break;
+                uint8 rnd = rand() % option;
+                for (uint8 i = 0; i < option; i++)
+                {
+                    uint8 choice = (i + rnd) % (option);
+                    if (action == lastCategory && lastChoice == choice)
+                        continue;
+                    bool exit = false;
+                    RandomCombo({ ELKActionType::DEFEND, choice }, exit);
+                    if (exit)
+                    {
+                        lastCategory = action;
+                        lastChoice = choice;
+                        break;
+                    }
+                }
+                break;
+            }
+            case 3:
+            {
+                uint8 option = script->Combos.find(ELKActionType::SPELL)->second.size();
+                if (!option)
+                    break;
+                uint8 rnd = rand() % option;
+                for (uint8 i = 0; i < option; i++)
+                {
+                    uint8 choice = (i + rnd) % (option);
+                    if (action == lastCategory && lastChoice == choice)
+                        continue;
+
+                    bool exit = false;
+                    RandomCombo({ ELKActionType::SPELL, choice }, exit);
+                    if (exit)
+                    {
+                        lastCategory = action;
+                        lastChoice = choice;
+                        break;
+                    }
+                }
+                break;
+            }
+            default:
+                break;
+            }
+        }
+
+        void JumpTowards(const Position& pos, float speedXYmult, float speedZ, Unit* unit = nullptr)
+        {
+            if (!Acore::IsValidMapCoord(pos.m_positionX, pos.m_positionY, pos.m_positionZ) || pos.m_positionZ <= INVALID_HEIGHT)
+                return;
+
+            float dist = me->GetExactDist2d(pos.m_positionX, pos.m_positionY);
+
+            float speedXY = (dist * 10.0f / speedZ) * speedXYmult;
+
+            if (speedXY < 1.0f)
+                speedXY = 1.0f;
+
+            me->GetMotionMaster()->MoveJumpOriented(pos.m_positionX, pos.m_positionY, pos.m_positionZ, speedXY, speedZ, me->GetVictim());
+        }
+        void RandomCombo(std::pair<ELKActionType, uint8> combo, bool& exit)
+        {
+            const ELKCCombo& com = (script->Combos.find(combo.first))->second[combo.second];
+            const ELKCAction& act = script->Actions.find(com.actions[0])->second;
+            if (com.runeCost <= me->GetAvailableRunes())
+            {
+                exit = DoELKAIAction(act);
+                if (exit)
+                {
+                    currentCombo = std::pair(combo.first, std::pair(combo.second, uint8(0)));
+                    events.ScheduleEvent(ACTION_PROGRESS, act.delay);
+                }
+            }
+        }
+        bool DoELKAIAction(const ELKCAction& act)
+        {
+            if(act.type == ELKCAType::SPELL)
+            {
+                if (act.target == ELKCATarget::NONE)
+                {
+                    if (act.runeCost <= me->GetAvailableRunes() && me->GetDistance(me->GetVictim()) >= act.min_dist && (me->GetDistance(me->GetVictim()) < act.max_dist || act.max_dist == 0) && EasyCast(act.id))
+                        return true;
+                }
+                else if (act.target == ELKCATarget::VICTIM)
+                {
+                    if (act.runeCost <= me->GetAvailableRunes() && me->GetDistance(me->GetVictim()) >= act.min_dist && (me->GetDistance(me->GetVictim()) < act.max_dist || act.max_dist == 0) && EasyCastVictim(act.id))
+                        return true;
+                }
+            }
+            else if (act.type == ELKCAType::JUMP)
+            {
+                if (act.target == ELKCATarget::VICTIMAWAY)
+                {
+                    if (me->GetDistance(me->GetVictim()) >= act.min_dist && (me->GetDistance(me->GetVictim()) < act.max_dist || act.max_dist == 0))
+                    {
+                        Position pos = me->GetFirstCollisionPosition(act.distance, me->GetVictim()->GetRelativeAngle(me) + act.angle);
+                        if(act.on_mutate)
+                            isLeaping = true;
+                        JumpTowards(pos, act.speedXY, act.speedZ, me->GetVictim());
+                        return true;
+                    }
+                }
+                else if (act.target == ELKCATarget::VICTIM)
+                {
+                    if (me->GetDistance(me->GetVictim()) >= act.min_dist && (me->GetDistance(me->GetVictim()) < act.max_dist || act.max_dist == 0))
+                    {
+                        Position pos = me->GetFirstCollisionPosition(me->GetDistance(me->GetVictim()), me->GetRelativeAngle(me->GetVictim()) + act.angle);
+                        if (act.on_mutate)
+                            isLeaping = true;
+                        JumpTowards(pos, act.speedXY, act.speedZ, me->GetVictim());
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+        bool ContinueCombo()
+        {
+            const ELKCCombo& com = (script->Combos.find(currentCombo.first))->second[currentCombo.second.first];
+
+            if (com.actions.size() > currentCombo.second.second + 1)
+            {
+                const ELKCAction& act = script->Actions.find(com.actions[currentCombo.second.second + 1])->second;
+                if (DoELKAIAction(act))
+                {
+                    currentCombo.second.second++;
+                    events.ScheduleEvent(ACTION_PROGRESS, act.delay);
+                    return true;
+                }
+            }
+            ResetCombo();
+            return false;
+        }
+        std::pair<ELKActionType, std::pair<uint8, uint8>> currentCombo = { ELKActionType::NONE, {0,0} };
+        bool isLeaping = false; 
+        bool ResetCombo()
+        {
+            isLeaping = false;
+            currentCombo = { ELKActionType::NONE, {0,0} };
+            events.CancelEvent(ACTION_PROGRESS);
+            events.RescheduleEvent(REGULAR_CHECK, regularCheck);
             return true;
-        }
-        return false;
-    }
-    void EasyQueCombo(uint32 attack)
-    { 
-        uint32 atkTime = me->GetAttackTime(BASE_ATTACK);
-        events.ScheduleEvent(attack, 0);
-        me->setAttackTimer(BASE_ATTACK, atkTime);
-        comboing = 1;
-    }
-    void ReinforcementCall()
-    {
-        auto target = me->GetVictim();
-        if (!target)
-            return;
-        uint16 fighting = target->GetThreatMgr().GetThreatListSize();
-        if (fighting < reinforcementCall)
+        }; // FIRST IS COMBO, SECOND IS INDEX
+        virtual void DamageTakenExtra(Unit* doneby, uint32& damage, DamageEffectType type, SpellSchoolMask school)
         {
-            std::list<Creature*> cList;
-            
-            for (auto i : reinforcementEntries)
-            {
-                me->GetCreaturesWithEntryInRange(cList, 40.0f, i);
-            }
-            for (auto cre : cList)
-            {
-                if (cre->IsInCombat() == false and cre->IsAlive() == true)
-                {
-                    fighting++;
-                    cre->CombatStart(target);
-                    cre->AddThreat(target, 1.0f);
-                    target->AddThreat(cre, 1.0f);
-                }
-                if (fighting >= reinforcementCall)
-                    break;
-            }
-        }
-    }
-    virtual void EnterCombatCustom(Unit* /*who*/)
-    {
-        
-    }
-    void JustEngagedWith(Unit* who) override
-    {
-        EnterCombatCustom(who);
-        ReinforcementCall();
-    }
-    uint8 RandomOrder()
-    {
-        uint8 result = rand() % (chanceAtk + chanceDef + chanceSpell + chanceBuff);
-        if (result < chanceAtk)
-            return 1;
-        result -= chanceAtk;
-        if (result < chanceDef)
-            return 2;
-        result -= chanceDef;
-        if (result < chanceSpell)
-            return 3;
-        result -= chanceSpell;
-        if (result < chanceBuff)
-            return 4;
-        return 0;
-    }
-    virtual void MovementInform(uint32 type, uint32 point)
-    {
-        if (type != POINT_MOTION_TYPE)
-            return;
-    }
 
-    void RandomAction()
-    {
-        uint8 action = RandomOrder();
+        }
+        void DamageTaken(Unit* doneby, uint32& damage, DamageEffectType type, SpellSchoolMask school) override
+        {
+            DamageTakenExtra(doneby, damage, type, school);
+            regularCheck = script->regularCheck - me->GetHealthPct() * script->regularCheckHP;
+        }
+        void sOnMutate() override
+        {
+            if (!me->GetVictim() || !me->CanFreeMove())
+            {
+                if (dynamicMovement.moveTime)
+                {
+                    ResetDynamicMovement();
+                }
+                if (isLeaping)
+                {
+                    ResetCombo();
+                }
+                return;
+            }
+            else if (isLeaping)
+            {
+                ContinueCombo();
+            }
+        }
 
-        switch (action)
+        virtual void ResetCC()
         {
-        case 1:
+        }
+        void SpellHit(Unit* caster, SpellInfo const* spell) override
         {
-            uint8 rnd = rand() % optionAtk;
-            for (uint8 i = 0; i < optionAtk; i++)
+            if (me->HasUnitState(UNIT_STATE_STUNNED))
             {
-                uint8 choice = (i + rnd) % (optionAtk);
-                if (action == lastCategory && lastChoice == choice)
-                    continue;
-                lastCategory = action;
-                lastChoice = choice;
-                bool exit = false;
-                RandomAtk(choice, exit);
-                if (exit)
-                {
-                    break;
-                }
+                ResetDynamicMovement();
+                events.Reset();
+                ResetCC();
+                events.ScheduleEvent(REGULAR_CHECK, regularCheck);
+                ResetCombo();
             }
-            break;
+            SpellHitExtra(caster, spell);
         }
-        case 2:
+        virtual void SpellHitExtra(Unit* caster, SpellInfo const* spell)
         {
-            uint8 rnd = rand() % optionDef;
-            for (uint8 i = 0; i < optionDef; i++)
-            {
-                uint8 choice = (i + rnd) % (optionAtk);
-                if (action == lastCategory && lastChoice == choice)
-                    continue;
-                lastCategory = action;
-                lastChoice = choice;
-                bool exit = false;
-                RandomDef(choice, exit);
-                if (exit)
-                {
-                    break;
-                }
-            }
-            break;
-        }
-        case 3:
-        { 
-            uint8 rnd = rand() % optionSpell;
-            for (uint8 i = 0; i < optionSpell; i++)
-            {
-                uint8 choice = (i + rnd) % (optionAtk);
-                if (action == lastCategory && lastChoice == choice)
-                    continue;
-                lastCategory = action;
-                lastChoice = choice;
-                bool exit = false;
-                RandomSpell(choice, exit);
-                if (exit)
-                {
-                    break;
-                }
-            }
-            break;
-        }
-        case 4:
-        {
-            uint8 rnd = rand() % optionBuff;
-            for (uint8 i = 0; i < optionBuff; i++)
-            {
-                uint8 choice = (i + rnd) % (optionAtk);
-                if (action == lastCategory && lastChoice == choice)
-                    continue;
-                lastCategory = action;
-                lastChoice = choice;
-                bool exit = false;
-                RandomBuff(choice, exit);
-                if (exit)
-                {
-                    break;
-                }
-            }
-            break;
-        }
-        default:
-            break;
-        }
-    }
-    virtual void RandomAtk(uint8, bool&) {};
-    virtual void RandomDef(uint8, bool&) {};
-    virtual void RandomSpell(uint8, bool&) {};
-    virtual void RandomBuff(uint8, bool&) {};
 
+        }
+        bool ELKUpdateAI(uint32 diff)
+        {
+            events.Update(diff);
 
+            if (me->isMoving())
+            {
+                if (isLeaping)
+                    return true;
+                if (dynamicMovement.moveTime > 0)
+                {
+                    if (dynamicMovement.moveTime > diff)
+                    {
+                        dynamicMovement.moveTime = 0;
+                        ResetDynamicMovement();
+                    }
+                    else
+                        dynamicMovement.moveTime -= diff;
+
+                    DynamicMove(dynamicMovement.angleMulti, dynamicMovement.angleRaw, dynamicMovement.dist);
+                    return true;
+                }
+            }
+            return false;
+        }
+        void ResetDynamicMovement()
+        {
+            me->RemoveAura(56354);
+            dynamicMovement.moveTime = 0;
+        }
+        virtual void StartDynamicMovements()
+        {
+            DynamicMove(dynamicMovement.angleMulti, dynamicMovement.angleRaw, dynamicMovement.dist);
+        }
+        virtual bool DoEventsExtra()
+        {
+            return false;
+        }
+        void DoEvents()
+        {
+            switch (events.ExecuteEvent())
+            {
+            case ACTION_PROGRESS:
+                ContinueCombo();
+                break;
+            case REGULAR_CHECK:
+                events.ScheduleEvent(REGULAR_CHECK, regularCheck);
+                if (currentCombo.first != ELKActionType::NONE)
+                {
+                    DoEvents();
+                    break;
+                }
+                DoEvents();
+                if (DoEventsExtra())
+                    break;
+                RandomAction();
+                break;
+            default:
+                return;
+            }
+        }
+        void DynamicMove(float angleMulti, float angleRaw, float dist)
+        {
+            Position pos = me->GetPosition();
+            float angle = me->GetVictim()->GetRelativeAngle(me);
+
+            angle = (angle * angleMulti + angleRaw);
+
+            me->MovePositionToFirstCollision(pos, dist, angle);
+
+            Movement::MoveSplineInit init(me);
+            init.MoveTo(pos.m_positionX, pos.m_positionY, pos.m_positionZ);
+            init.Launch();
+        }
+
+    };
 };
-
 /*
 class magistrix_erona : public ELKCreatureScript
 {
@@ -542,47 +802,3 @@ public:
 
 };
 */
-
-class ELKCreatureTemplate
-{
-    struct ELKCAction
-    {
-        std::string name;
-        uint8 min_dist;
-        uint8 max_dist;
-        uint16 delay;
-        uint8 weight;
-        // enum target;
-    };
-    struct ELKCAJump : ELKCAction
-    {
-        float angle;
-        float speedXY;
-        float speedZ;
-    };
-    struct ELKCASpell : ELKCAction
-    {
-        uint32 id;
-    };
-    // Per action, first uint8 is action starting index, second number amount of actions - calculated by Actions[first + 0...second - 1]
-    std::map<enum ActionType, std::map<uint8, uint8> Combos = {};
-    std::vector<ELKAction> Actions = {};
-    "reinforcementCall": "0",
-        "chanceAtk" : "5",
-        "chanceDef" : "2",
-        "chanceSpell" : "3",
-        "SpellPowerBonus" : "300",
-
-    static inline std::map <std::string, ELKCreatureTemplate*> = {};
-    ELKCreatureTemplate(std::string Name)
-    {
-        if (json.find(index) != json.end())	\
-        {																			\
-            val = json[index];														\
-        }
-    }
-}
-
-
-
-

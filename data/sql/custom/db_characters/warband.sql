@@ -15,4 +15,3 @@ BEGIN
 END;;
 CALL warband_create_table();;
 DROP PROCEDURE  warband_create_table;;
-

@@ -275,7 +275,6 @@ struct TargetInfo
     uint8  effectMask:8;
     bool   processed:1;
     bool   alive:1;
-    bool   crit:1;
     bool   scaleAura:1;
     int32  damage;
 };
@@ -818,8 +817,9 @@ public:
     uint8 runeCostAlt = 0;
     float bonusRange = 0;
     uint32 bonusSpellPower = 0;
+    bool Crit = false;
 public:
-
+    void SetCrit(bool crit) { Crit = crit; }
     uint32 GetBonusSpellPower() { return bonusSpellPower; }
     void SetBonusSpellPower(uint32 spellPower) { bonusSpellPower = spellPower; }
     void ModBonusSpellPower(uint32 spellPower) { bonusSpellPower += spellPower; }

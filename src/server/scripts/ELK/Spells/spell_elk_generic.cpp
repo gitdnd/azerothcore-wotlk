@@ -213,7 +213,6 @@ class spell_elk_deflect : public SpellScript
 
         GetCaster()->SetSheath(SHEATH_STATE_MELEE);
         GetSpell()->SetRuneCooldown(15000);
-        GetSpell()->SetRuneCost(1);
         Aura* aura = GetCaster()->GetAura(ELKS(SPELL_DEFLECT));
         if (aura)
         {
@@ -408,7 +407,6 @@ class spell_elk_generic_finale : public ELKSpellScript
         if (GetCaster()->CanUseAttackType(OFF_ATTACK))
             cd += GetCaster()->GetAttackTime(OFF_ATTACK);
         GetSpell()->SetRuneCooldown(cd);
-        GetSpell()->SetRuneCost(1);
 
         if (auto aura = GetCaster()->GetAura(ELKS(COMBO_COUNT)))
             comboLength = aura->GetStackAmount();
@@ -425,8 +423,8 @@ class spell_elk_generic_finale : public ELKSpellScript
         uint32 hitSpell = 0;
         switch (GetSpell()->m_spellInfo->Id)
         {
-        case CRUSHING_WAVE:
-            hitSpell = CRUSHING_WAVE_HIT;
+            case uint32(SpellsC::CRUSHING_WAVE):
+            hitSpell = uint32(SpellsC::CRUSHING_WAVE_HIT);
             break;
         }
         if (!hitSpell)

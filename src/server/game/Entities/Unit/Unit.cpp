@@ -11927,8 +11927,9 @@ int32 Unit::SpellBaseDamageBonusTaken(SpellSchoolMask schoolMask, bool isDoT)
     return TakenAdvertisedBenefit;
 }
 
-float Unit::SpellDoneCritChance(Unit const* /*victim*/, SpellInfo const* spellProto, SpellSchoolMask schoolMask, WeaponAttackType attackType, bool skipEffectCheck) const
+float Unit::SpellDoneCritChance(Unit const* victim, SpellInfo const* spellProto, SpellSchoolMask schoolMask, WeaponAttackType attackType, bool skipEffectCheck) const
 {
+
     // Mobs can't crit with spells.
     if (GetTypeId() == TYPEID_UNIT && !GetSpellModOwner())
         return -100.0f;
@@ -11944,53 +11945,53 @@ float Unit::SpellDoneCritChance(Unit const* /*victim*/, SpellInfo const* spellPr
     float crit_chance = 0.0f;
     switch (spellProto->DmgClass)
     {
-        case SPELL_DAMAGE_CLASS_MAGIC:
+    case SPELL_DAMAGE_CLASS_MAGIC:
+    {
+        if (schoolMask & SPELL_SCHOOL_MASK_NORMAL)
+            crit_chance = 0.0f;
+        // For other schools
+        else if (GetTypeId() == TYPEID_PLAYER)
+            crit_chance = GetFloatValue(static_cast<uint16>(PLAYER_SPELL_CRIT_PERCENTAGE1) + GetFirstSchoolInMask(schoolMask));
+        else
+        {
+            crit_chance = (float)m_baseSpellCritChance;
+            crit_chance += GetTotalAuraModifierByMiscMask(SPELL_AURA_MOD_SPELL_CRIT_CHANCE_SCHOOL, schoolMask);
+        }
+        break;
+    }
+    case SPELL_DAMAGE_CLASS_MELEE:
+    case SPELL_DAMAGE_CLASS_RANGED:
+    {
+        if (GetTypeId() == TYPEID_PLAYER)
+        {
+            switch (attackType)
             {
-                if (schoolMask & SPELL_SCHOOL_MASK_NORMAL)
-                    crit_chance = 0.0f;
-                // For other schools
-                else if (GetTypeId() == TYPEID_PLAYER)
-                    crit_chance = GetFloatValue(static_cast<uint16>(PLAYER_SPELL_CRIT_PERCENTAGE1) + GetFirstSchoolInMask(schoolMask));
-                else
-                {
-                    crit_chance = (float)m_baseSpellCritChance;
-                    crit_chance += GetTotalAuraModifierByMiscMask(SPELL_AURA_MOD_SPELL_CRIT_CHANCE_SCHOOL, schoolMask);
-                }
+            case BASE_ATTACK:
+                crit_chance = GetFloatValue(PLAYER_CRIT_PERCENTAGE);
+                break;
+            case OFF_ATTACK:
+                crit_chance = GetFloatValue(PLAYER_OFFHAND_CRIT_PERCENTAGE);
+                break;
+            case RANGED_ATTACK:
+                crit_chance = GetFloatValue(PLAYER_RANGED_CRIT_PERCENTAGE);
+                break;
+            default:
                 break;
             }
-        case SPELL_DAMAGE_CLASS_MELEE:
-        case SPELL_DAMAGE_CLASS_RANGED:
-            {
-                if (GetTypeId() == TYPEID_PLAYER)
-                {
-                    switch (attackType)
-                    {
-                        case BASE_ATTACK:
-                            crit_chance = GetFloatValue(PLAYER_CRIT_PERCENTAGE);
-                            break;
-                        case OFF_ATTACK:
-                            crit_chance = GetFloatValue(PLAYER_OFFHAND_CRIT_PERCENTAGE);
-                            break;
-                        case RANGED_ATTACK:
-                            crit_chance = GetFloatValue(PLAYER_RANGED_CRIT_PERCENTAGE);
-                            break;
-                        default:
-                            break;
-                    }
-                }
-                else
-                {
-                    crit_chance = 5.0f;
-                    crit_chance += GetTotalAuraModifier(SPELL_AURA_MOD_WEAPON_CRIT_PERCENT);
-                    crit_chance += GetTotalAuraModifier(SPELL_AURA_MOD_CRIT_PCT);
-                }
-                crit_chance += GetTotalAuraModifierByMiscMask(SPELL_AURA_MOD_SPELL_CRIT_CHANCE_SCHOOL, schoolMask);
-                break;
-            }
-        // values overridden in spellmgr for lifebloom and earth shield
-        case SPELL_DAMAGE_CLASS_NONE:
-        default:
-            return 0.0f;
+        }
+        else
+        {
+            crit_chance = 5.0f;
+            crit_chance += GetTotalAuraModifier(SPELL_AURA_MOD_WEAPON_CRIT_PERCENT);
+            crit_chance += GetTotalAuraModifier(SPELL_AURA_MOD_CRIT_PCT);
+        }
+        crit_chance += GetTotalAuraModifierByMiscMask(SPELL_AURA_MOD_SPELL_CRIT_CHANCE_SCHOOL, schoolMask);
+        break;
+    }
+    // values overridden in spellmgr for lifebloom and earth shield
+    case SPELL_DAMAGE_CLASS_NONE:
+    default:
+        return 0.0f;
     }
 
     // percent done
@@ -11998,219 +11999,59 @@ float Unit::SpellDoneCritChance(Unit const* /*victim*/, SpellInfo const* spellPr
     if (Player* modOwner = GetSpellModOwner())
         modOwner->ApplySpellMod(spellProto->Id, SPELLMOD_CRITICAL_CHANCE, crit_chance);
 
-    // xinef: can be negative!
-    return crit_chance;
-}
 
-float Unit::SpellTakenCritChance(Unit* caster, SpellInfo const* spellProto, SpellSchoolMask schoolMask, float doneChance, WeaponAttackType attackType, bool skipEffectCheck) const
-{
-    // not critting spell
-    if (spellProto->HasAttribute(SPELL_ATTR2_CANT_CRIT))
-        return 0.0f;
-
-    // Xinef: check if spell is capable of critting, auras requires special aura to crit so they can be skipped
-    if (!skipEffectCheck && !spellProto->IsCritCapable())
-        return 0.0f;
-
-    float crit_chance = doneChance;
-    switch (spellProto->DmgClass)
+    if (victim)
     {
+        switch (spellProto->DmgClass)
+        {
         case SPELL_DAMAGE_CLASS_MAGIC:
+        {
+            if (!spellProto->IsPositive())
             {
-                if (!spellProto->IsPositive())
+                // Modify critical chance by victim SPELL_AURA_MOD_ATTACKER_SPELL_CRIT_CHANCE
+                // xinef: apply max and min only
+                if (victim->HasAuraType(SPELL_AURA_MOD_ATTACKER_SPELL_CRIT_CHANCE))
                 {
-                    // Modify critical chance by victim SPELL_AURA_MOD_ATTACKER_SPELL_CRIT_CHANCE
-                    // xinef: apply max and min only
-                    if (HasAuraType(SPELL_AURA_MOD_ATTACKER_SPELL_CRIT_CHANCE))
-                    {
-                        crit_chance += GetMaxNegativeAuraModifierByMiscMask(SPELL_AURA_MOD_ATTACKER_SPELL_CRIT_CHANCE, schoolMask);
-                        crit_chance += GetMaxPositiveAuraModifierByMiscMask(SPELL_AURA_MOD_ATTACKER_SPELL_CRIT_CHANCE, schoolMask);
-                    }
-
-                    Unit::ApplyResilience(this, &crit_chance, nullptr, false, CR_CRIT_TAKEN_SPELL);
-                }
-                // scripted (increase crit chance ... against ... target by x%
-                if (caster)
-                {
-                    AuraEffectList const& mOverrideClassScript = caster->GetAuraEffectsByType(SPELL_AURA_OVERRIDE_CLASS_SCRIPTS);
-                    for (AuraEffectList::const_iterator i = mOverrideClassScript.begin(); i != mOverrideClassScript.end(); ++i)
-                    {
-                        if (!((*i)->IsAffectedOnSpell(spellProto)))
-                            continue;
-                        int32 modChance = 0;
-                        switch ((*i)->GetMiscValue())
-                        {
-                            // Shatter
-                            case 911:
-                                modChance += 16;
-                                [[fallthrough]];
-                            case 910:
-                                modChance += 17;
-                                [[fallthrough]];
-                            case 849:
-                                modChance += 17;
-                                if (!HasAuraState(AURA_STATE_FROZEN, spellProto, caster))
-                                    break;
-                                crit_chance += modChance;
-                                break;
-                            case 7917: // Glyph of Shadowburn
-                                if (HasAuraState(AURA_STATE_HEALTHLESS_35_PERCENT, spellProto, caster))
-                                    crit_chance += (*i)->GetAmount();
-                                break;
-                            case 7997: // Renewed Hope
-                            case 7998:
-                                if (HasAura(6788))
-                                    crit_chance += (*i)->GetAmount();
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                    // Custom crit by class
-                    switch (spellProto->SpellFamilyName)
-                    {
-                        case SPELLFAMILY_MAGE:
-                            // Glyph of Fire Blast
-                            if (spellProto->SpellFamilyFlags[0] == 0x2 && spellProto->SpellIconID == 12)
-                                if (HasAuraWithMechanic((1 << MECHANIC_STUN) | (1 << MECHANIC_KNOCKOUT)))
-                                    if (AuraEffect const* aurEff = caster->GetAuraEffect(56369, EFFECT_0))
-                                        crit_chance += aurEff->GetAmount();
-                            break;
-                        case SPELLFAMILY_DRUID:
-                            // Improved Faerie Fire
-                            if (HasAuraState(AURA_STATE_FAERIE_FIRE))
-                                if (AuraEffect const* aurEff = caster->GetDummyAuraEffect(SPELLFAMILY_DRUID, 109, 0))
-                                    crit_chance += aurEff->GetAmount();
-
-                            // cumulative effect - don't break
-
-                            // Starfire
-                            if (spellProto->SpellFamilyFlags[0] & 0x4 && spellProto->SpellIconID == 1485)
-                            {
-                                // Improved Insect Swarm
-                                if (AuraEffect const* aurEff = caster->GetDummyAuraEffect(SPELLFAMILY_DRUID, 1771, 0))
-                                    if (GetAuraEffect(SPELL_AURA_PERIODIC_DAMAGE, SPELLFAMILY_DRUID, 0x00000002, 0, 0))
-                                        crit_chance += aurEff->GetAmount();
-                                break;
-                            }
-                            break;
-                        case SPELLFAMILY_ROGUE:
-                            // Shiv-applied poisons can't crit
-                            if (caster->FindCurrentSpellBySpellId(5938))
-                                crit_chance = 0.0f;
-                            break;
-                        case SPELLFAMILY_PALADIN:
-                            // Flash of light
-                            if (spellProto->SpellFamilyFlags[0] & 0x40000000)
-                            {
-                                // Sacred Shield
-                                if (AuraEffect const* aura = GetAuraEffect(58597, 1, GetGUID()))
-                                    crit_chance += aura->GetAmount();
-                                break;
-                            }
-                            // Exorcism
-                            else if (spellProto->GetCategory() == 19)
-                            {
-                                if (GetCreatureTypeMask() & CREATURE_TYPEMASK_DEMON_OR_UNDEAD)
-                                    return 100.0f;
-                                break;
-                            }
-                            break;
-                        case SPELLFAMILY_SHAMAN:
-                            // Lava Burst
-                            if (spellProto->SpellFamilyFlags[1] & 0x00001000)
-                            {
-                                if (GetAuraEffect(SPELL_AURA_PERIODIC_DAMAGE, SPELLFAMILY_SHAMAN, 0x10000000, 0, 0, caster->GetGUID()))
-                                    if (GetTotalAuraModifier(SPELL_AURA_MOD_ATTACKER_SPELL_AND_WEAPON_CRIT_CHANCE) > -100)
-                                        return 100.0f;
-                                break;
-                            }
-                            break;
-                    }
-                }
-                break;
-            }
-        case SPELL_DAMAGE_CLASS_MELEE:
-            // Custom crit by class
-            if (caster)
-            {
-                switch (spellProto->SpellFamilyName)
-                {
-                case SPELLFAMILY_DRUID:
-                    // Rend and Tear - bonus crit chance for Ferocious Bite on bleeding targets
-                    if (spellProto->SpellFamilyFlags[0] & 0x00800000 && spellProto->SpellIconID == 1680 && HasAuraState(AURA_STATE_BLEEDING))
-                    {
-                        if (AuraEffect const* rendAndTear = caster->GetDummyAuraEffect(SPELLFAMILY_DRUID, 2859, 1))
-                            crit_chance += rendAndTear->GetAmount();
-                        break;
-                    }
-                    break;
-                case SPELLFAMILY_WARRIOR:
-                    // Victory Rush
-                    if (spellProto->SpellFamilyFlags[1] & 0x100)
-                    {
-                        // Glyph of Victory Rush
-                        if (AuraEffect const* aurEff = caster->GetAuraEffect(58382, 0))
-                            crit_chance += aurEff->GetAmount();
-                        break;
-                    }
-                    break;
+                    crit_chance += victim->GetMaxNegativeAuraModifierByMiscMask(SPELL_AURA_MOD_ATTACKER_SPELL_CRIT_CHANCE, schoolMask);
+                    crit_chance += victim->GetMaxPositiveAuraModifierByMiscMask(SPELL_AURA_MOD_ATTACKER_SPELL_CRIT_CHANCE, schoolMask);
                 }
             }
-
-            // 100% critical chance against sitting target
-            if (GetTypeId() == TYPEID_PLAYER && (IsSitState() || getStandState() == UNIT_STAND_STATE_SLEEP))
+            AuraEffectList const& mOverrideClassScript = GetAuraEffectsByType(SPELL_AURA_OVERRIDE_CLASS_SCRIPTS);
+            for (AuraEffectList::const_iterator i = mOverrideClassScript.begin(); i != mOverrideClassScript.end(); ++i)
             {
-                return 100.0f;
+                if (!((*i)->IsAffectedOnSpell(spellProto)))
+                    continue;
             }
-            [[fallthrough]]; /// @todo: Not sure whether the fallthrough was a mistake (forgetting a break) or intended. This should be double-checked.
+            break;
+        }
         case SPELL_DAMAGE_CLASS_RANGED:
-            {
-                // flat aura mods
-                if (attackType == RANGED_ATTACK)
-                    crit_chance += GetTotalAuraModifier(SPELL_AURA_MOD_ATTACKER_RANGED_CRIT_CHANCE);
-                else
-                    crit_chance += GetTotalAuraModifier(SPELL_AURA_MOD_ATTACKER_MELEE_CRIT_CHANCE);
+        {
+            // flat aura mods
+            if (attackType == RANGED_ATTACK)
+                crit_chance += victim->GetTotalAuraModifier(SPELL_AURA_MOD_ATTACKER_RANGED_CRIT_CHANCE);
+            else
+                crit_chance += victim->GetTotalAuraModifier(SPELL_AURA_MOD_ATTACKER_MELEE_CRIT_CHANCE);
 
-                // reduce crit chance from Rating for players
-                if (attackType != RANGED_ATTACK)
-                {
-                    // xinef: little hack, crit chance dont require caster to calculate, pass victim
-                    Unit::ApplyResilience(this, &crit_chance, nullptr, false, CR_CRIT_TAKEN_MELEE);
-                }
-                else
-                    Unit::ApplyResilience(this, &crit_chance, nullptr, false, CR_CRIT_TAKEN_RANGED);
 
-                // Apply crit chance from defence skill
-                if (caster)
-                    crit_chance += (int32(caster->GetMaxSkillValueForLevel(this)) - int32(GetDefenseSkillValue(caster))) * 0.04f;
+            crit_chance += (int32(GetMaxSkillValueForLevel(this)) - int32(victim->GetDefenseSkillValue(this))) * 0.04f;
 
-                break;
-            }
-        // values overridden in spellmgr for lifebloom and earth shield
-        case SPELL_DAMAGE_CLASS_NONE:
-        default:
-            return 0.0f;
-    }
+            break;
+        }
 
-    if (caster)
-    {
-        AuraEffectList const& mTotalAuraList = GetAuraEffectsByType(SPELL_AURA_MOD_CRIT_CHANCE_FOR_CASTER);
+        AuraEffectList const& mTotalAuraList = victim->GetAuraEffectsByType(SPELL_AURA_MOD_CRIT_CHANCE_FOR_CASTER);
         for (AuraEffectList::const_iterator i = mTotalAuraList.begin(); i != mTotalAuraList.end(); ++i)
         {
-            if (caster->GetGUID() != (*i)->GetCasterGUID())
+            if (GetGUID() != (*i)->GetCasterGUID())
                 continue;
 
             crit_chance += (*i)->GetAmount();
         }
+        // Modify critical chance by victim SPELL_AURA_MOD_ATTACKER_SPELL_AND_WEAPON_CRIT_CHANCE
+        // xinef: should be calculated at the end
+        if (!spellProto->IsPositive())
+            crit_chance += victim->GetTotalAuraModifier(SPELL_AURA_MOD_ATTACKER_SPELL_AND_WEAPON_CRIT_CHANCE);
+        }
     }
-
-    // Modify critical chance by victim SPELL_AURA_MOD_ATTACKER_SPELL_AND_WEAPON_CRIT_CHANCE
-    // xinef: should be calculated at the end
-    if (!spellProto->IsPositive())
-        crit_chance += GetTotalAuraModifier(SPELL_AURA_MOD_ATTACKER_SPELL_AND_WEAPON_CRIT_CHANCE);
-
-    // xinef: can be negative!
     return crit_chance;
 }
 

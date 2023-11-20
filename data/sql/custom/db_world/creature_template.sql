@@ -207,6 +207,7 @@ UPDATE creature_template SET gossip_menu_id=200189 WHERE entry=16281;
 UPDATE creature_template SET gossip_menu_id=200190 WHERE entry=16787;
 UPDATE creature_template SET gossip_menu_id=200191 WHERE entry=16494;
 
+UPDATE creature_template SET ScriptName='young_wolf', name = "Diseased Wolf"  WHERE entry=299;
 UPDATE creature_template SET ScriptName='lazy_peon' WHERE entry=10556;
 UPDATE creature_template SET minlevel = 6, maxlevel = 8 WHERE (entry = 15271);
 UPDATE creature_template SET ScriptName='mana_wyrm' WHERE entry=15274;

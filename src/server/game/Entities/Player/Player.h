@@ -2890,6 +2890,40 @@ public:
     uint32 Warband[4] = { 0,0,0,0 };
     void _LoadWarband(PreparedQueryResult result);
     void _SaveWarband(CharacterDatabaseTransaction trans);
+
+
+    /*
+    Consider: Cast time, Cooldown, Channel time, Targeting
+    If Y has targeting, X must have targeting
+    If Y spell has cast time, Y mana cost goes up by 100% per 1s.
+    If X has channel time, Y is checked on each tick.
+    Y cannot have channel time.
+    If X is not targeted and Y is ground targeted, Y will cast on top of player character.
+    If Y has cooldown, it will only try to crit off cooldown.
+    */
+
+    std::map<uint32, uint32> CritData = {};
+    bool AddCritCast(uint32 X, uint32 Y)
+    {
+        if (!HasSpell(Y) || !HasSpell(X))
+            return false;
+        const SpellInfo* infoX = sSpellMgr->GetSpellInfo(X);
+        if (!infoX)
+            return false;
+        const SpellInfo* infoY = sSpellMgr->GetSpellInfo(Y);
+        if (!infoY)
+            return false;
+        if(infoY->NeedsExplicitUnitTarget() && !infoX->NeedsExplicitUnitTarget())
+            return false;
+        if (infoY->IsChanneled())
+            return false;
+
+        if (CritData.count(Y))
+            CritData.erase(Y);
+        CritData[X] = Y;
+
+        return true;
+    }
 };
 
 void AddItemsSetItem(Player* player, Item* item);

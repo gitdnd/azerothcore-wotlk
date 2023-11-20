@@ -2699,6 +2699,8 @@ void SpellMgr::LoadSpellAreas()
     LOG_INFO("server.loading", " ");
 }
 
+void AddELKAIJson();
+
 void SpellMgr::LoadSpellInfoStore()
 {
     uint32 oldMSTime = getMSTime();
@@ -2726,6 +2728,9 @@ void SpellMgr::LoadSpellInfoStore()
 
     LOG_INFO("server.loading", ">> Loaded Spell Custom Attributes in {} ms", GetMSTimeDiffToNow(oldMSTime));
     LOG_INFO("server.loading", " ");
+
+
+    AddELKAIJson();
 }
 
 void SpellMgr::LoadSpellCooldownOverrides()
