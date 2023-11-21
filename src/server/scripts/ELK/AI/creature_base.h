@@ -68,11 +68,13 @@ struct ELKCAction
     ELKCATarget target = ELKCATarget::NONE;
     bool on_mutate = false;
     uint8 runeCost = false;
+    uint32 cooldown = 0;
 };
 struct ELKCCombo
 {
     uint8 runeCost = 0;
     std::vector<uint8> actions = {};
+    uint32 cooldown = 0;
 };
 
 struct ELKAI;
@@ -82,9 +84,22 @@ enum class ELKActionType : uint8
     NONE,
     ATTACK,
     DEFEND,
-    SPELL
+    SPELL,
+    MOVEMENT,
 };
-
+enum class ELKActionMoveType : uint8
+{
+    NONE,
+    DYNAMIC_MOVEMENT,
+    LEAPING,
+};
+struct DynamicMovement
+{
+    uint16 moveTime = 0;
+    float angleBase = 1.f;
+    float angleRaw = 0.f;
+    uint16 dist = 0;
+};
 
 
 
@@ -108,6 +123,8 @@ public:
     uint32 regularCheckHP = 0;
     static inline std::map<std::string, ELKCreatureScript*> ELKCreatureScripts = {};
 
+    DynamicMovement dynamicMovement;
+    uint8 dynamicMovementOdds = 255;
 protected:
     ELKCreatureScript(const char* name) : CreatureScript(name)
     {
@@ -251,16 +268,8 @@ protected:
 
         uint32 regularCheck = 2500;
 
-        struct DynamicMovement
-        {
-            uint16 moveTime = 0;
-            float angleMulti = 0.f;
-            float angleRaw = 0.f;
-            float dist = 0.f;
-        };
         DynamicMovement dynamicMovement;
 
-        std::map<uint32, uint16> baseCooldowns;
         std::map<uint32, uint16> baseCost;
 
         std::vector<uint32> reinforcementEntries;
@@ -292,7 +301,7 @@ protected:
             SpellCastResult ret = me->CastSpell(me, spell, false);
             if (ret == SPELL_CAST_OK)
             {
-                me->AddSpellCooldown(spell, 0, baseCooldowns[spell]);
+               
                 return true;
             }
             return false;
@@ -305,7 +314,7 @@ protected:
             SpellCastResult ret = me->CastSpell(point.GetPositionX(), point.GetPositionY(), point.GetPositionZ(), spell, false);
             if (ret == SPELL_CAST_OK)
             {
-                me->AddSpellCooldown(spell, 0, baseCooldowns[spell]);
+               
                 return true;
             }
             return false;
@@ -318,7 +327,7 @@ protected:
             SpellCastResult ret = me->CastSpell(target, spell, false);
             if (ret == SPELL_CAST_OK)
             {
-                me->AddSpellCooldown(spell, 0, baseCooldowns[spell]);
+               
                 return true;
             }
             return false;
@@ -473,6 +482,8 @@ protected:
         }
         void RandomCombo(std::pair<ELKActionType, uint8> combo, bool& exit)
         {
+            if (comboCooldown[combo.first][combo.second] > 0)
+                return;
             const ELKCCombo& com = (script->Combos.find(combo.first))->second[combo.second];
             const ELKCAction& act = script->Actions.find(com.actions[0])->second;
             if (com.runeCost <= me->GetAvailableRunes())
@@ -480,7 +491,8 @@ protected:
                 exit = DoELKAIAction(act);
                 if (exit)
                 {
-                    currentCombo = std::pair(combo.first, std::pair(combo.second, uint8(0)));
+                    comboCooldown[combo.first][combo.second] = com.cooldown;
+                    currentCombo.Reset();
                     events.ScheduleEvent(ACTION_PROGRESS, act.delay);
                 }
             }
@@ -508,7 +520,7 @@ protected:
                     {
                         Position pos = me->GetFirstCollisionPosition(act.distance, me->GetVictim()->GetRelativeAngle(me) + act.angle);
                         if(act.on_mutate)
-                            isLeaping = true;
+                            currentCombo.typeMove = ELKActionMoveType::LEAPING;
                         JumpTowards(pos, act.speedXY, act.speedZ, me->GetVictim());
                         return true;
                     }
@@ -519,7 +531,7 @@ protected:
                     {
                         Position pos = me->GetFirstCollisionPosition(me->GetDistance(me->GetVictim()), me->GetRelativeAngle(me->GetVictim()) + act.angle);
                         if (act.on_mutate)
-                            isLeaping = true;
+                            currentCombo.typeMove = ELKActionMoveType::LEAPING;
                         JumpTowards(pos, act.speedXY, act.speedZ, me->GetVictim());
                         return true;
                     }
@@ -529,27 +541,46 @@ protected:
         }
         bool ContinueCombo()
         {
-            const ELKCCombo& com = (script->Combos.find(currentCombo.first))->second[currentCombo.second.first];
+            const ELKCCombo& com = (script->Combos.find(currentCombo.type))->second[currentCombo.combo];
 
-            if (com.actions.size() > currentCombo.second.second + 1)
+            if (com.actions.size() > currentCombo.action + 1)
             {
-                const ELKCAction& act = script->Actions.find(com.actions[currentCombo.second.second + 1])->second;
+                const ELKCAction& act = script->Actions.find(com.actions[currentCombo.action + 1])->second;
                 if (DoELKAIAction(act))
                 {
-                    currentCombo.second.second++;
-                    events.ScheduleEvent(ACTION_PROGRESS, act.delay);
+                    currentCombo.action++;
+                    if(currentCombo.typeMove == ELKActionMoveType::NONE)
+                        events.ScheduleEvent(ACTION_PROGRESS, act.delay);
                     return true;
                 }
             }
             ResetCombo();
             return false;
         }
-        std::pair<ELKActionType, std::pair<uint8, uint8>> currentCombo = { ELKActionType::NONE, {0,0} };
-        bool isLeaping = false; 
+        struct CurrentCombo
+        {
+            ELKActionType type = ELKActionType::NONE;
+            uint8 combo = 0;
+            uint8 action = 0;
+            ELKActionMoveType typeMove = ELKActionMoveType::NONE;
+            void Reset()
+            {
+                type = ELKActionType::NONE;
+                combo = 0;
+                action = 0;
+                typeMove = ELKActionMoveType::NONE;
+            }
+        };
+        CurrentCombo currentCombo;
+        std::map<ELKActionType, std::map<uint8, uint16>> comboCooldown = {
+            {ELKActionType::ATTACK, {}},
+            {ELKActionType::DEFEND, {}},
+            {ELKActionType::SPELL, {}}
+        };
+
         bool ResetCombo()
         {
-            isLeaping = false;
-            currentCombo = { ELKActionType::NONE, {0,0} };
+            currentCombo.Reset();
             events.CancelEvent(ACTION_PROGRESS);
             events.RescheduleEvent(REGULAR_CHECK, regularCheck);
             return true;
@@ -561,23 +592,23 @@ protected:
         void DamageTaken(Unit* doneby, uint32& damage, DamageEffectType type, SpellSchoolMask school) override
         {
             DamageTakenExtra(doneby, damage, type, school);
-            regularCheck = script->regularCheck - me->GetHealthPct() * script->regularCheckHP;
+            regularCheck = script->regularCheck + me->GetHealthPct() * script->regularCheckHP;
         }
         void sOnMutate() override
         {
             if (!me->GetVictim() || !me->CanFreeMove())
             {
-                if (dynamicMovement.moveTime)
+                if (currentCombo.typeMove == ELKActionMoveType::DYNAMIC_MOVEMENT)
                 {
                     ResetDynamicMovement();
                 }
-                if (isLeaping)
+                if (currentCombo.typeMove == ELKActionMoveType::LEAPING)
                 {
                     ResetCombo();
                 }
                 return;
             }
-            else if (isLeaping)
+            else if (currentCombo.typeMove == ELKActionMoveType::LEAPING)
             {
                 ContinueCombo();
             }
@@ -605,35 +636,76 @@ protected:
         bool ELKUpdateAI(uint32 diff)
         {
             events.Update(diff);
-
+            for (auto& cdCat : comboCooldown)
+            {
+                for (auto cC = cdCat.second.begin(); cC != cdCat.second.end(); )
+                {
+                    if (cC->second > diff)
+                    {
+                        cC->second -= diff;
+                        cC++;
+                    }
+                    else
+                        cdCat.second.erase(cC++);
+                }
+            }
             if (me->isMoving())
             {
-                if (isLeaping)
+                if (currentCombo.typeMove == ELKActionMoveType::LEAPING)
                     return true;
-                if (dynamicMovement.moveTime > 0)
+                if (currentCombo.typeMove == ELKActionMoveType::DYNAMIC_MOVEMENT)
                 {
-                    if (dynamicMovement.moveTime > diff)
+                    if (dynamicMovement.dist < diff)
                     {
-                        dynamicMovement.moveTime = 0;
+                        dynamicMovement.dist = script->dynamicMovement.dist;
+                        DynamicMove(dynamicMovement.angleRaw);
+                    }
+                    else
+                        dynamicMovement.dist -= diff;
+
+                    if (dynamicMovement.moveTime < diff)
+                    {
                         ResetDynamicMovement();
                     }
                     else
                         dynamicMovement.moveTime -= diff;
 
-                    DynamicMove(dynamicMovement.angleMulti, dynamicMovement.angleRaw, dynamicMovement.dist);
+
                     return true;
+                }
+            }
+            else
+            {
+                if (dynamicMovement.moveTime > 0)
+                {
+                    ResetDynamicMovement();
                 }
             }
             return false;
         }
         void ResetDynamicMovement()
         {
-            me->RemoveAura(56354);
+            ResetCombo();
+            me->RemoveAura(100023);
             dynamicMovement.moveTime = 0;
+            if (me->GetVictim())
+                me->SetFacingToObject(me->GetVictim());
         }
         virtual void StartDynamicMovements()
         {
-            DynamicMove(dynamicMovement.angleMulti, dynamicMovement.angleRaw, dynamicMovement.dist);
+            currentCombo.typeMove = ELKActionMoveType::DYNAMIC_MOVEMENT;
+            currentCombo.type = ELKActionType::MOVEMENT;
+            dynamicMovement.moveTime = script->dynamicMovement.moveTime * me->GetDistance(me->GetVictim());
+            int8 posneg = (rand() % 2);
+            if (posneg == 0)
+                posneg = -1;
+            dynamicMovement.angleBase = posneg * script->dynamicMovement.angleBase;
+            dynamicMovement.angleRaw = posneg * script->dynamicMovement.angleRaw;
+            dynamicMovement.dist = script->dynamicMovement.dist;
+
+            me->SetOrientation(me->GetOrientation() + dynamicMovement.angleBase);
+            DynamicMove(dynamicMovement.angleRaw);
+            me->AddAura(100023, me);
         }
         virtual bool DoEventsExtra()
         {
@@ -648,12 +720,23 @@ protected:
                 break;
             case REGULAR_CHECK:
                 events.ScheduleEvent(REGULAR_CHECK, regularCheck);
-                if (currentCombo.first != ELKActionType::NONE)
+                if (currentCombo.type != ELKActionType::NONE)
                 {
                     DoEvents();
                     break;
                 }
                 DoEvents();
+
+                if (me->GetDistance(me->GetVictim()) < 4)
+                {
+                    if (rand() % script->dynamicMovementOdds == 0)
+                    {
+                        StartDynamicMovements();
+
+                        break;
+                    }
+                }
+
                 if (DoEventsExtra())
                     break;
                 RandomAction();
@@ -662,19 +745,17 @@ protected:
                 return;
             }
         }
-        void DynamicMove(float angleMulti, float angleRaw, float dist)
+        void DynamicMove(float angleRaw)
         {
             Position pos = me->GetPosition();
-            float angle = me->GetVictim()->GetRelativeAngle(me);
 
-            angle = (angle * angleMulti + angleRaw);
-
-            me->MovePositionToFirstCollision(pos, dist, angle);
+            me->MovePositionToFirstCollision(pos, 5.f, angleRaw);
 
             Movement::MoveSplineInit init(me);
             init.MoveTo(pos.m_positionX, pos.m_positionY, pos.m_positionZ);
             init.Launch();
         }
+
 
     };
 };

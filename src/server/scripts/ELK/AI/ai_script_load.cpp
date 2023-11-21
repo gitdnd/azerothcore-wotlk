@@ -39,8 +39,17 @@ void ReadELKAIArray(std::string category, const json& js, ELKCreatureScript* scr
         ELKCCombo cCombo;
         cCombo.actions = combo;
         for (uint8 i = 0; i < combo.size(); i++)
-            if (script->Actions[i].runeCost > 0)
-                cCombo.runeCost += script->Actions[i].runeCost;
+            if (auto action = script->Actions.find(combo[i]); action != script->Actions.end())
+            {
+                if (action->second.runeCost > 0)
+                {
+                    cCombo.runeCost += script->Actions[i].runeCost;
+                }
+                if (action->second.cooldown > 0 && cCombo.cooldown < action->second.cooldown)
+                    cCombo.cooldown = action->second.cooldown;
+            }
+            else
+                continue;
         script->Combos[type].push_back(cCombo);
     }
 }
@@ -74,6 +83,12 @@ void AddELKAIJson()
                             ExtractJson(it->second->regularCheck, creature, "regularCheck");
                             ExtractJson(it->second->regularCheckHP, creature, "regularCheckHP");
 
+                            ExtractJson(it->second->dynamicMovement.dist, creature, "DMdist");
+                            ExtractJson(it->second->dynamicMovement.angleRaw, creature, "DMangleRaw");
+                            ExtractJson(it->second->dynamicMovement.angleBase, creature, "DMangleBase");
+                            ExtractJson(it->second->dynamicMovement.moveTime, creature, "DMmoveTime");
+                            ExtractJson(it->second->dynamicMovementOdds, creature, "DModds");
+
                             uint8 next_mutate = 0;
                             it->second->Actions.clear();
                             if (creature.find("ACTIONS") != creature.end())
@@ -93,6 +108,8 @@ void AddELKAIJson()
                                         action.type = ELKCAType::SPELL;
                                         const SpellInfo* spell = sSpellMgr->GetSpellInfo(action.id);
 
+                                        if (!spell)
+                                            continue;
                                         SpellRuneCostEntry const* runeCostData = sSpellRuneCostStore.LookupEntry(spell->RuneCostID);
                                         if (runeCostData && !(runeCostData->NoRuneCost()))
                                         {
@@ -119,6 +136,7 @@ void AddELKAIJson()
                                     ExtractJson(action.speedZ, itA, "speedZ");
                                     ExtractJson(action.min_dist, itA, "min_dist");
                                     ExtractJson(action.distance, itA, "distance");
+                                    ExtractJson(action.cooldown, itA, "cooldown");
                                     ExtractJson(next_mutate, itA, "next_mutate");
                                     if (next_mutate)
                                         action.on_mutate = true;

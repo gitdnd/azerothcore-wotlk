@@ -1,23 +1,23 @@
 #include "creature_base.h"
 
 
-class young_wolf : public ELKCreatureScript
+class diseased_pup : public ELKCreatureScript
 {
 public:
-    young_wolf() : ELKCreatureScript("young_wolf") {}
+    diseased_pup() : ELKCreatureScript("diseased_pup") {}
     CreatureAI* GetAI(Creature* creature) const override
     {
-        return new young_wolfAI(creature, this);
+        return new diseased_pupAI(creature, this);
     }
-    struct young_wolfAI : public ELKAI
+    struct diseased_pupAI : public ELKAI
     {
-        young_wolfAI(Creature* creature, const ELKCreatureScript* script) : ELKAI(creature, script)
+        diseased_pupAI(Creature* creature, const ELKCreatureScript* script) : ELKAI(creature, script)
         {
             
         };
         void EnterCombatCustom(Unit* /*who*/) override
         {
-            regularCheck = 3500;
+
             events.ScheduleEvent(REGULAR_CHECK, regularCheck);
         }
         void ResetExtra() override
@@ -41,28 +41,233 @@ public:
                 chanceAtk = 0;
             DoEvents();
         }
-        bool DoEventsExtra() override
+
+
+
+    };
+};
+
+class mange : public ELKCreatureScript
+{
+public:
+    mange() : ELKCreatureScript("mange") {}
+    CreatureAI* GetAI(Creature* creature) const override
+    {
+        return new mangeAI(creature, this);
+    }
+    struct mangeAI : public ELKAI
+    {
+        mangeAI(Creature* creature, const ELKCreatureScript* script) : ELKAI(creature, script)
         {
-            if (me->GetDistance(me->GetVictim()) < 4)
+
+        };
+        void EnterCombatCustom(Unit* /*who*/) override
+        {
+
+            events.ScheduleEvent(REGULAR_CHECK, regularCheck);
+        }
+        void ResetExtra() override
+        {
+        }
+        void UpdateAI(uint32 diff) override
+        {
+            if (ELKUpdateAI(diff))
+                return;
+            if (!UpdateVictim())
+                return;
+            if (me->HasUnitState(UNIT_STATE_CASTING))
             {
-                if (rand() % 13 == 0)
-                {
-                    StartDynamicMovements();
-                    
-                    return true;
-                }
+                return;
             }
-            return false;
+
+
+            if (me->IsWithinMeleeRange(me->GetVictim()))
+                chanceAtk = script->chanceAtk;
+            else
+                chanceAtk = 0;
+            DoEvents();
         }
 
-        void StartDynamicMovements() override
+
+
+    };
+};
+
+class night_prowler : public ELKCreatureScript
+{
+public:
+    night_prowler() : ELKCreatureScript("night_prowler") {}
+    CreatureAI* GetAI(Creature* creature) const override
+    {
+        return new night_prowlerAI(creature, this);
+    }
+    struct night_prowlerAI : public ELKAI
+    {
+        night_prowlerAI(Creature* creature, const ELKCreatureScript* script) : ELKAI(creature, script)
         {
-            dynamicMovement.moveTime = 3500;
-            dynamicMovement.angleMulti = 2.f;
-            dynamicMovement.angleRaw = 3.14f;
-            dynamicMovement.dist = 5.f;
-            ELKAI::StartDynamicMovements();
+
+        };
+        void EnterCombatCustom(Unit* /*who*/) override
+        {
+
+            events.ScheduleEvent(REGULAR_CHECK, regularCheck);
         }
+        void ResetExtra() override
+        {
+        }
+        void UpdateAI(uint32 diff) override
+        {
+            if (ELKUpdateAI(diff))
+                return;
+            if (!UpdateVictim())
+                return;
+            if (me->HasUnitState(UNIT_STATE_CASTING))
+            {
+                return;
+            }
+
+
+            if (me->IsWithinMeleeRange(me->GetVictim()))
+                chanceAtk = script->chanceAtk;
+            else
+                chanceAtk = 0;
+            DoEvents();
+        }
+
+
+    };
+};
+class defias : public ELKCreatureScript
+{
+public:
+    defias() : ELKCreatureScript("defias") {}
+    CreatureAI* GetAI(Creature* creature) const override
+    {
+        return new defiasAI(creature, this);
+    }
+    struct defiasAI : public ELKAI
+    {
+        defiasAI(Creature* creature, const ELKCreatureScript* script) : ELKAI(creature, script)
+        {
+
+        };
+        void EnterCombatCustom(Unit* /*who*/) override
+        {
+
+            events.ScheduleEvent(REGULAR_CHECK, regularCheck);
+        }
+        void ResetExtra() override
+        {
+        }
+        void UpdateAI(uint32 diff) override
+        {
+            if (ELKUpdateAI(diff))
+                return;
+            if (!UpdateVictim())
+                return;
+            if (me->HasUnitState(UNIT_STATE_CASTING))
+            {
+                return;
+            }
+
+
+            if (me->IsWithinMeleeRange(me->GetVictim()))
+                chanceAtk = script->chanceAtk;
+            else
+                chanceAtk = 0;
+            DoEvents();
+        }
+
+    };
+};
+
+
+class padfoot : public ELKCreatureScript
+{
+public:
+    padfoot() : ELKCreatureScript("padfoot") {}
+    CreatureAI* GetAI(Creature* creature) const override
+    {
+        return new padfootAI(creature, this);
+    }
+    struct padfootAI : public ELKAI
+    {
+        padfootAI(Creature* creature, const ELKCreatureScript* script) : ELKAI(creature, script)
+        {
+
+        };
+        void EnterCombatCustom(Unit* /*who*/) override
+        {
+
+            events.ScheduleEvent(REGULAR_CHECK, regularCheck);
+        }
+        void ResetExtra() override
+        {
+        }
+        void UpdateAI(uint32 diff) override
+        {
+            if (ELKUpdateAI(diff))
+                return;
+            if (!UpdateVictim())
+                return;
+            if (me->HasUnitState(UNIT_STATE_CASTING))
+            {
+                return;
+            }
+
+
+            if (me->IsWithinMeleeRange(me->GetVictim()))
+                chanceAtk = script->chanceAtk;
+            else
+                chanceAtk = 0;
+            DoEvents();
+        }
+
+    };
+};
+
+
+class cutpurse : public ELKCreatureScript
+{
+public:
+    cutpurse() : ELKCreatureScript("cutpurse") {}
+    CreatureAI* GetAI(Creature* creature) const override
+    {
+        return new cutpurseAI(creature, this);
+    }
+    struct cutpurseAI : public ELKAI
+    {
+        cutpurseAI(Creature* creature, const ELKCreatureScript* script) : ELKAI(creature, script)
+        {
+
+        };
+        void EnterCombatCustom(Unit* /*who*/) override
+        {
+
+            events.ScheduleEvent(REGULAR_CHECK, regularCheck);
+        }
+        void ResetExtra() override
+        {
+        }
+        void UpdateAI(uint32 diff) override
+        {
+            if (ELKUpdateAI(diff))
+                return;
+            if (!UpdateVictim())
+                return;
+            if (me->HasUnitState(UNIT_STATE_CASTING))
+            {
+                return;
+            }
+
+
+            if (me->IsWithinMeleeRange(me->GetVictim()))
+                chanceAtk = script->chanceAtk;
+            else
+                chanceAtk = 0;
+            DoEvents();
+        }
+
     };
 };
 
@@ -72,8 +277,13 @@ public:
 void AddSC_elk_elwynn_forest_mobs()
 {
 
-    new young_wolf();
+    new diseased_pup();
+    new mange();
+    new night_prowler();
+    new defias();
+    new padfoot();
 
+    new cutpurse();
 }
 
 

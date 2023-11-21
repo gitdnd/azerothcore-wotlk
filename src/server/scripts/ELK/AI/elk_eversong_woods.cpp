@@ -101,7 +101,7 @@ public:
             {
                 return;
             }
-            if (currentCombo.first == ELKActionType::NONE)
+            if (currentCombo.type == ELKActionType::NONE)
                 if (Aura* aura = me->GetAura(uint32(ELKSpells::COMBO_COUNT)); aura && aura->GetStackAmount() > 4)
                     if (EasyCast(uint32(SpellsC::CRUSHING_WAVE)))
                         return;
@@ -112,19 +112,7 @@ public:
                 chanceAtk = 0;
             DoEvents();
         }
-        bool DoEventsExtra() override
-        {
-            if (me->GetDistance(me->GetVictim()) < 3)
-            {
-                if (rand() % 5 == 0)
-                {
-                    StartDynamicMovements();
-                    
-                    return true;
-                }
-            }
-            return false;
-        }
+
         uint32 spellHits = 0;
         void SpellHitExtra(Unit* caster, SpellInfo const* spell) override
         {
@@ -147,7 +135,6 @@ public:
                 return;
             if (damage >= me->GetHealth() && lives > rand() % 10)
             {
-                isLeaping = 0;
                 damage = 0;
                 me->SetHealth(300);
                 lives--;
@@ -166,14 +153,6 @@ public:
                 doneby->CastSpell(me, 150033, true);
             }
 
-        }
-        void StartDynamicMovements() override
-        {
-            dynamicMovement.moveTime = 1500;
-            dynamicMovement.angleMulti = 1.f;
-            dynamicMovement.angleRaw = 3.14f;
-            dynamicMovement.dist = 3.f;
-            ELKAI::StartDynamicMovements();
         }
     };
 };
