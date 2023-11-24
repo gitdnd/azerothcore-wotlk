@@ -213,7 +213,7 @@ UPDATE creature_template SET ScriptName='night_prowler', name = "Prowler"  WHERE
 UPDATE creature_template SET ScriptName='diseased_pup', name = "Diseased Pup"  WHERE entry=299;
 UPDATE creature_template SET ScriptName='mange', name = "Mange"  WHERE entry=1922;
 
-UPDATE creature_template SET ScriptName='cutpurse', name = "Mange"  WHERE entry=448;
+UPDATE creature_template SET ScriptName='cutpurse', name = "Cutpurse"  WHERE entry=94;
 
 UPDATE creature_template SET ScriptName='lazy_peon' WHERE entry=10556;
 UPDATE creature_template SET minlevel = 6, maxlevel = 8 WHERE (entry = 15271);

@@ -1,16 +1,16 @@
 #include "creature_base.h"
 
-class lazy_peon : public CreatureScript
+class lazy_peon : public ELKCreatureScript
 {
 public:
-    lazy_peon() : CreatureScript("lazy_peon") {}
+    lazy_peon() : ELKCreatureScript("lazy_peon") {}
     CreatureAI* GetAI(Creature* creature) const override
     {
-        return new lazy_peonAI(creature);
+        return new lazy_peonAI(creature, this);
     }
     struct lazy_peonAI : public ELKAI
     {
-        lazy_peonAI(Creature* creature) : ELKAI(creature)
+        lazy_peonAI(Creature* creature, const ELKCreatureScript* script) : ELKAI(creature, script)
         {
             switch (creature->GetSpawnId())
             {

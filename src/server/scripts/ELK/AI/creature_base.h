@@ -99,6 +99,8 @@ struct DynamicMovement
     float angleBase = 1.f;
     float angleRaw = 0.f;
     uint16 dist = 0;
+    uint16 sprintPre = 0;
+    uint16 sprintPost = 0;
 };
 
 
@@ -106,6 +108,7 @@ struct DynamicMovement
 class ELKCreatureScript : public CreatureScript
 {
 public:
+#pragma region ELKCMain
     std::map<ELKActionType, std::vector<ELKCCombo>> Combos = {
         {ELKActionType::ATTACK, {}},
         {ELKActionType::DEFEND, {}},
@@ -130,7 +133,9 @@ protected:
     {
         ELKCreatureScripts.emplace(name, this);
     }
+#pragma endregion
 
+#pragma ELKCDialogue
     struct DialogueLine
     {
         DialogueLine() {};
@@ -241,7 +246,11 @@ protected:
             }
         }
     };
-
+    /*
+        dialogue loops from last to first, chekcing conditions.
+    */
+#pragma endregion
+#pragma region ELKCAI
     struct ELKAI : public ScriptedAI
     {
         ELKAI(Creature* creature, const ELKCreatureScript* s) : ScriptedAI(creature)
@@ -283,7 +292,7 @@ protected:
             chanceAtk = script->chanceAtk;
             chanceDef = script->chanceDef;
             chanceSpell = script->chanceSpell;
-            regularCheck = script->regularCheck;
+            regularCheck = script->regularCheck + me->GetHealthPct() * script->regularCheckHP;
 
             lastCategory = 0;
             lastChoice = 0;
@@ -492,13 +501,16 @@ protected:
                 if (exit)
                 {
                     comboCooldown[combo.first][combo.second] = com.cooldown;
-                    currentCombo.Reset();
+                    currentCombo.type = combo.first;
+                    currentCombo.combo = combo.second;
+                    currentCombo.action = 0;
                     events.ScheduleEvent(ACTION_PROGRESS, act.delay);
                 }
             }
         }
         bool DoELKAIAction(const ELKCAction& act)
         {
+            currentCombo.typeMove = ELKActionMoveType::NONE;
             if(act.type == ELKCAType::SPELL)
             {
                 if (act.target == ELKCATarget::NONE)
@@ -658,7 +670,7 @@ protected:
                     if (dynamicMovement.dist < diff)
                     {
                         dynamicMovement.dist = script->dynamicMovement.dist;
-                        DynamicMove(dynamicMovement.angleRaw);
+                        DynamicMove();
                     }
                     else
                         dynamicMovement.dist -= diff;
@@ -676,7 +688,7 @@ protected:
             }
             else
             {
-                if (dynamicMovement.moveTime > 0)
+                if (currentCombo.typeMove == ELKActionMoveType::DYNAMIC_MOVEMENT)
                 {
                     ResetDynamicMovement();
                 }
@@ -686,16 +698,36 @@ protected:
         void ResetDynamicMovement()
         {
             ResetCombo();
-            me->RemoveAura(100023);
+            me->RemoveAura(2983);
             dynamicMovement.moveTime = 0;
             if (me->GetVictim())
                 me->SetFacingToObject(me->GetVictim());
+            if (me->GetMotionMaster()->IsDynamicMovement())
+            {
+                me->GetMotionMaster()->Clear();
+                me->GetMotionMaster()->SetDynamicMovement(false);
+                if(me->GetVictim())
+                    me->ResumeChasingVictim();
+                else
+                    me->GetMotionMaster()->MoveIdle();
+                if (script->dynamicMovement.sprintPost)
+                {
+                    Aura* aura = me->AddAura(2983, me);
+                    aura->SetDuration(script->dynamicMovement.sprintPost);
+                }
+            }
         }
         virtual void StartDynamicMovements()
         {
+            if (me->GetMotionMaster()->IsDynamicMovement())
+            {
+                ResetDynamicMovement();
+            }
+            me->GetMotionMaster()->SetDynamicMovement(true);
+
             currentCombo.typeMove = ELKActionMoveType::DYNAMIC_MOVEMENT;
             currentCombo.type = ELKActionType::MOVEMENT;
-            dynamicMovement.moveTime = script->dynamicMovement.moveTime * me->GetDistance(me->GetVictim());
+            dynamicMovement.moveTime = script->dynamicMovement.moveTime;
             int8 posneg = (rand() % 2);
             if (posneg == 0)
                 posneg = -1;
@@ -703,9 +735,13 @@ protected:
             dynamicMovement.angleRaw = posneg * script->dynamicMovement.angleRaw;
             dynamicMovement.dist = script->dynamicMovement.dist;
 
-            me->SetOrientation(me->GetOrientation() + dynamicMovement.angleBase);
-            DynamicMove(dynamicMovement.angleRaw);
-            me->AddAura(100023, me);
+            dynamicMovement.angleBase += me->GetOrientation();
+            DynamicMove();
+            if (script->dynamicMovement.sprintPre)
+            {
+                Aura* aura = me->AddAura(2983, me);
+                aura->SetDuration(script->dynamicMovement.sprintPre);
+            }
         }
         virtual bool DoEventsExtra()
         {
@@ -745,19 +781,29 @@ protected:
                 return;
             }
         }
-        void DynamicMove(float angleRaw)
+        void DynamicMove()
         {
+            if (!me->GetMotionMaster()->IsDynamicMovement())
+            {
+                ResetDynamicMovement();
+                return;
+            }
+            
+            me->GetMotionMaster()->MoveIdle();
+            dynamicMovement.angleBase += dynamicMovement.angleRaw;
+            me->SetOrientation(dynamicMovement.angleBase);
             Position pos = me->GetPosition();
 
-            me->MovePositionToFirstCollision(pos, 5.f, angleRaw);
 
-            Movement::MoveSplineInit init(me);
-            init.MoveTo(pos.m_positionX, pos.m_positionY, pos.m_positionZ);
-            init.Launch();
+            me->MovePositionToFirstCollision(pos, 5.f, 0);
+
+            me->GetMotionMaster()->MovePoint(0, pos.m_positionX, pos.m_positionY, pos.m_positionZ, false, false);
+            me->GetMotionMaster()->SetDynamicMovement(true);
         }
 
 
     };
+#pragma endregion 
 };
 /*
 class magistrix_erona : public ELKCreatureScript

@@ -1,0 +1,483 @@
+{
+  "diseased_pup": {
+    "name": "diseased_pup",
+    "chanceAtk": 3,
+    "chanceDef": 1,
+    "chanceSpell": 0,
+    "regularCheck": 1500,
+    "regularCheckHP": 20,
+
+    "DMmoveTime": 3500,
+    "DMangleBase": 1.67,
+    "DMangleRaw": 0.1,
+    "DMdist": 200,
+    "DModds": 3,
+    "DMsprintPost": 1500,
+
+    "reinforcementCall": 1,
+    "ACTIONS": {
+      "0": {
+        "index": 0,
+        "min_dist": 5,
+        "max_dist": 12,
+        "id": "JUMP",
+        "target": "VICTIM",
+        "angle": 0,
+        "speedXY": 1,
+        "speedZ": 3
+      },
+      "1": {
+        "index": 1,
+        "max_dist": 3,
+        "id": "100003"
+      }
+    },
+    "ATTACK": {
+      "BITE_TWICE": [ 1, 1 ],
+      "BITE_THRICE": [ 1, 1, 1 ]
+    },
+    "DEFEND": {
+      "LEAP_AT": [ 0 ],
+      "LEAP_AT_TWICE": [ 0, 0 ]
+    }
+  },
+  "mange": {
+    "name": "mange",
+    "chanceAtk": 4,
+    "chanceDef": 2,
+    "chanceSpell": 1,
+    "regularCheck": 1000,
+    "regularCheckHP": 15,
+
+    "DMmoveTime": 3500,
+    "DMangleBase": 1.67,
+    "DMangleRaw": 0.3,
+    "DMdist": 150,
+    "DModds": 13,
+    "DMsprintPost": 1500,
+
+    "reinforcementCall": 1,
+    "ACTIONS": {
+      "0": {
+        "index": 0,
+        "min_dist": 5,
+        "max_dist": 12,
+        "id": "JUMP",
+        "target": "VICTIM",
+        "angle": 0,
+        "speedXY": 1,
+        "speedZ": 3,
+        "next_mutate": 1
+      },
+      "1": {
+        "index": 1,
+        "max_dist": 3,
+        "id": "100003"
+      },
+      "2": {
+        "index": 2,
+        "max_dist": 3,
+        "id": "100003",
+        "delay": 300
+      },
+      "3": {
+        "index": 3,
+        "id": "150061",
+        "cooldown": 30000
+      },
+      "4": {
+        "index": 4,
+        "id": "150062"
+      },
+      "5": {
+        "index": 5,
+        "max_dist": 3,
+        "id": "100003"
+      }
+    },
+    "ATTACK": {
+      "BITE_TWICE": [ 1, 1 ],
+      "BITE_PAUSE": [ 2, 1 ]
+    },
+    "DEFEND": {
+      "LEAP_AT": [ 0, 5 ]
+    },
+    "SPELL": {
+      "HOWL": [ 3 ]
+    }
+  },
+  "night_prowler": {
+    "name": "night_prowler",
+    "chanceAtk": 14,
+    "chanceDef": 7,
+    "chanceSpell": 1,
+    "regularCheck": 1500,
+    "regularCheckHP": 0,
+
+    "DMmoveTime": 3500,
+    "DMangleBase": 1.67,
+    "DMangleRaw": 0.3,
+    "DMdist": 150,
+    "DModds": 13,
+    "DMsprintPost": 1500,
+
+    "reinforcementCall": 1,
+    "ACTIONS": {
+      "0": {
+        "index": 0,
+        "min_dist": 5,
+        "max_dist": 12,
+        "id": "JUMP",
+        "target": "VICTIM",
+        "angle": 0,
+        "speedXY": 1,
+        "speedZ": 3,
+        "next_mutate": 1
+      },
+      "1": {
+        "index": 1,
+        "max_dist": 3,
+        "id": "100003"
+      },
+      "2": {
+        "index": 2,
+        "max_dist": 3,
+        "id": "100003",
+        "delay": 300
+      },
+      "3": {
+        "index": 3,
+        "id": "150061"
+      },
+      "4": {
+        "index": 4,
+        "id": "150062",
+        "cooldown": 30000
+      },
+      "5": {
+        "index": 5,
+        "max_dist": 3,
+        "id": "100003"
+      },
+      "6": {
+        "index": 6,
+        "target": "VICTIM",
+        "id": "150063",
+        "max_dist": 3,
+        "cooldown": 30000
+      }
+    },
+    "ATTACK": {
+      "BITE_TWICE": [ 1, 1 ],
+      "BITE_PAUSE": [ 2, 1 ]
+    },
+    "DEFEND": {
+      "LEAP_AT": [ 0, 5 ],
+      "HAMSTRING": [ 6 ]
+    },
+    "SPELL": {
+      "TOUGHEN": [ 4 ]
+    }
+  },
+  "defias": {
+    "name": "defias",
+    "chanceAtk": 4,
+    "chanceDef": 2,
+    "chanceSpell": 0,
+    "regularCheck": 1500,
+    "regularCheckHP": 40,
+
+    "DMmoveTime": 500,
+    "DMangleBase": 1.67,
+    "DMangleRaw": 0.3,
+    "DMdist": 100,
+    "DModds": 5,
+    "DMsprintPre": 500,
+
+    "reinforcementCall": 2,
+    "ACTIONS": {
+      "0": {
+        "index": 0,
+        "min_dist": 3,
+        "max_dist": 9,
+        "id": "150004",
+        "target": "VICTIM"
+      },
+      "1": {
+        "index": 1,
+        "max_dist": 3,
+        "id": "100003",
+        "delay": 700
+      },
+      "2": {
+        "index": 2,
+        "id": "100045",
+        "delay": 300
+      },
+      "3": {
+        "index": 3,
+        "max_dist": 3,
+        "weight": 3,
+        "id": "100006",
+        "delay": 600
+      }
+    },
+    "ATTACK": {
+      "HIT_HIT_SPIN": [ 1, 1, 2 ],
+      "HIT_HIT_HIT": [ 1, 1, 1 ],
+      "THROW": [ 0 ]
+    },
+    "DEFEND": {
+      "DEFLECT": [ 3 ],
+      "DEFLECT_TWO": [ 3, 3 ]
+    }
+  },
+  "padfoot": {
+    "name": "padfoot",
+    "chanceAtk": 4,
+    "chanceDef": 4,
+    "chanceSpell": 1,
+    "regularCheck": 1500,
+    "regularCheckHP": 10,
+
+    "DMmoveTime": 500,
+    "DMangleBase": 0,
+    "DMangleRaw": 0.3,
+    "DMdist": 50,
+    "DModds": 3,
+    "DMsprintPre": 500,
+
+    "reinforcementCall": 2,
+    "ACTIONS": {
+      "0": {
+        "index": 0,
+        "min_dist": 3,
+        "max_dist": 9,
+        "id": "150004",
+        "delay": 700,
+        "target": "VICTIM"
+      },
+      "1": {
+        "index": 1,
+        "max_dist": 3,
+        "id": "100003",
+        "delay": 700
+      },
+      "2": {
+        "index": 2,
+        "id": "100045",
+        "delay": 300
+      },
+      "3": {
+        "index": 3,
+        "max_dist": 3,
+        "weight": 3,
+        "id": "100006",
+        "delay": 600
+
+      },
+      "4": {
+        "index": 4,
+        "id": "150002",
+        "cooldown": 30000
+      }
+    },
+    "ATTACK": {
+      "HIT_HIT_SPIN": [ 1, 1, 2, 2, 2 ],
+      "HIT_HIT_HIT": [ 1, 1 ],
+      "THROW": [ 0, 0, 0 ]
+    },
+    "DEFEND": {
+      "DEFLECT": [ 3 ],
+      "DEFLECT_TWO": [ 3, 3 ]
+    },
+    "SPELL": {
+      "REJUV": [ 4 ]
+    }
+  },
+  "cutpurse": {
+    "name": "cutpurse",
+    "chanceAtk": 4,
+    "chanceDef": 2,
+    "chanceSpell": 0,
+    "regularCheck": 1500,
+    "regularCheckHP": 10,
+
+    "DMmoveTime": 500,
+    "DMangleBase": 1.67,
+    "DMangleRaw": 0.7,
+    "DMdist": 150,
+    "DModds": 5,
+    "DMsprintPre": 500,
+
+    "reinforcementCall": 3,
+    "ACTIONS": {
+      "0": {
+        "index": 0,
+        "min_dist": 3,
+        "max_dist": 9,
+        "id": "150004",
+        "delay": 700,
+        "target": "VICTIM"
+      },
+      "1": {
+        "index": 1,
+        "max_dist": 3,
+        "id": "100003",
+        "delay": 700
+      },
+      "2": {
+        "index": 2,
+        "id": "100045",
+        "delay": 300
+      },
+      "3": {
+        "index": 3,
+        "max_dist": 3,
+        "weight": 3,
+        "id": "100006",
+        "delay": 600
+      },
+      "4": {
+        "index": 4,
+        "target": "VICTIM",
+        "id": "150063",
+        "max_dist": 3,
+        "cooldown": 30000
+      }
+    },
+    "ATTACK": {
+      "HIT": [ 1 ],
+      "HIT_SPIN": [ 1, 2 ],
+      "HAMSTRING": [ 4 ]
+    },
+    "DEFEND": {
+      "DEFLECT": [ 3 ],
+      "THROW": [ 0 ]
+    }
+  },
+  "rogue_wizard": {
+    "name": "rogue_wizard",
+    "chanceAtk": 3,
+    "chanceDef": 3,
+    "chanceSpell": 3,
+    "regularCheck": 1500,
+    "regularCheckHP": 10,
+
+    "ACTIONS": {
+      "0": {
+        "index": 0,
+        "min_dist": 3,
+        "max_dist": 9,
+        "id": "150004",
+        "target": "VICTIM"
+      },
+      "1": {
+        "index": 1,
+        "max_dist": 3,
+        "id": "100003",
+        "delay": 700
+      },
+      "2": {
+        "index": 2,
+        "id": "100045",
+        "delay": 300
+      },
+      "3": {
+        "index": 3,
+        "max_dist": 3,
+        "weight": 3,
+        "id": "100006",
+        "delay": 600
+      }
+    }
+  },
+    "marauder": {
+
+    },
+    "ambusher": {
+
+    },
+    "dockmaster_gezzly": {
+
+    },
+    "drudgemoor": {
+
+    },
+    "the_collector": {
+
+    },
+    "lightfingers": {
+
+    },
+    "sly_morg": {
+
+    },
+    "puddlehunter": {
+
+    },
+    "puddle_swashbuckler": {
+
+    },
+    "elwynn_rockhide": {
+
+    },
+    "elwynn_stonetusk": {
+
+    },
+    "princess": {
+
+    },
+    "entourage": {
+
+    },
+    "elwynn_bear": {
+
+    },
+    "grassblade_spider": {
+
+    },
+    "neck_crawler": {
+
+    },
+    "mother_fang": {
+
+    },
+    "poacher": {
+
+    },
+    "runt": {
+
+    },
+    "gruff_swiftbite": {
+
+    },
+    "hogger": {
+
+    },
+    "fedfennel": {
+
+    },
+    "kobold_geomancer": {
+
+    },
+    "kobold_miner": {
+
+    },
+    "kobold_youngin": {
+
+    },
+    "ruklar_the_trapper": {
+
+    },
+    "narg_the_taskmaster": {
+
+    },
+    "goldtooth": {
+
+    },
+
+    "surena": {
+
+    }
+  }

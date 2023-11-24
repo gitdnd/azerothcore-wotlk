@@ -787,7 +787,7 @@ void MotionMaster::MoveDistract(uint32 timer)
 
 void MotionMaster::Mutate(MovementGenerator* m, MovementSlot slot)
 {
-
+    dynamicMovement = false;
     while (MovementGenerator* curr = Impl[slot])
     {
         bool delayed = (_top == slot && (_cleanFlag & MMCF_UPDATE));

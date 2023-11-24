@@ -129,7 +129,11 @@ private:
         return _needInit[_top];
     }
     void InitTop();
+
+    bool dynamicMovement = false;
 public:
+    bool IsDynamicMovement() { return dynamicMovement; }
+    void SetDynamicMovement(bool set) { dynamicMovement = set; }
     explicit MotionMaster(Unit* unit) : _expList(nullptr), _top(-1), _owner(unit), _cleanFlag(MMCF_NONE)
     {
         for (uint8 i = 0; i < MAX_MOTION_SLOT; ++i)

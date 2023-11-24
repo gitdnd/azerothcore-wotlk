@@ -7,7 +7,7 @@ class spell_elk_creature_giga_thunder_clap : public SpellScript
 
     void SpellCast()
     {
-        GetCaster()->CastSpell(GetCaster(), SpellsC::GIGA_THUNDER_CLAP_HIT, false);
+        GetCaster()->CastSpell(GetCaster(), uint32(SpellsC::GIGA_THUNDER_CLAP_HIT), false);
     }
     void Register() override
     {

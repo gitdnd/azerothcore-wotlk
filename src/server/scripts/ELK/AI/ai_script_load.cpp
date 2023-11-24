@@ -89,6 +89,9 @@ void AddELKAIJson()
                             ExtractJson(it->second->dynamicMovement.moveTime, creature, "DMmoveTime");
                             ExtractJson(it->second->dynamicMovementOdds, creature, "DModds");
 
+                            ExtractJson(it->second->dynamicMovement.sprintPre, creature, "DMsprintPre");
+                            ExtractJson(it->second->dynamicMovement.sprintPost, creature, "DMsprintPost");
+
                             uint8 next_mutate = 0;
                             it->second->Actions.clear();
                             if (creature.find("ACTIONS") != creature.end())

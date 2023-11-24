@@ -25,9 +25,9 @@ public:
         }
         void UpdateAI(uint32 diff) override
         {
-            if (ELKUpdateAI(diff))
-                return;
             if (!UpdateVictim())
+                return;
+            if (ELKUpdateAI(diff))
                 return;
             if (me->HasUnitState(UNIT_STATE_CASTING))
             {
