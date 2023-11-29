@@ -14,6 +14,7 @@
 #include "../Quest/QuestStageFlags.h"
 #include "../Spells/spell_elk_include.h" 
 
+#define AddScriptFlag(name, var) scriptFlagIds.emplace(name, & var)
 
 enum Events : uint16
 {
@@ -135,124 +136,222 @@ protected:
     }
 #pragma endregion
 
-#pragma ELKCDialogue
-    struct DialogueLine
+#pragma region ELKCDialogue
+public:
+    struct CreatureResponseVariants
     {
-        DialogueLine() {};
-        DialogueLine(std::string textIndex, std::vector<std::string> flagNeededName, std::vector<std::string> flagAddedName, std::string nextResponse, void (ELKAI::* pressedScript)())
-            : nextResponse(nextResponse),
-            pressedScript(pressedScript)
-        {
-            ELKDialogue* dial = sObjectMgr->GetELKDialogue(textIndex);
-            if (dial)
-                textLine = dial->dialogue;
-            else
-                textLine = "";
-            for (std::string& flag : flagNeededName)
-            {
-                flagNeeded.push_back(sObjectMgr->GetELKFlag(flag));
-            }
-            for (std::string& flag : flagAddedName)
-            {
-                flagAdded.push_back(sObjectMgr->GetELKFlag(flag));
-            }
-        }
-        std::string textLine = "";
-        std::vector<uint32> flagNeeded = {};
-        std::vector<uint32> flagAdded = {};
-        std::string nextResponse = "";
-        uint8 nextIndex = 0;
-        void (ELKAI::* pressedScript)() = nullptr; // ai.appearScript = &ELKAI::ScriptFunction;
+        uint32 databaseId = 0;
+        std::map<uint32, bool> flagTypes = {};
+        uint32 choiceId = 0;
+
+        static inline std::map<uint32, CreatureResponseVariants> variantId = {};
     };
-
-    struct DialogueResponse
+    struct CreatureResponse
     {
-        DialogueResponse() {};
-        DialogueResponse(std::string textName, std::vector<std::string> flagNeededName, std::vector<DialogueLine> lines, void (ELKAI::* scriptMethod)())
-            : textName(textName),
-            lines(lines),
-            appearScript(scriptMethod)
+        CreatureResponse() {}
+        uint32 id = 0;
+        std::map<uint32, bool> flagTypes = {};
+        std::vector<uint32> flagsAdded = {};
+        std::vector<CreatureResponseVariants*> variants = {};
+        std::vector<uint32> _variants = {};
+        std::vector<uint32> choices = {};
+
+        bool CanUse(Player* player)
         {
-            ELKDialogue* dial = sObjectMgr->GetELKDialogue(textName);
-            if (dial)
-                textIndex = dial->id + 1000000;
-            else
-                textIndex = 1000001;
-            for (std::string& flag : flagNeededName)
+            for (auto& [flag, yn] : flagTypes)
             {
-                flagNeeded.push_back(sObjectMgr->GetELKFlag(flag));
-            }
-
-
-
-
-
-
-            // get the shit in the deebee
-            //std::string nextLines = DB[string];
-            //std::vector<std::string> v = SplitLines(nextLines);
-        }
-        std::vector<std::string> SplitLines(std::string const& str) {
-            std::vector<std::string> ret;
-            std::stringstream ss(str);
-            std::string item;
-
-            while (getline(ss, item, ' ')) {
-                ret.push_back(item);
-            }
-
-            return ret;
-        }
-
-        std::string textName = "";
-        uint32 textIndex = 0;
-        std::vector<uint32> flagNeeded = {};
-        std::vector<DialogueLine> lines = {};
-        void (ELKAI::* appearScript)() = nullptr; // ai.appearScript = &ELKAI::ScriptFunction;
-    };
-
-    struct ResponseHolder
-    {
-    private:
-        std::vector<DialogueResponse> responsesArray = {};
-        std::map<std::string, uint16> responseIndexes = {};
-    public:
-        void AddResponseIndex(std::string str)
-        {
-            if (responseIndexes[str] == 0)
-            {
-                responseIndexes[str] = responseIndexes.size() + 1;
-            }
-        }
-
-        void Insert(DialogueResponse const& response)
-        {
-            AddResponseIndex(response.textName);
-            for (auto& line : response.lines)
-            {
-                if (line.nextResponse != "")
-                    AddResponseIndex(line.nextResponse);
-            }
-            responsesArray.push_back(response);
-        }
-        void Refine()
-        {
-            for (auto& response : responsesArray)
-            {
-                for (auto& line : response.lines)
+                if (player->GetQuestStageFlag(flag) != yn)
                 {
-                    line.nextIndex = responseIndexes[line.nextResponse];
+                    return false;
                 }
             }
+            return true;
+        }
+        static inline std::map<uint32, CreatureResponse*> AllResponses = {};
+        static inline std::map<std::string, uint32> AllResponsesDictionary = {};
+        static uint32 GetResponseId(std::string name)
+        {
+            auto it = AllResponsesDictionary.find(name);
+            if (it != AllResponsesDictionary.end())
+                return it->second;
+            return 0;
+        }
+        static CreatureResponse* GetResponse(uint32 id)
+        {
+            auto it = AllResponses.find(id);
+            if (it != AllResponses.end())
+                return it->second;
+            return nullptr;
+        }
+        uint32 GetText(Player* player, uint32 choice)
+        {
+            for(CreatureResponseVariants* var : variants)
+                if (choice == var->choiceId)
+                {
+                    for (auto& [flag, yn] : var->flagTypes)
+                    {
+                        if (player->GetQuestStageFlag(flag) == yn)
+                            return var->databaseId;
+                    }
+                }
+            return 0;
         }
     };
-    /*
-        dialogue loops from last to first, chekcing conditions.
-    */
+    struct PlayerChoice
+    {
+        PlayerChoice() {}
+        uint32 id = 0;
+        std::map<uint32, bool> flagTypes = {};
+        std::vector<uint32> flagsAdded = {};
+        std::vector<uint32> responsesId = {};
+        std::string text = "?/WHOOS/?";
+
+        bool CanUse(Player* player)
+        {
+            for (auto& [flag, yn] : flagTypes)
+            {
+                if (player->GetQuestStageFlag(flag) != yn)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        static inline std::map<uint32, PlayerChoice*> AllChoices = {};
+        static inline std::map<std::string, uint32> AllChoicesDictionary = {};
+        static uint32 GetChoiceId(std::string name)
+        {
+            auto it = AllChoicesDictionary.find(name);
+            if (it != AllChoicesDictionary.end())
+                return it->second;
+            return 0;
+        }
+        static PlayerChoice* GetChoice(uint32 id)
+        {
+            auto it = AllChoices.find(id);
+            if (it != AllChoices.end())
+                return it->second;
+            return nullptr;
+        }
+    };
+    struct CreatureConversation
+    {
+        uint32 startResponse = 0;
+        std::vector<uint32> batches = {};
+    };
+
+    std::vector<CreatureConversation> conversations = {};
+
+    struct PlayerQuestFlag
+    {
+        static inline std::map<std::string, uint32> AllQuestFlags = {};
+        static uint32 GetQuestFlag(std::string name)
+        {
+            auto it = AllQuestFlags.find(name);
+            if (it != AllQuestFlags.end())
+                return it->second;
+            return 0;
+        }
+        uint32 id = 0;
+    };
+    std::map<std::string, uint32*> scriptChoiceIds = {};
+    std::map<std::string, uint32*> scriptFlagIds = {};
+    void FillScriptVars()
+    {
+        for (auto scr : scriptChoiceIds)
+            *(scr.second) = PlayerChoice::GetChoiceId(scr.first);
+        for (auto scr : scriptFlagIds)
+            *(scr.second) = PlayerQuestFlag::GetQuestFlag(scr.first);
+        
+    }
+    virtual bool PlayerChoiceScript(Player* player, PlayerChoice* choice, CreatureResponse* response) const { return true; }
+    virtual bool CreatureResponseScript(Player* player, PlayerChoice* choice, CreatureResponse* response) const { return true; }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #pragma endregion
 #pragma region ELKCAI
     struct ELKAI : public ScriptedAI
     {
+        virtual void sGossipHello(Player* player)  override
+        {
+            for (auto& convo : script->conversations)
+            {
+                CreatureResponse* response = CreatureResponse::GetResponse(convo.startResponse);
+                if (!response)
+                    continue;
+                if (!response->CanUse(player))
+                    continue;
+                for (auto ch : response->choices)
+                {
+                    PlayerChoice* newChoice = PlayerChoice::GetChoice(ch);
+                    if (!newChoice)
+                        continue;
+                    if (!newChoice->CanUse(player))
+                        continue;
+                    AddGossipItemFor(player, GOSSIP_ICON_CHAT, newChoice->text, GOSSIP_SENDER_MAIN, newChoice->id);
+                }
+                for (auto& batch : convo.batches)
+                {
+                    PlayerChoice* newChoice = PlayerChoice::GetChoice(batch);
+                    if (!newChoice)
+                        continue;
+                    if (!newChoice->CanUse(player))
+                        continue;
+                    AddGossipItemFor(player, GOSSIP_ICON_CHAT, newChoice->text, GOSSIP_SENDER_MAIN, newChoice->id);
+                }
+                SendGossipMenuFor(player, response->GetText(player, 0), me);
+                return;
+            }
+        }
+
+        void sGossipSelect(Player* player, uint32 sender, uint32 uiAction) override
+        {
+            ClearGossipMenuFor(player);
+            PlayerChoice* choice = PlayerChoice::GetChoice(uiAction);
+            if (!choice->CanUse(player))
+                return;
+            for (uint8 i = 0; i < choice->responsesId.size(); i++)
+            {
+                CreatureResponse* response = CreatureResponse::GetResponse(choice->responsesId[i]);
+                if (!response->CanUse(player))
+                    break;
+
+                if (script->PlayerChoiceScript(player, choice, response))
+                    if (script->CreatureResponseScript(player, choice, response))
+                    {
+
+                        for (auto ch : response->choices)
+                        {
+                            PlayerChoice* newChoice = PlayerChoice::GetChoice(ch);
+                            if (!newChoice)
+                                continue;
+                            if (!newChoice->CanUse(player))
+                                continue;
+                            AddGossipItemFor(player, GOSSIP_ICON_CHAT, newChoice->text, GOSSIP_SENDER_MAIN, newChoice->id);
+                        }
+
+                        SendGossipMenuFor(player, response->GetText(player, choice->responsesId[i]), me);
+
+                        return;
+                    }
+            }
+        }
+
+
         ELKAI(Creature* creature, const ELKCreatureScript* s) : ScriptedAI(creature)
         {
             reinforcementEntries.push_back(me->GetEntry());
@@ -927,5 +1026,116 @@ public:
         }
     };
 
-};
-*/
+    struct DialogueLine
+    {
+        DialogueLine() {};
+        DialogueLine(std::string textIndex, std::vector<std::string> flagNeededName, std::vector<std::string> flagAddedName, std::string nextResponse, void (ELKAI::* pressedScript)())
+            : nextResponse(nextResponse),
+            pressedScript(pressedScript)
+        {
+            ELKDialogue* dial = sObjectMgr->GetELKDialogue(textIndex);
+            if (dial)
+                textLine = dial->dialogue;
+            else
+                textLine = "";
+            for (std::string& flag : flagNeededName)
+            {
+                flagNeeded.push_back(sObjectMgr->GetELKFlag(flag));
+            }
+            for (std::string& flag : flagAddedName)
+            {
+                flagAdded.push_back(sObjectMgr->GetELKFlag(flag));
+            }
+        }
+        std::string textLine = "";
+        std::vector<uint32> flagNeeded = {};
+        std::vector<uint32> flagAdded = {};
+        std::string nextResponse = "";
+        uint8 nextIndex = 0;
+        void (ELKAI::* pressedScript)() = nullptr; // ai.appearScript = &ELKAI::ScriptFunction;
+    };
+
+    struct DialogueResponse
+    {
+        DialogueResponse() {};
+        DialogueResponse(std::string textName, std::vector<std::string> flagNeededName, std::vector<DialogueLine> lines, void (ELKAI::* scriptMethod)())
+            : textName(textName),
+            lines(lines),
+            appearScript(scriptMethod)
+        {
+            ELKDialogue* dial = sObjectMgr->GetELKDialogue(textName);
+            if (dial)
+                textIndex = dial->id + 1000000;
+            else
+                textIndex = 1000001;
+            for (std::string& flag : flagNeededName)
+            {
+                flagNeeded.push_back(sObjectMgr->GetELKFlag(flag));
+            }
+
+
+
+
+
+
+            // get the shit in the deebee
+            //std::string nextLines = DB[string];
+            //std::vector<std::string> v = SplitLines(nextLines);
+        }
+        std::vector<std::string> SplitLines(std::string const& str) {
+            std::vector<std::string> ret;
+            std::stringstream ss(str);
+            std::string item;
+
+            while (getline(ss, item, ' ')) {
+                ret.push_back(item);
+            }
+
+            return ret;
+        }
+
+        std::string textName = "";
+        uint32 textIndex = 0;
+        std::vector<uint32> flagNeeded = {};
+        std::vector<DialogueLine> lines = {};
+        void (ELKAI::* appearScript)() = nullptr; // ai.appearScript = &ELKAI::ScriptFunction;
+    };
+
+    struct ResponseHolder
+    {
+    private:
+        std::vector<DialogueResponse> responsesArray = {};
+        std::map<std::string, uint16> responseIndexes = {};
+    public:
+        void AddResponseIndex(std::string str)
+        {
+            if (responseIndexes[str] == 0)
+            {
+                responseIndexes[str] = responseIndexes.size() + 1;
+            }
+        }
+
+        void Insert(DialogueResponse const& response)
+        {
+            AddResponseIndex(response.textName);
+            for (auto& line : response.lines)
+            {
+                if (line.nextResponse != "")
+                    AddResponseIndex(line.nextResponse);
+            }
+            responsesArray.push_back(response);
+        }
+        void Refine()
+        {
+            for (auto& response : responsesArray)
+            {
+                for (auto& line : response.lines)
+                {
+                    line.nextIndex = responseIndexes[line.nextResponse];
+                }
+            }
+        }
+    };
+    /*
+        dialogue loops from last to first, chekcing conditions.
+    */

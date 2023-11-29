@@ -174,7 +174,8 @@ class spell_extension_system : public AuraScript
             if (currMana < mana)
                 return;
             GetUnitOwner()->SetPower(POWER_MANA, currMana - mana);
-            (*ext.second->Function)(this, spell);
+            if(ext.second->Function != nullptr)
+                (*ext.second->Function)(this, spell);
         }
     }
     void IsCasting(AuraEffect const* aurEff)

@@ -2699,7 +2699,7 @@ void SpellMgr::LoadSpellAreas()
     LOG_INFO("server.loading", " ");
 }
 
-void AddELKAIJson();
+void AddELKAICreatureJson();
 
 void SpellMgr::LoadSpellInfoStore()
 {
@@ -2730,7 +2730,7 @@ void SpellMgr::LoadSpellInfoStore()
     LOG_INFO("server.loading", " ");
 
 
-    AddELKAIJson();
+    AddELKAICreatureJson();
 }
 
 void SpellMgr::LoadSpellCooldownOverrides()

@@ -12,3 +12,5 @@ class spell_elk_undeath_strike : public spell_elk_attack
 
     }
 };
+
+void AddSC_elk_dk_scripts(){}

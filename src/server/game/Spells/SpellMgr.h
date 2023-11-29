@@ -722,6 +722,8 @@ public:
     [[nodiscard]] SpellAreaForAuraMapBounds GetSpellAreaForAuraMapBounds(uint32 spell_id) const;
     [[nodiscard]] SpellAreaForAreaMapBounds GetSpellAreaForAreaMapBounds(uint32 area_id) const;
 
+	// SpellInfo object management
+	[[nodiscard]] SpellInfo* GetSpellInfoDev(uint32 spellId) const { return spellId < GetSpellInfoStoreSize() ? mSpellInfoMap[spellId] : nullptr; }
     // SpellInfo object management
     [[nodiscard]] SpellInfo const* GetSpellInfo(uint32 spellId) const { return spellId < GetSpellInfoStoreSize() ?  mSpellInfoMap[spellId] : nullptr; }
     // Use this only with 100% valid spellIds

@@ -18,7 +18,16 @@
 // This is where scripts' loading functions should be declared:
 void AddELKAIScripts();
 void AddSC_elk_spell_scripts();
+void AddSC_elk_dk_scripts();
+void AddSC_elk_druid_scripts();
+void AddSC_elk_hunter_scripts();
+void AddSC_elk_mage_scripts();
 void AddSC_elk_paladin_scripts();
+void AddSC_elk_priest_scripts();
+void AddSC_elk_rogue_scripts();
+void AddSC_elk_shaman_scripts();
+void AddSC_elk_warlock_scripts();
+void AddSC_elk_warrior_scripts();
 
 void AddSC_elk_creature_100_scripts();
 
@@ -32,7 +41,16 @@ void AddELKScripts()
 { 
     AddELKAIScripts();
     AddSC_elk_spell_scripts();
+    AddSC_elk_dk_scripts();
+    AddSC_elk_druid_scripts();
+    AddSC_elk_hunter_scripts();
+    AddSC_elk_mage_scripts();
     AddSC_elk_paladin_scripts();
+    AddSC_elk_priest_scripts();
+    AddSC_elk_rogue_scripts();
+    AddSC_elk_shaman_scripts();
+    AddSC_elk_warlock_scripts();
+    AddSC_elk_warrior_scripts();
 
     AddSC_elk_creature_100_scripts();
 

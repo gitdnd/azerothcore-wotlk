@@ -14507,7 +14507,7 @@ void Player::_LoadQuestStageFlags(PreparedQueryResult result)
         { 
             uint32 questStageFlag = (*result)[0].Get<uint32>();
             bool stageFlag = (*result)[1].Get<bool>();
-            m_questStageFlag[QuestStageFlags(questStageFlag)] = stageFlag; 
+            m_questStageFlag[questStageFlag] = stageFlag; 
         } while (result->NextRow());
     }
 }
@@ -14516,7 +14516,7 @@ void Player::_SaveQuestStageFlags(CharacterDatabaseTransaction trans)
 {
     CharacterDatabasePreparedStatement* stmt = nullptr;
 
-    for (std::map<QuestStageFlags, bool>::iterator itr = m_questStageFlag.begin(); itr != m_questStageFlag.end();)
+    for (std::map<uint32, bool>::iterator itr = m_questStageFlag.begin(); itr != m_questStageFlag.end();)
     { 
         stmt = CharacterDatabase.GetPreparedStatement(CHAR_INS_QUEST_STAGE_FLAGS);
         stmt->SetData(0, GetGUID().GetCounter());

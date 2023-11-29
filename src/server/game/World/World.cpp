@@ -1889,6 +1889,8 @@ void World::SetInitialWorldSettings()
     LOG_INFO("server.loading", "Load Mail Server Template...");
     sObjectMgr->LoadMailServerTemplates();
 
+    LOG_INFO("server.loading", "Load ELK Spell Info...");
+    sObjectMgr->LoadELKSpellInfo();
     // Loot tables
     LoadLootTables();
 

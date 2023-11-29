@@ -271,7 +271,31 @@ public:
     };
 };
 
-
+class milley : public ELKCreatureScript
+{
+public:
+    milley() : ELKCreatureScript("milley")
+    {
+        AddScriptFlag("MILLEY_GIVES_GRAPES", givesGrapes);
+        AddScriptFlag("MILLEY_WAS_RUDE", wasRude);
+    }
+    uint32 givesGrapes;
+    uint32 wasRude;
+    static const uint32 MilleysHarvestId = 3904;
+    bool CreatureResponseScript(Player* player, PlayerChoice* choice, CreatureResponse* response) const override
+    {
+        if (binary_search(response->flagsAdded.begin(), response->flagsAdded.end(), givesGrapes)) {
+            if (uint32 harvest = player->GetItemCount(MilleysHarvestId))
+            {
+                player->DestroyItemCount(MilleysHarvestId, harvest, true);
+                player->ModifyMoney(player->GetQuestStageFlag(wasRude) ? harvest * 2 : harvest * 3);
+                return true;
+            }
+            return false;
+        }
+        return true;
+    }
+};
 
 
 void AddSC_elk_elwynn_forest_mobs()

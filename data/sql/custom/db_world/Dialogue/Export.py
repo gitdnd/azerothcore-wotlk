@@ -1,10 +1,17 @@
 import openpyxl
 from pathlib import Path
+import math
+import JsonifyDialogue as JsD
 
-PrintAll = [
-
-]
+PrintAll = []
 Flags = []
+CurrentConversation = 0
+CurrentScope = 0
+
+
+def SplitVariants(text):
+    tags = []
+    text.split('&&')
 def ExcelSearch():
     for d in Path('./').rglob('*.xlsx'):
         excelFile = openpyxl.load_workbook(d)
@@ -14,12 +21,46 @@ def ExcelSearch():
                 columns = sheet.max_column
                 for i in range(1, rows + 1):
                     id = (sheet.cell(row = i, column = 1).value)
+                    if id is None:
+                        continue
                     text = (sheet.cell(row = i, column = 2).value)
-                    flag = (sheet.cell(row = i, column = 3).value)
-                    if id is not None and text is not None:
-                        PrintAll.append((sheet.title + "_" + id + '", "' + text))
-                        if flag is not None:
-                            Flags.append((sheet.title + "_" + flag))
+                    flagsNeeded = (sheet.cell(row = i, column = 3).value)
+                    flagsGiven = (sheet.cell(row = i, column = 4).value)
+                    nextId = (sheet.cell(row = i, column = 5).value)
+
+                    if CurrentScope != 0:
+                        realId = sheet.title + "_" + CurrentScope + '_' + id
+                    else:
+                        realId = sheet.title + '_' + id
+                    flagsNeeded = flagsNeeded.split()
+                    flagsGiven = flagsGiven.split()
+                    nextId = nextId.split()
+
+                    if id == "END":
+                        CurrentScope = 0
+                    elif CurrentScope != 0:
+                    if id[1] == "I":
+                        CurrentBatch = 0
+                        CurrentScope = id
+                    elif id[1] == "B":
+                        CurrentBatch = id
+                    elif id[1] == "C":
+                        CurrentScope = id
+                    elif id[1] == "D":
+
+                    elif id[1] == "T":
+                        JsD.RefineGossip(realId, text, flagsNeeded, flagsGiven, nextId)
+
+                    if text is not None:
+                        PrintAll.append(sheet.title + "_" + id + '", "' + text)
+                        if flagsNeeded is not None:
+                            fN = flagsNeeded.split()
+                            for f in fN:
+                                Flags.append((sheet.title + "_" + f))
+                        if flagsGiven is not None:
+                            fG = flagsGiven.split()
+                            for f in fG:
+                                Flags.append((sheet.title + "_" + f))
 
         except:
             pass

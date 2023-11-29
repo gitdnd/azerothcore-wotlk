@@ -392,6 +392,7 @@ public:
     std::array<SpellEffectInfo, MAX_SPELL_EFFECTS> Effects;
     uint32 ExplicitTargetMask;
     SpellChainNode const* ChainEntry;
+    bool ReleaseType;
 
     // Mine
     AuraStateType _auraState;

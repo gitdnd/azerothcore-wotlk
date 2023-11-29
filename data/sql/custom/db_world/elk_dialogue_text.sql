@@ -4,6 +4,7 @@ DROP PROCEDURE IF EXISTS create_elk_dialogue_text;
 CREATE PROCEDURE create_elk_dialogue_text ()
 BEGIN
     DECLARE CONTINUE HANDLER FOR 1050 BEGIN END;
+	DROP TABLE IF EXISTS elk_dialogue_text;
 	CREATE TABLE elk_dialogue_text (
     id int NOT NULL AUTO_INCREMENT,
     text_name varchar(64) NOT NULL,

@@ -805,6 +805,7 @@ public:
     [[nodiscard]] DamageEffectType GetDamageType() const { return m_damageType; };
     [[nodiscard]] WeaponAttackType GetAttackType() const { return m_attackType; };
     [[nodiscard]] uint32 GetDamage() const { return m_damage; };
+    [[nodiscard]] uint32 GetCleanDamage() const { return m_cleanDamage; };
     [[nodiscard]] uint32 GetAbsorb() const { return m_absorb; };
     [[nodiscard]] uint32 GetResist() const { return m_resist; };
     [[nodiscard]] uint32 GetBlock() const { return m_block; };

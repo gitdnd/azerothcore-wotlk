@@ -187,7 +187,7 @@ class spell_elk_deflect_aura : public AuraScript
             dmgInfo.AbsorbDamage(-1 * dmgInfo.GetDamage());
             if (attacker)
             {
-                GetCaster()->ModifyPower(POWER_MANA, (dmgInfo.GetDamage() * GetCaster()->GetStat(STAT_SPIRIT)) / 1000);
+                GetCaster()->ModifyPower(POWER_MANA, (dmgInfo.GetCleanDamage() * GetCaster()->GetStat(STAT_SPIRIT)) / 1000);
             }
         }
     }
@@ -300,7 +300,7 @@ class spell_elk_dash_aura : public AuraScript
 
     void Absorb(AuraEffect* aurEff, DamageInfo& dmgInfo, uint32& absorbAmount)
     {
-        dmgInfo.ModifyDamage(-1 * dmgInfo.GetDamage());
+        dmgInfo.ModifyDamage(dmgInfo.GetDamage());
     }
     void Cast(AuraEffect const*  /*aurEff*/, AuraEffectHandleModes  /*mode*/)
     {
@@ -562,6 +562,60 @@ class spell_elk_generic_finale_hit : public ELKSpellScript
         AfterHit += SpellHitFn(spell_elk_generic_finale_hit::SpellHit);
     }
 };
+class spell_elk_block : public ELKSpellScript
+{
+    PrepareSpellScript(spell_elk_block);
+    void SpellClick()
+    {
+        GetSpell()->SetRuneCooldown(30000);
+    }
+    void Register() override
+    {
+        BeforeSpellLoad += SpellCastFn(spell_elk_block::SpellClick);
+    }
+};
+class spell_elk_block_aura : public AuraScript
+{
+    PrepareAuraScript(spell_elk_block_aura);
+
+    bool success = false;
+
+    uint32 blockMax;
+    uint32 blockCurr;
+    void Absorb(AuraEffect* aurEff, DamageInfo& dmgInfo, uint32& absorbAmount)
+    {
+        Unit* attacker = dmgInfo.GetAttacker();
+        Position pos1 = GetCaster()->GetPosition();
+        Position pos2 = attacker->GetPosition();
+        float angle = GetCaster()->NormalizeOrientation(pos1.GetRelativeAngle(pos2.GetPositionX(), pos2.GetPositionY()));
+        if (angle < 0.7 || angle > 5.585)
+        {
+            if (dmgInfo.GetCleanDamage() < blockCurr)
+            {
+                Spell* currentSpell = GetUnitOwner()->GetCurrentSpell(CURRENT_CHANNELED_SPELL);
+                if (currentSpell->m_spellInfo->Id == 100046)
+                {
+                    dmgInfo.AbsorbDamage(-1 * dmgInfo.GetDamage());
+                    blockCurr -= dmgInfo.GetCleanDamage();
+                    currentSpell ->SetChannelTime(uint32(float(GetAura()->GetMaxDuration()) * (float(blockCurr) / float(blockMax))));
+                    return;
+                }
+            }
+            GetAura()->Remove();
+        }
+    }
+    void Apply(AuraEffect const* aurEff, AuraEffectHandleModes mode)
+    {
+        blockMax = GetUnitOwner()->GetShieldBlockValue();
+        blockCurr = GetUnitOwner()->GetShieldBlockValue();
+    }
+    void Register() override
+    {
+        OnEffectAbsorb += AuraEffectAbsorbFn(spell_elk_block_aura::Absorb, EFFECT_0);
+        OnEffectApply += AuraEffectApplyFn(spell_elk_block_aura::Apply, EFFECT_0, SPELL_AURA_SCHOOL_ABSORB, AURA_EFFECT_HANDLE_REAL);
+    }
+};
+
 
 
 void AddSC_elk_spell_scripts()
@@ -583,4 +637,6 @@ void AddSC_elk_spell_scripts()
 
     RegisterSpellScript(spell_combo_counter_aura);
     RegisterSpellScript(spell_extension_system);
+
+    RegisterSpellAndAuraScriptPair(spell_elk_block, spell_elk_block_aura);
 }

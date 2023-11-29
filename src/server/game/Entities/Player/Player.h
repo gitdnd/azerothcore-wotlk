@@ -958,7 +958,6 @@ enum EmoteBroadcastTextID
     EMOTE_BROADCAST_TEXT_ID_STRANGE_GESTURES = 91243
 };
 
-enum class QuestStageFlags : uint32;
 enum class ChestFlags : uint32;
 
 std::ostringstream& operator<< (std::ostringstream& ss, PlayerTaxi const& taxi);
@@ -2851,7 +2850,7 @@ private:
 
     PlayerSettingMap m_charSettingsMap;
 
-    std::map<QuestStageFlags, bool> m_questStageFlag;
+    std::map<uint32, bool> m_questStageFlag;
     std::map<ChestFlags, bool> m_chestFlag;
 
     uint32 quedSpell = 0;
@@ -2874,9 +2873,9 @@ public:
 
     void SetQuedSpell(uint32 spell) { quedSpell = spell; }
     uint32 GetQuedSpell() { return quedSpell; }
-    bool GetQuestStageFlag(QuestStageFlags index) const { auto it = m_questStageFlag.find(index);  if (it != m_questStageFlag.end()) return it->second; return false; }
-    void AddQuestStageFlag(QuestStageFlags index) { m_questStageFlag[index] = true; }
-    void RemoveStageQuestFlag(QuestStageFlags index) { m_questStageFlag[index] = false; }
+    bool GetQuestStageFlag(uint32 index) const { auto it = m_questStageFlag.find(index);  if (it != m_questStageFlag.end()) return it->second; return false; }
+    void AddQuestStageFlag(uint32 index) { m_questStageFlag[index] = true; }
+    void RemoveStageQuestFlag(uint32 index) { m_questStageFlag[index] = false; }
 
     bool GetChestFlag(ChestFlags index) { return m_chestFlag[index]; }
     void AddChestFlag(ChestFlags index) { m_chestFlag[index] = true; }

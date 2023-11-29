@@ -10371,3 +10371,32 @@ void ObjectMgr::LoadELKCraftingChance()
 
     LOG_INFO("server.loading", ">> Loaded {} ELK Crafting Chances in {} ms", (unsigned long)_elkCraftingChanceStore.size(), GetMSTimeDiffToNow(oldMSTime));
 }
+
+void ObjectMgr::LoadELKSpellInfo()
+{
+    uint32 oldMSTime = getMSTime();
+
+
+    QueryResult result = WorldDatabase.Query("SELECT id, elk_category, release_type FROM elk_spell_info");
+
+    if (!result)
+        return;
+
+    do
+    {
+        Field* fields = result->Fetch();
+
+        uint32 id = fields[0].Get<uint32>();
+        uint8 category = fields[1].Get<uint8>();
+        bool release = fields[2].Get<bool>();
+
+        SpellInfo* spell = sSpellMgr->GetSpellInfoDev(id);
+        if (spell)
+        {
+            spell->ReleaseType = release;
+        }
+
+    } while (result->NextRow());
+
+    LOG_INFO("server.loading", ">> Loaded {} ELK Spell Info in {} ms", GetMSTimeDiffToNow(oldMSTime));
+}

@@ -8053,7 +8053,11 @@ bool Spell::CheckEffectTarget(Unit const* target, uint32 eff) const
 
     return true;
 }
-
+void Spell::SetChannelTime(uint32 time)
+{
+    m_channeledDuration = time;
+    SendChannelUpdate(m_channeledDuration);
+}
 bool Spell::IsNextMeleeSwingSpell() const
 {
     return m_spellInfo->HasAttribute(SPELL_ATTR0_ON_NEXT_SWING_NO_DAMAGE);

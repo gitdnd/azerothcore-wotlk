@@ -197,7 +197,14 @@ enum PetScalingSpells
 
 #define PET_FOLLOW_DIST  1.0f
 #define PET_FOLLOW_ANGLE (M_PI/2)
-
+float RandomPetFollowDist()
+{
+    return frand(0.f, 1.5f);
+}
+float RandomPetFollowAngle()
+{
+    return frand(0.f, M_PI * 1.5f);
+}
 class PetStable
 {
 public:

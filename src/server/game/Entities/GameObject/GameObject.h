@@ -431,4 +431,88 @@ private:
 
     bool m_saveStateOnDb = false;
 };
+
+
+#ifdef FAKEGOB
+class FakeGOB : public WorldObject, public GridObject<FakeGOB>, public MovableMapObject
+{
+public:
+    G3D::Quat m_localRotation;
+    int64 m_packedRotation;
+    explicit FakeGOB();
+    ~FakeGOB() override;
+
+    void BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, Player* target) const override;
+
+    void AddToWorld() override;
+    void RemoveFromWorld() override;
+    void CleanupsBeforeDelete(bool finalCleanup = true) override;
+
+
+    virtual bool Create(ObjectGuid::LowType guidlow, uint32 name_id, Map* map, uint32 phaseMask, float x, float y, float z, float ang, G3D::Quat const& rotation, uint32 animprogress, GOState go_state, uint32 artKit = 0);
+    void Update(uint32 p_time) override;
+
+
+    // z_rot, y_rot, x_rot - rotation angles around z, y and x axes
+    void SetLocalRotationAngles(float z_rot, float y_rot, float x_rot);
+    void SetLocalRotation(G3D::Quat const& rot);
+    void SetTransportPathRotation(float qx, float qy, float qz, float qw);
+    [[nodiscard]] G3D::Quat const& GetLocalRotation() const { return m_localRotation; }
+    [[nodiscard]] int64 GetPackedLocalRotation() const { return m_packedRotation; }
+    [[nodiscard]] G3D::Quat GetWorldRotation() const;
+
+
+
+
+    void SetOwnerGUID(ObjectGuid owner)
+    {
+        // Owner already found and different than expected owner - remove object from old owner
+        if (owner && GetOwnerGUID() && GetOwnerGUID() != owner)
+        {
+            ABORT();
+        }
+        SetGuidValue(OBJECT_FIELD_CREATED_BY, owner);
+    }
+    [[nodiscard]] ObjectGuid GetOwnerGUID() const { return GetGuidValue(OBJECT_FIELD_CREATED_BY); }
+    [[nodiscard]] Unit* GetOwner() const;
+
+
+    void Refresh();
+    void DespawnOrUnsummon(Milliseconds delay = 0ms, Seconds forcedRespawnTime = 0s);
+    void Delete();
+
+    [[nodiscard]] GameobjectTypes GetGoType() const { return GameobjectTypes(GetByteValue(GAMEOBJECT_BYTES_1, 1)); }
+    void SetGoType(GameobjectTypes type) { SetByteValue(GAMEOBJECT_BYTES_1, 1, type); }
+    [[nodiscard]] GOState GetGoState() const { return GOState(GetByteValue(GAMEOBJECT_BYTES_1, 0)); }
+    void SetGoState(GOState state);
+    [[nodiscard]] uint8 GetGoArtKit() const { return GetByteValue(GAMEOBJECT_BYTES_1, 2); }
+    void SetGoArtKit(uint8 artkit);
+    [[nodiscard]] uint8 GetGoAnimProgress() const { return GetByteValue(GAMEOBJECT_BYTES_1, 3); }
+    void SetGoAnimProgress(uint8 animprogress) { SetByteValue(GAMEOBJECT_BYTES_1, 3, animprogress); }
+    static void SetGoArtKit(uint8 artkit, GameObject* go, ObjectGuid::LowType lowguid = 0);
+
+
+    void SendCustomAnim(uint32 anim);
+    [[nodiscard]] bool IsInRange(float x, float y, float z, float radius) const;
+
+    void SendMessageToSetInRange(WorldPacket const* data, float dist, bool /*self*/, bool includeMargin = false, Player const* skipped_rcvr = nullptr) const override; // pussywizard!
+
+    void EventInform(uint32 eventId);
+
+    void SetDisplayId(uint32 displayid);
+    [[nodiscard]] uint32 GetDisplayId() const { return GetUInt32Value(GAMEOBJECT_DISPLAYID); }
+
+
+    void SetPosition(float x, float y, float z, float o);
+    void SetPosition(const Position& pos) { SetPosition(pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ(), pos.GetOrientation()); }
+
+
+    void UpdateModelPosition();
+
+    GameObjectModel* CreateModel();
+    void UpdateModel();
+
+    GameObjectModel* m_model;
+};
+#endif
 #endif
