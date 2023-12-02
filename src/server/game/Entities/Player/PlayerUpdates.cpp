@@ -1941,8 +1941,8 @@ void Player::UpdateCharmedAI()
             if (follow)
             {
                 if (!HasUnitState(UNIT_STATE_FOLLOW))
-                    GetMotionMaster()->MoveFollow(charmer, PET_FOLLOW_DIST,
-                                                  PET_FOLLOW_ANGLE);
+                    GetMotionMaster()->MoveFollow(charmer, RandomPetFollowDist(),
+                                                  RandomPetFollowAngle());
                 return;
             }
         }
@@ -1958,8 +1958,8 @@ void Player::UpdateCharmedAI()
         if (!target)
         {
             if (!HasUnitState(UNIT_STATE_FOLLOW))
-                GetMotionMaster()->MoveFollow(charmer, PET_FOLLOW_DIST,
-                                              PET_FOLLOW_ANGLE);
+                GetMotionMaster()->MoveFollow(charmer, RandomPetFollowDist(),
+                                              RandomPetFollowAngle());
 
             return;
         }

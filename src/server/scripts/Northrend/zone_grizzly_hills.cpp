@@ -102,7 +102,7 @@ public:
                 break;
             case 11:
                 if (Creature* Mrfloppy = ObjectAccessor::GetCreature(*me, _mrfloppyGUID))
-                    Mrfloppy->GetMotionMaster()->MoveFollow(me, PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
+                    Mrfloppy->GetMotionMaster()->MoveFollow(me, RandomPetFollowDist(), RandomPetFollowAngle());
                 break;
             case 17:
                 if (Creature* Mrfloppy = ObjectAccessor::GetCreature(*me, _mrfloppyGUID))
@@ -159,7 +159,7 @@ public:
                     {
                         me->GetMotionMaster()->MovePoint(0, Mrfloppy->GetPositionX(), Mrfloppy->GetPositionY(), Mrfloppy->GetPositionZ());
                         Mrfloppy->setDeathState(ALIVE);
-                        Mrfloppy->GetMotionMaster()->MoveFollow(me, PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
+                        Mrfloppy->GetMotionMaster()->MoveFollow(me, RandomPetFollowDist(), RandomPetFollowAngle());
                         Talk(SAY_VICTORY3);
                     }
                 }
@@ -205,7 +205,7 @@ public:
         {
             creature->AI()->Talk(SAY_QUEST_ACCEPT);
             if (Creature* Mrfloppy = GetClosestCreatureWithEntry(creature, NPC_MRFLOPPY, 180.0f))
-                Mrfloppy->GetMotionMaster()->MoveFollow(creature, PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
+                Mrfloppy->GetMotionMaster()->MoveFollow(creature, RandomPetFollowDist(), RandomPetFollowAngle());
 
             if (npc_escortAI* pEscortAI = CAST_AI(npc_emily::npc_emilyAI, (creature->AI())))
                 pEscortAI->Start(true, false, player->GetGUID());
@@ -252,7 +252,7 @@ public:
         void EnterEvadeMode(EvadeReason /*why*/) override
         {
             if (Creature* Emily = GetClosestCreatureWithEntry(me, NPC_EMILY, 50.0f))
-                me->GetMotionMaster()->MoveFollow(Emily, PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
+                me->GetMotionMaster()->MoveFollow(Emily, RandomPetFollowDist(), RandomPetFollowAngle());
         }
 
         void MoveInLineOfSight(Unit* /*who*/) override { }

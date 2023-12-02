@@ -1642,7 +1642,7 @@ void Spell::SelectImplicitCasterDestTargets(SpellEffIndex effIndex, SpellImplici
                 switch (targetType.GetTarget())
                 {
                 case TARGET_DEST_CASTER_SUMMON:
-                    dist = PET_FOLLOW_DIST;
+                    dist = RandomPetFollowDist();
                     break;
                 case TARGET_DEST_CASTER_RANDOM:
                     if (dist > objSize)

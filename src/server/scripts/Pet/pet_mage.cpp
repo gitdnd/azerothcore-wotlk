@@ -91,7 +91,7 @@ struct npc_pet_mage_mirror_image : CasterAI
         if (owner->IsInCombat())
             me->NearTeleportTo(me->GetPositionX() + cos(angle)*dist, me->GetPositionY() + std::sin(angle)*dist, me->GetPositionZ(), me->GetOrientation(), false, false, false, false);
         else
-            me->GetMotionMaster()->MoveFollow(owner, PET_FOLLOW_DIST, me->GetFollowAngle(), MOTION_SLOT_ACTIVE);
+            me->GetMotionMaster()->MoveFollow(owner, RandomPetFollowDist(), me->GetFollowAngle(), MOTION_SLOT_ACTIVE);
 
         me->SetReactState(REACT_DEFENSIVE);
 
@@ -144,7 +144,7 @@ struct npc_pet_mage_mirror_image : CasterAI
         if (owner && !me->HasUnitState(UNIT_STATE_FOLLOW))
         {
             me->GetMotionMaster()->Clear(false);
-            me->GetMotionMaster()->MoveFollow(owner, PET_FOLLOW_DIST, me->GetFollowAngle(), MOTION_SLOT_ACTIVE);
+            me->GetMotionMaster()->MoveFollow(owner, RandomPetFollowDist(), me->GetFollowAngle(), MOTION_SLOT_ACTIVE);
         }
     }
 

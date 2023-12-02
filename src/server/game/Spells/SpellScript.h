@@ -548,6 +548,7 @@ public:
         if (GetTarget()->OnMovePacketAura)
             GetTarget()->RemoveAura(GetTarget()->OnMovePacketAura);
         GetTarget()->OnMovePacketAura = GetAura();
+        GetTarget()->OnMovePacketAura->CallScriptOnMovementPacket();
     }
     void _OnMovePacketRemove(AuraEffect const* aurEff, AuraEffectHandleModes mode)
     {

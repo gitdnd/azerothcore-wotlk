@@ -59,6 +59,8 @@ public:
 
     void SetVisibleBySummonerOnly(bool visibleBySummonerOnly) { _visibleBySummonerOnly = visibleBySummonerOnly; }
     [[nodiscard]] bool IsVisibleBySummonerOnly() const { return _visibleBySummonerOnly; }
+    [[nodiscard]] bool IsPetGhoul() const { return GetEntry() == 26125 /*normal ghoul*/ || GetEntry() == 30230 /*Raise Ally ghoul*/; } // Ghoul may be guardian or pet
+    [[nodiscard]] bool IsGuardianPet() const;
 
     const SummonPropertiesEntry* const m_Properties;
 
@@ -81,8 +83,6 @@ public:
     [[nodiscard]] Unit* GetOwner() const;
     [[nodiscard]] float GetFollowAngle() const override { return m_followAngle; }
     void SetFollowAngle(float angle) { m_followAngle = angle; }
-    [[nodiscard]] bool IsPetGhoul() const {return GetEntry() == 26125 /*normal ghoul*/ || GetEntry() == 30230 /*Raise Ally ghoul*/;} // Ghoul may be guardian or pet
-    [[nodiscard]] bool IsGuardianPet() const;
     void setDeathState(DeathState s, bool despawn = false) override;                   // override virtual Unit::setDeathState
 
     std::string GetDebugInfo() const override;

@@ -2381,7 +2381,7 @@ public:
             bunnyTimer = urand(10000, 20000);
             searchTimer = urand(5000, 10000);
             if (Unit* owner = me->GetOwner())
-                me->GetMotionMaster()->MoveFollow(owner, PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
+                me->GetMotionMaster()->MoveFollow(owner, RandomPetFollowDist(), RandomPetFollowAngle());
         }
 
         void JustEngagedWith(Unit* /*who*/) override { }
@@ -2615,7 +2615,7 @@ public:
             return;
         }
 
-        me->GetMotionMaster()->MoveFollow(summoner->ToUnit(), PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
+        me->GetMotionMaster()->MoveFollow(summoner->ToUnit(), RandomPetFollowDist(), RandomPetFollowAngle());
     }
 
     void UpdateAI(uint32 diff) override

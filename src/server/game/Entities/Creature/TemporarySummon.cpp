@@ -354,7 +354,7 @@ Minion::Minion(SummonPropertiesEntry const* properties, ObjectGuid owner, bool i
 {
     ASSERT(m_owner);
     m_unitTypeMask |= UNIT_MASK_MINION;
-    m_followAngle = PET_FOLLOW_ANGLE;
+    m_followAngle = RandomPetFollowAngle();
 }
 
 void Minion::InitStats(uint32 duration)
@@ -387,7 +387,7 @@ Unit* Minion::GetOwner() const
     return ObjectAccessor::GetUnit(*this, m_owner);
 }
 
-bool Minion::IsGuardianPet() const
+bool TempSummon::IsGuardianPet() const
 {
     return IsPet() || (m_Properties && m_Properties->Category == SUMMON_CATEGORY_PET);
 }

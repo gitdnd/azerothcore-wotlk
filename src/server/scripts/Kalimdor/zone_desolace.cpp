@@ -478,7 +478,7 @@ public:
                 {
                     me->UpdateEntry(NPC_TAMED_KODO, nullptr, false);
                     EnterEvadeMode();
-                    me->GetMotionMaster()->MoveFollow(caster, PET_FOLLOW_DIST, me->GetFollowAngle());
+                    me->GetMotionMaster()->MoveFollow(caster, RandomPetFollowDist(), me->GetFollowAngle());
 
                     caster->CastSpell(caster, SPELL_KODO_KOMBO_PLAYER_BUFF, true);
                     DoCast(me, SPELL_KODO_KOMBO_DESPAWN_BUFF, true);

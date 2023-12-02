@@ -2445,7 +2445,7 @@ void Spell::EffectSummonType(SpellEffIndex effIndex)
                         if (properties->Type != SUMMON_TYPE_JEEVES)
                         {
                             summon->GetMotionMaster()->Clear(false);
-                            summon->GetMotionMaster()->MoveFollow(m_originalCaster, PET_FOLLOW_DIST, summon->GetFollowAngle(), MOTION_SLOT_ACTIVE);
+                            summon->GetMotionMaster()->MoveFollow(m_originalCaster, RandomPetFollowDist(), summon->GetFollowAngle(), MOTION_SLOT_ACTIVE);
                         }
                         break;
                     }
@@ -5245,7 +5245,7 @@ void Spell::EffectResurrectPet(SpellEffIndex /*effIndex*/)
     // Reposition the pet's corpse before reviving so as not to grab aggro
     // We can use a different, more accurate version of GetClosePoint() since we have a pet
     float x, y, z; // Will be used later to reposition the pet if we have one
-    player->GetClosePoint(x, y, z, pet->GetCombatReach(), PET_FOLLOW_DIST, pet->GetFollowAngle());
+    player->GetClosePoint(x, y, z, pet->GetCombatReach(), RandomPetFollowDist(), pet->GetFollowAngle());
     pet->NearTeleportTo(x, y, z, player->GetOrientation());
     pet->Relocate(x, y, z, player->GetOrientation()); // This is needed so SaveStayPosition() will get the proper coords.
     pet->ReplaceAllDynamicFlags(UNIT_DYNFLAG_NONE);
@@ -6086,7 +6086,7 @@ void Spell::SummonGuardian(uint32 i, uint32 entry, SummonPropertiesEntry const* 
         {
             //  summon->AI()->EnterEvadeMode();
             summon->GetMotionMaster()->Clear(false);
-            summon->GetMotionMaster()->MoveFollow(caster, PET_FOLLOW_DIST, summon->GetFollowAngle(), MOTION_SLOT_ACTIVE);
+            summon->GetMotionMaster()->MoveFollow(caster, RandomPetFollowDist(), summon->GetFollowAngle(), MOTION_SLOT_ACTIVE);
         }
 
         if (properties && properties->Category == SUMMON_CATEGORY_ALLY)

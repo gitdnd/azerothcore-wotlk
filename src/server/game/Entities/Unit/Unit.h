@@ -2000,7 +2000,7 @@ public:
     [[nodiscard]] Player* GetCharmerOrOwnerPlayerOrPlayerItself() const;
     [[nodiscard]] Player* GetAffectingPlayer() const;
 
-    void SetMinion(Minion* minion, bool apply);
+    void SetMinion(TempSummon* minion, bool apply);
     void GetAllMinionsByEntry(std::list<Creature*>& Minions, uint32 entry);
     void RemoveAllMinionsByEntry(uint32 entry);
     void SetCharm(Unit* target, bool apply);
@@ -2322,6 +2322,7 @@ public:
     uint32 GetRuneDefaultCooldown(uint8 index, bool skipGrace);
     [[nodiscard]] bool IsBaseRuneSlotsOnCooldown() const;
     [[nodiscard]] uint32 GetRuneCooldown(uint8 index) const { return m_runes->runes[index].Cooldown; }
+    void ReduceRuneCooldown(uint8 index, uint32 cooldown) { if (m_runes->runes[index].Cooldown > cooldown) m_runes->runes[index].Cooldown -= cooldown; else m_runes->runes->Cooldown = 0; }
     void SetRuneCooldown(uint8 index, uint32 cooldown) { m_runes->runes[index].Cooldown = cooldown; m_runes->SetRuneState(index, (cooldown == 0)); }
     [[nodiscard]] uint32 GetRuneStartCooldown(uint8 index) const { return m_runes->runes[index].StartCooldown; }
     void SetRuneStartCooldown(uint8 index, uint32 startCooldown) { m_runes->runes[index].StartCooldown = startCooldown + 1; }

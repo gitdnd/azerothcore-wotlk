@@ -169,13 +169,18 @@ class spell_elk_deflect_aura : public AuraScript
         {
             if (!success)
             {
-                auto auraMap = GetAura()->GetTriggerDummy();
-                auraMap.emplace(MapDummy::Misc_1, std::optional<bool>(true));
+                uint8 runeToRefresh = 0;
+                uint32 itsCD = 0;
                 for (int i = 0; i < MAX_RUNES; i++)
                 {
                     uint32 cd = GetCaster()->GetRuneCooldown(i);
-                    GetCaster()->SetRuneCooldown(i, (cd > 15000) ? cd - 15000 : 0);
+                    if (cd > itsCD)
+                    {
+                        itsCD = cd;
+                        runeToRefresh = i;
+                    }
                 }
+                GetCaster()->SetRuneCooldown(runeToRefresh, 0);
                 success = true;
                 Aura* aura = GetCaster()->GetAura(ELKS(COMBO_COUNT));
                 if (!aura)
@@ -191,45 +196,18 @@ class spell_elk_deflect_aura : public AuraScript
             }
         }
     }
-    void End(AuraEffect const* aurEff, AuraEffectHandleModes mode)
-    {
-        Spell* spell = GetCaster()->GetCurrentSpell(CURRENT_CHANNELED_SPELL);
-        if (spell && (spell->m_spellInfo->Id == ELKS(SPELL_DEFLECT) || spell->m_spellInfo->Id == ELKS(SPELL_DEFLECT_SHORT)));
-            GetCaster()->InterruptSpell(CURRENT_CHANNELED_SPELL);
-    }
     void Register() override
     {
         OnEffectAbsorb += AuraEffectAbsorbFn(spell_elk_deflect_aura::Absorb, EFFECT_0);
-        AfterEffectRemove += AuraEffectRemoveFn(spell_elk_deflect_aura::End, EFFECT_0, SPELL_AURA_SCHOOL_ABSORB, AURA_EFFECT_HANDLE_REAL);
     }
 };
 
 class spell_elk_deflect : public SpellScript
 {
     PrepareSpellScript(spell_elk_deflect);
-    bool success = false; 
     void SpamCheck()
     {
-
-        GetCaster()->SetSheath(SHEATH_STATE_MELEE);
         GetSpell()->SetRuneCooldown(15000);
-        Aura* aura = GetCaster()->GetAura(ELKS(SPELL_DEFLECT));
-        if (aura)
-        {
-            auto spellMap = aura->GetTriggerDummy();
-            if (spellMap[MapDummy::Misc_1].has_value())
-            {
-                success = std::any_cast<bool>(spellMap[MapDummy::Misc_1].value());
-            }
-            if (!success and GetSpell()->GetSpellInfo()->Id == ELKS(SPELL_DEFLECT) and aura->GetDuration() > 100)
-            {
-                
-                GetSpell()->cancel();
-                aura->Remove();
-                GetCaster()->CastSpell(GetCaster(), ELKS(SPELL_DEFLECT_SHORT), false);
-                return;
-            }
-        }
     } 
     void Register() override
     {
@@ -262,6 +240,7 @@ class spell_elk_sprint_aura : public AuraScript
 {
     PrepareAuraScript(spell_elk_sprint_aura);
 
+    uint8 mistakesPermitted = 2;
     void MovePacket()
     {
         if (GetCaster()->IsFalling())
@@ -277,8 +256,11 @@ class spell_elk_sprint_aura : public AuraScript
             {
                 return;
             }
-        } 
-        GetCaster()->RemoveAura(GetAura());
+        }
+        if (mistakesPermitted)
+            mistakesPermitted--;
+        else
+            GetCaster()->RemoveAura(GetAura());
     }
     void EnergyCheck(AuraEffect const*  /*aurEff*/)
     {
@@ -298,13 +280,14 @@ class spell_elk_dash_aura : public AuraScript
 {
     PrepareAuraScript(spell_elk_dash_aura);
 
+    uint8 mistakesPermitted = 1;
     void Absorb(AuraEffect* aurEff, DamageInfo& dmgInfo, uint32& absorbAmount)
     {
         dmgInfo.ModifyDamage(dmgInfo.GetDamage());
     }
     void Cast(AuraEffect const*  /*aurEff*/, AuraEffectHandleModes  /*mode*/)
     {
-        GetCaster()->CastSpell(GetCaster(), 100042, true);
+
     }
     void MovePacket()
     {
@@ -314,8 +297,14 @@ class spell_elk_dash_aura : public AuraScript
         if ((degree > 0.78 && degree < 2.35) || (degree > 3.92 && degree < 5.495))
         {
             return;
-        }  
-        GetAura()->Remove();
+        }
+        if (mistakesPermitted)
+            mistakesPermitted--;
+        else
+        {
+            GetAura()->Remove();
+            GetCaster()->AddSpellCooldown(100024, 0, 1000);
+        }
     } 
     void Register() override
     {
@@ -567,7 +556,16 @@ class spell_elk_block : public ELKSpellScript
     PrepareSpellScript(spell_elk_block);
     void SpellClick()
     {
-        GetSpell()->SetRuneCooldown(30000);
+        if (Player* player = GetCaster()->ToPlayer(); player)
+        {
+            if (Item* item = player->GetItemByPos(EQUIPMENT_SLOT_OFFHAND); item)
+                if (item->GetTemplate()->SubClass == 6)
+                {
+                    GetSpell()->SetRuneCooldown(30000);
+                    return;
+                }
+        }
+        GetSpell()->skip = true;
     }
     void Register() override
     {
@@ -590,12 +588,12 @@ class spell_elk_block_aura : public AuraScript
         float angle = GetCaster()->NormalizeOrientation(pos1.GetRelativeAngle(pos2.GetPositionX(), pos2.GetPositionY()));
         if (angle < 0.7 || angle > 5.585)
         {
+            dmgInfo.AbsorbDamage(-1 * dmgInfo.GetDamage());
             if (dmgInfo.GetCleanDamage() < blockCurr)
             {
                 Spell* currentSpell = GetUnitOwner()->GetCurrentSpell(CURRENT_CHANNELED_SPELL);
                 if (currentSpell->m_spellInfo->Id == 100046)
                 {
-                    dmgInfo.AbsorbDamage(-1 * dmgInfo.GetDamage());
                     blockCurr -= dmgInfo.GetCleanDamage();
                     currentSpell ->SetChannelTime(uint32(float(GetAura()->GetMaxDuration()) * (float(blockCurr) / float(blockMax))));
                     return;

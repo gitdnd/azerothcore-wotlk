@@ -191,7 +191,7 @@ void WorldSession::HandlePetActionHelper(Unit* pet, ObjectGuid guid1, uint32 spe
                         pet->AttackStop();
                         pet->InterruptNonMeleeSpells(false);
                         pet->ClearInPetCombat();
-                        pet->GetMotionMaster()->MoveFollow(_player, PET_FOLLOW_DIST, pet->GetFollowAngle());
+                        pet->GetMotionMaster()->MoveFollow(_player, RandomPetFollowDist(), RandomPetFollowAngle());
                         if (pet->ToPet())
                             pet->ToPet()->ClearCastWhenWillAvailable();
                         charmInfo->SetCommandState(COMMAND_FOLLOW);
@@ -557,7 +557,7 @@ void WorldSession::HandlePetActionHelper(Unit* pet, ObjectGuid guid1, uint32 spe
                             charmInfo->SetIsCommandFollow(false);
                             charmInfo->SetIsReturning(false);
 
-                            pet->GetMotionMaster()->MoveFollow(unit_target, PET_FOLLOW_DIST, rand_norm() * 2 * M_PI);
+                            pet->GetMotionMaster()->MoveFollow(unit_target, RandomPetFollowDist(), RandomPetFollowAngle());
 
                             if (pet->IsPet() && ((Pet*)pet)->getPetType() == SUMMON_PET && pet != unit_target && urand(0, 100) < 10)
                                 pet->SendPetTalk((uint32)PET_TALK_SPECIAL_SPELL);

@@ -261,7 +261,7 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petEntry, uint32 petnumber, bool c
     if (IsCritter())
     {
         float px, py, pz;
-        owner->GetClosePoint(px, py, pz, GetCombatReach(), PET_FOLLOW_DIST, GetFollowAngle());
+        owner->GetClosePoint(px, py, pz, GetCombatReach(), RandomPetFollowDist(), GetFollowAngle());
         Relocate(px, py, pz, owner->GetOrientation());
 
         if (!IsPositionValid())
@@ -327,7 +327,7 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petEntry, uint32 petnumber, bool c
 
     // Set pet's position after setting level, its size depends on it
     float px, py, pz;
-    owner->GetClosePoint(px, py, pz, GetCombatReach(), PET_FOLLOW_DIST, GetFollowAngle());
+    owner->GetClosePoint(px, py, pz, GetCombatReach(), RandomPetFollowDist(), GetFollowAngle());
     Relocate(px, py, pz, owner->GetOrientation());
     if (!IsPositionValid())
     {
@@ -776,7 +776,7 @@ void Pet::Update(uint32 diff)
                                             GetCharmInfo()->SetIsReturning(true);
                                             GetCharmInfo()->SetIsCommandFollow(true);
                                             GetCharmInfo()->SetIsFollowing(false);
-                                            GetMotionMaster()->MoveFollow(charmer, PET_FOLLOW_DIST, GetFollowAngle());
+                                            GetMotionMaster()->MoveFollow(charmer, RandomPetFollowDist(), GetFollowAngle());
                                         }
                                     }
 
@@ -821,7 +821,7 @@ void Pet::Update(uint32 diff)
                             GetCharmInfo()->SetIsReturning(true);
                             GetCharmInfo()->SetIsCommandFollow(true);
                             GetCharmInfo()->SetIsFollowing(false);
-                            GetMotionMaster()->MoveFollow(charmer, PET_FOLLOW_DIST, GetFollowAngle());
+                            GetMotionMaster()->MoveFollow(charmer, RandomPetFollowDist(), GetFollowAngle());
                         }
                     }
                 }

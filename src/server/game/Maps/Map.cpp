@@ -42,6 +42,7 @@
 #include "VMapFactory.h"
 #include "Vehicle.h"
 #include "Weather.h"
+#include <ModelInstance.h>
 
 union u_map_magic
 {
@@ -4561,4 +4562,9 @@ std::string InstanceMap::GetDebugInfo() const
         << std::boolalpha
         << "ScriptId: " << GetScriptId() << " ScriptName: " << GetScriptName();
     return sstr.str();
+}
+
+VMAP::ModelInstance* Map::FindCollisionModel(float x1, float y1, float z1, float x2, float y2, float z2)
+{
+    return VMAP::VMapFactory::createOrGetVMapMgr()->FindCollisionModel(GetId(), x1, y1, z1, x2, y2, z2);
 }

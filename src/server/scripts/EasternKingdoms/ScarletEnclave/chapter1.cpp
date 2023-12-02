@@ -534,7 +534,7 @@ public:
                     me->SetReactState(REACT_DEFENSIVE);
                     me->RemoveUnitFlag(UNIT_FLAG_DISABLE_MOVE);
                     if (Player* owner = me->GetCharmerOrOwnerPlayerOrPlayerItself())
-                        me->GetMotionMaster()->MoveFollow(owner, PET_FOLLOW_DIST, frand(0.0f, 2 * M_PI));
+                        me->GetMotionMaster()->MoveFollow(owner, RandomPetFollowDist(), frand(0.0f, 2 * M_PI));
                     events.ScheduleEvent(EVENT_GHOUL_CHECK_COMBAT, 1s);
                     return;
                 case EVENT_GHOUL_CHECK_COMBAT:

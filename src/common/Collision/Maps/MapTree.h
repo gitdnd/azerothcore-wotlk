@@ -83,6 +83,8 @@ namespace VMAP
         [[nodiscard]] bool isTiled() const { return iIsTiled; }
         [[nodiscard]] uint32 numLoadedTiles() const { return iLoadedTiles.size(); }
         void GetModelInstances(ModelInstance*& models, uint32& count);
+
+        ModelInstance* FindCollisionModel(G3D::Vector3& pos1, G3D::Vector3& pos2);
     };
 
     struct AreaInfo
@@ -94,6 +96,16 @@ namespace VMAP
         int32 adtId{0};
         int32 rootId{0};
         int32 groupId{0};
+    };
+
+    class MapIntersectionFinderCallback
+    {
+    public:
+        MapIntersectionFinderCallback(ModelInstance* val) : result(nullptr), prims(val) {}
+        bool operator()(G3D::Ray const& ray, uint32 entry, float& distance, bool pStopAtFirstHit = true, ModelIgnoreFlags ignoreM2Model = ModelIgnoreFlags(0));
+        ModelInstance* result;
+    protected:
+        ModelInstance* prims;
     };
 }                                                           // VMAP
 

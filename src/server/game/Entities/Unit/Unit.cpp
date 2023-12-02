@@ -10611,7 +10611,7 @@ Unit* Unit::GetCharm() const
     return nullptr;
 }
 
-void Unit::SetMinion(Minion* minion, bool apply)
+void Unit::SetMinion(TempSummon* minion, bool apply)
 {
     LOG_DEBUG("entities.unit", "SetMinion {} for {}, apply {}", minion->GetEntry(), GetEntry(), apply);
 
@@ -18609,7 +18609,7 @@ bool Unit::SetCharmedBy(Unit* charmer, CharmType type, AuraApplication const* au
                 }
                 if (playerCharmer->m_seer != this)
                 {
-                    GetMotionMaster()->MoveFollow(charmer, PET_FOLLOW_DIST, GetFollowAngle());
+                    GetMotionMaster()->MoveFollow(charmer, RandomPetFollowDist(), GetFollowAngle());
                     playerCharmer->CharmSpellInitialize();
                 }
                 break;
@@ -20548,7 +20548,7 @@ void Unit::PetSpellFail(SpellInfo const* spellInfo, Unit* target, uint32 result)
                     charmInfo->SetIsReturning(false);
                     charmInfo->SetIsFollowing(false);
 
-                    GetMotionMaster()->MoveFollow(target, PET_FOLLOW_DIST, rand_norm() * 2 * M_PI);
+                    GetMotionMaster()->MoveFollow(target, RandomPetFollowDist(), RandomPetFollowAngle());
                 }
                 else if (owner->IsValidAttackTarget(target))
                 {

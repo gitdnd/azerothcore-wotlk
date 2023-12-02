@@ -160,7 +160,7 @@ struct npc_pet_gen_argent_pony_bridle : public ScriptedAI
         if (Unit* owner = me->GetCharmerOrOwner())
         {
             me->GetMotionMaster()->Clear(false);
-            me->GetMotionMaster()->MoveFollow(owner, PET_FOLLOW_DIST, me->GetFollowAngle(), MOTION_SLOT_ACTIVE);
+            me->GetMotionMaster()->MoveFollow(owner, RandomPetFollowDist(), me->GetFollowAngle(), MOTION_SLOT_ACTIVE);
         }
     }
 
@@ -395,7 +395,7 @@ struct npc_pet_gen_target_following_bomb : public NullCreatureAI
             {
                 if (Unit* owner = me->GetCharmerOrOwner())
                 {
-                    me->GetMotionMaster()->MoveFollow(owner, PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
+                    me->GetMotionMaster()->MoveFollow(owner, RandomPetFollowDist(), RandomPetFollowAngle());
                 }
             }
         }
@@ -709,7 +709,7 @@ struct npc_pet_gen_toxic_wasteling : public PassiveAI
                 if (Unit* owner = me->GetCharmerOrOwner())
                 {
                     me->GetMotionMaster()->Clear(false);
-                    me->GetMotionMaster()->MoveFollow(owner, PET_FOLLOW_DIST, me->GetFollowAngle(), MOTION_SLOT_ACTIVE);
+                    me->GetMotionMaster()->MoveFollow(owner, RandomPetFollowDist(), me->GetFollowAngle(), MOTION_SLOT_ACTIVE);
                 }
                 me->AddAura(71854, me); // Growth
                 checkTimer = 0;

@@ -25,4 +25,5 @@ REPLACE INTO `elk_spell_info` (`id`, `elk_category`, `release_type`) VALUES
 (100009, @category_attack, false),
 (100044, @category_attack, false),
 (100046, 0, true),
+(1100006, 0, true),
 (1300003, 0, true);

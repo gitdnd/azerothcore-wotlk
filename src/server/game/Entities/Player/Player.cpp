@@ -594,6 +594,7 @@ bool Player::Create(ObjectGuid::LowType guidlow, CharacterCreateInfo* createInfo
     LearnDefaultSkills();
     LearnCustomSpells();
 
+
     // original action bar
     for (PlayerCreateInfoActions::const_iterator action_itr = info->action.begin(); action_itr != info->action.end(); ++action_itr)
         addActionButton(action_itr->button, action_itr->action, action_itr->type);
@@ -11498,6 +11499,18 @@ void Player::LearnCustomSpells()
             learnSpell(tspell);
         }
     }
+    addSpell(100023, SPEC_MASK_ALL, true);
+    addSpell(100024, SPEC_MASK_ALL, true);
+    addSpell(100020, SPEC_MASK_ALL, true);
+    addSpell(100021, SPEC_MASK_ALL, true);
+    addSpell(100018, SPEC_MASK_ALL, true);
+    addSpell(100019, SPEC_MASK_ALL, true);
+    addSpell(100011, SPEC_MASK_ALL, true);
+    addSpell(100017, SPEC_MASK_ALL, true);
+    addSpell(100015, SPEC_MASK_ALL, true);
+    addSpell(100018, SPEC_MASK_ALL, true);
+    addSpell(100003, SPEC_MASK_ALL, true);
+    addSpell(100006, SPEC_MASK_ALL, true);
 }
 
 void Player::LearnDefaultSkills()

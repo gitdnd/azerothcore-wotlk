@@ -37,7 +37,7 @@ REPLACE INTO `spell_script_names` (`spell_id`, `ScriptName`) VALUES
 	(100043, 'spell_elk_spell_power_mana_cost_aura'),
 	(100044, 'spell_elk_spin_attack_hit'),
 	(100045, 'spell_elk_spin_attack'), 
-	(100046, 'spell_elk_block_aura'), 
+	(100046, 'spell_elk_block'), 
 	(150035, 'spell_elk_generic_finale_hit'), 
 	(150036, 'spell_elk_generic_finale'), 
 	(150038, 'spell_elk_creature_giga_thunder_clap'), 
@@ -63,4 +63,8 @@ REPLACE INTO `spell_script_names` (`spell_id`, `ScriptName`) VALUES
 	(1000021, 'spell_elk_crusader_strike_hit'),
 	(1100001, 'spell_elk_reflect'),
 	(1200001, 'spell_elk_static_link'),
-	(1300003, 'spell_elk_summon_imps'); 
+	(1300003, 'spell_elk_summon_imps'),
+	(1400001, 'spell_elk_force_of_nature'),
+	(1500001, 'spell_elk_spin_fury'),
+	(1700001, 'spell_elk_pin_down_aura'),
+	(1800001, 'spell_elk_healing_reach_aura'); 

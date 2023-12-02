@@ -114,7 +114,7 @@ public:
         {
             creature->SetStandState(UNIT_STAND_STATE_STAND);
             creature->AI()->SetGUID(player->GetGUID(), 0);
-            creature->GetMotionMaster()->MoveFollow(player, PET_FOLLOW_DIST, M_PI, MOTION_SLOT_CONTROLLED);
+            creature->GetMotionMaster()->MoveFollow(player, RandomPetFollowDist(), M_PI, MOTION_SLOT_CONTROLLED);
         }
         return true;
     }

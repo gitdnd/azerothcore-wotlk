@@ -530,4 +530,24 @@ namespace VMAP
         models = iTreeValues;
         count = iNTreeValues;
     }
+    ModelInstance* StaticMapTree::FindCollisionModel(G3D::Vector3& pos1, G3D::Vector3& pos2)
+    {
+        float maxDist = (pos2 - pos1).magnitude();
+        if (maxDist < 1e-10f)
+            return nullptr;
+        G3D::Ray ray = G3D::Ray::fromOriginAndDirection(pos1, (pos2 - pos1) / maxDist);
+
+        MapIntersectionFinderCallback intersectionCallBack(iTreeValues);
+        iTree.intersectRay(ray, intersectionCallBack, maxDist, true);
+        if (intersectionCallBack.result)
+            return intersectionCallBack.result;
+        return nullptr;
+    }
+    bool MapIntersectionFinderCallback::operator()(G3D::Ray const& ray, uint32 entry, float& distance, bool pStopAtFirstHit, ModelIgnoreFlags ignoreM2Model)
+    {
+        bool hit = prims[entry].intersectRay(ray, distance, pStopAtFirstHit, ignoreM2Model);
+        if (hit && (!result || result->flags & MOD_NO_BREAK_LOS))
+            result = &prims[entry];
+        return hit;
+    }
 }

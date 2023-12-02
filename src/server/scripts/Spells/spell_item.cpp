@@ -1082,7 +1082,7 @@ class spell_item_enchanted_broom_periodic : public AuraScript
         {
             if (owner->isMoving())
             {
-                GetTarget()->GetMotionMaster()->MoveFollow(owner, PET_FOLLOW_DIST, GetTarget()->GetFollowAngle(), MOTION_SLOT_ACTIVE);
+                GetTarget()->GetMotionMaster()->MoveFollow(owner, RandomPetFollowDist(), GetTarget()->GetFollowAngle(), MOTION_SLOT_ACTIVE);
             }
             else
             {
@@ -1152,7 +1152,7 @@ class spell_item_draenic_pale_ale : public SpellScript
             summon->SetFaction(GetCaster()->GetFaction());
             summon->SetImmuneToAll(true);
             summon->SetReactState(REACT_PASSIVE);
-            summon->GetMotionMaster()->MoveFollow(GetCaster(), PET_FOLLOW_DIST, GetCaster()->GetAngle(summon), MOTION_SLOT_CONTROLLED);
+            summon->GetMotionMaster()->MoveFollow(GetCaster(), RandomPetFollowDist(), GetCaster()->GetAngle(summon), MOTION_SLOT_CONTROLLED);
             GetSpell()->ExecuteLogEffectSummonObject(effIndex, summon);
         }
     }

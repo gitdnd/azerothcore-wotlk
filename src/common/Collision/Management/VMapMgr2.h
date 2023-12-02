@@ -49,6 +49,7 @@ namespace VMAP
 {
     class StaticMapTree;
     class WorldModel;
+    class ModelInstance;
 
     class ManagedModel
     {
@@ -136,6 +137,9 @@ namespace VMAP
 
         typedef bool(*IsVMAPDisabledForFn)(uint32 entry, uint8 flags);
         IsVMAPDisabledForFn IsVMAPDisabledForPtr;
+
+        ModelInstance* FindCollisionModel(unsigned int mapId, float x0, float y0, float z0, float x1, float y1, float z1);
+
     };
 }
 

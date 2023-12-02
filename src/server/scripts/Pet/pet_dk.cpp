@@ -116,7 +116,7 @@ public:
                 {
                     me->CombatStop(true);
                     me->GetMotionMaster()->Clear(false);
-                    me->GetMotionMaster()->MoveFollow(owner, PET_FOLLOW_DIST, 0.0f);
+                    me->GetMotionMaster()->MoveFollow(owner, RandomPetFollowDist(), 0.0f);
                     RemoveTargetAura();
                 }
             }

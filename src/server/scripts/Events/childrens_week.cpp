@@ -209,7 +209,7 @@ struct npc_winterfin_playmate : public ScriptedAI
                     orphan->AI()->Talk(TEXT_ORACLE_ORPHAN_3);
                     me->HandleEmoteCommand(EMOTE_STATE_NONE);
                     player->GroupEventHappens(QUEST_PLAYMATE_ORACLE, me);
-                    orphan->GetMotionMaster()->MoveFollow(player, PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
+                    orphan->GetMotionMaster()->MoveFollow(player, RandomPetFollowDist(), RandomPetFollowAngle());
                     Reset();
                     return;
             }
@@ -295,7 +295,7 @@ struct npc_snowfall_glade_playmate : public ScriptedAI
                 case 5:
                     orphan->AI()->Talk(TEXT_WOLVAR_ORPHAN_3);
                     player->GroupEventHappens(QUEST_PLAYMATE_WOLVAR, me);
-                    orphan->GetMotionMaster()->MoveFollow(player, PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
+                    orphan->GetMotionMaster()->MoveFollow(player, RandomPetFollowDist(), RandomPetFollowAngle());
                     Reset();
                     return;
             }
@@ -372,7 +372,7 @@ struct npc_the_biggest_tree : public ScriptedAI
                     break;
                 case 3:
                     player->GroupEventHappens(QUEST_THE_BIGGEST_TREE_EVER, me);
-                    orphan->GetMotionMaster()->MoveFollow(player, PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
+                    orphan->GetMotionMaster()->MoveFollow(player, RandomPetFollowDist(), RandomPetFollowAngle());
                     Reset();
                     return;
             }
@@ -448,7 +448,7 @@ struct npc_high_oracle_soo_roo : public ScriptedAI
                 case 3:
                     orphan->AI()->Talk(TEXT_ORACLE_ORPHAN_6);
                     player->GroupEventHappens(QUEST_THE_BRONZE_DRAGONSHRINE_ORACLE, me);
-                    orphan->GetMotionMaster()->MoveFollow(player, PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
+                    orphan->GetMotionMaster()->MoveFollow(player, RandomPetFollowDist(), RandomPetFollowAngle());
                     Reset();
                     return;
             }
@@ -523,7 +523,7 @@ struct npc_elder_kekek : public ScriptedAI
                 case 3:
                     orphan->AI()->Talk(TEXT_WOLVAR_ORPHAN_5);
                     player->GroupEventHappens(QUEST_THE_BRONZE_DRAGONSHRINE_WOLVAR, me);
-                    orphan->GetMotionMaster()->MoveFollow(player, PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
+                    orphan->GetMotionMaster()->MoveFollow(player, RandomPetFollowDist(), RandomPetFollowAngle());
                     Reset();
                     return;
             }
@@ -606,7 +606,7 @@ struct npc_the_etymidian : public ScriptedAI
                     timer = 5000;
                     break;
                 case 5:
-                    orphan->GetMotionMaster()->MoveFollow(player, PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
+                    orphan->GetMotionMaster()->MoveFollow(player, RandomPetFollowDist(), RandomPetFollowAngle());
                     player->GroupEventHappens(QUEST_MEETING_A_GREAT_ONE, me);
                     Reset();
                     return;
@@ -724,7 +724,7 @@ struct npc_alexstraza_the_lifebinder : public ScriptedAI
                     me->SetStandState(UNIT_STAND_STATE_STAND);
                     me->SetOrientation(me->GetHomePosition().GetOrientation());
                     player->GroupEventHappens(QUEST_THE_DRAGON_QUEEN_ORACLE, me);
-                    orphan->GetMotionMaster()->MoveFollow(player, PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
+                    orphan->GetMotionMaster()->MoveFollow(player, RandomPetFollowDist(), RandomPetFollowAngle());
                     Reset();
                     return;
                 case 7:
@@ -755,7 +755,7 @@ struct npc_alexstraza_the_lifebinder : public ScriptedAI
                     break;
                 case 12:
                     player->GroupEventHappens(QUEST_THE_DRAGON_QUEEN_WOLVAR, me);
-                    orphan->GetMotionMaster()->MoveFollow(player, PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
+                    orphan->GetMotionMaster()->MoveFollow(player, RandomPetFollowDist(), RandomPetFollowAngle());
                     Reset();
                     return;
             }

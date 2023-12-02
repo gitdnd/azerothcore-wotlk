@@ -66,6 +66,7 @@ enum WeatherState : uint32;
 namespace VMAP
 {
     enum class ModelIgnoreFlags : uint32;
+    class ModelInstance;
 }
 
 namespace Acore
@@ -660,6 +661,7 @@ public:
 
     virtual std::string GetDebugInfo() const;
 
+    VMAP::ModelInstance* FindCollisionModel(float x1, float y1, float z1, float x2, float y2, float z2);
 private:
     void LoadMapAndVMap(int gx, int gy);
     void LoadVMap(int gx, int gy);

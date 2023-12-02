@@ -933,7 +933,7 @@ public:
                         timer = 5000;
                         break;
                     case 6:
-                        orphan->GetMotionMaster()->MoveFollow(player, PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
+                        orphan->GetMotionMaster()->MoveFollow(player, RandomPetFollowDist(), RandomPetFollowAngle());
                         player->GroupEventHappens(QUEST_THE_MIGHTY_HEMET_NESINGWARY, me);
                         Reset();
                         return;

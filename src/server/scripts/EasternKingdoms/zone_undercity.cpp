@@ -1607,7 +1607,7 @@ public:
                         case 13:
                             if (Creature* jaina = ObjectAccessor::GetCreature(*me, jainaGUID))
                             {
-                                jaina->GetMotionMaster()->MoveFollow(me, 5, PET_FOLLOW_ANGLE);
+                                jaina->GetMotionMaster()->MoveFollow(me, 5, RandomPetFollowAngle());
                                 jaina->SetReactState(REACT_AGGRESSIVE);
                                 jaina->SetFaction(FACTION_ESCORT_N_NEUTRAL_ACTIVE);
                             }

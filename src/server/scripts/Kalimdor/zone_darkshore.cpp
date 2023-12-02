@@ -470,7 +470,7 @@ public:
                             _playerGUID = player->GetGUID();
                             me->SetEntry(NPC_CAPTURED_RABID_THISTLE_BEAR);
                             me->SetFaction(FACTION_FRIENDLY);
-                            me->GetMotionMaster()->MoveFollow(player, 1.0f, PET_FOLLOW_ANGLE - (PET_FOLLOW_ANGLE / 4));
+                            me->GetMotionMaster()->MoveFollow(player, 1.0f, RandomPetFollowAngle() - (RandomPetFollowAngle() / 4));
                             _events.Reset();
                             _events.ScheduleEvent(EVENT_CHECK_FOLLOWING, 1s);
                             player->KilledMonsterCredit(NPC_CAPTURED_RABID_THISTLE_BEAR);

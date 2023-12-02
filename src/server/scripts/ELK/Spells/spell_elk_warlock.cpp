@@ -10,7 +10,7 @@ class spell_elk_summon_imps : public SpellScript
     void Periodic()
     {
         if(GetSpell()->GetChannelTime() > 0)
-            channelTime = GetSpell()->GetChannelTime();
+            channelTime = 8000 - GetSpell()->GetSpellTimer();
     }
     void Summon()
     {
@@ -22,14 +22,9 @@ class spell_elk_summon_imps : public SpellScript
             imps = 8 - m.size();
         for (uint8 i = 0; i < imps; i++)
         {
-            TempSummon* summon = player->SummonCreature(impId, player->GetPosition(), TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 100000, 0, sSummonPropertiesStore.LookupEntry(416));
-            summon->SetOwnerGUID(player->GetGUID());
-            ((Minion*)summon)->SetFollowAngle(frand(0.f, 7.f));
-            
-            summon->GetMotionMaster()->Clear(false);
-            summon->GetMotionMaster()->MoveFollow(player, PET_FOLLOW_DIST, summon->GetFollowAngle(), MOTION_SLOT_ACTIVE);
+            TempSummon* summon = player->SummonCreature(impId, player->GetPosition(), TEMPSUMMON_TIMED_OR_CORPSE_DESPAWN, 100000, 0, sSummonPropertiesStore.LookupEntry(impId));
             summon->SetFaction(player->GetFaction());
-            
+            player->SetMinion(summon, true);
         }
     }
     void Register() override
