@@ -527,78 +527,56 @@ class spell_elk_attack : public ELKSpellScript
 
 };
 
-class spell_elk_spin_attack : public ELKSpellScript
+
+class spell_elk_attack_hit : public ELKSpellScript
 {
-    PrepareSpellScript(spell_elk_spin_attack);
+    PrepareSpellScript(spell_elk_attack_hit);
 
-    uint8 comboLength = 0;
+    uint8 targetsHit = 0;
 
-
-
-    void SpellClick()
+    void SpellBegin()
     {
-        Spell* curAtk = GetCaster()->GetCurrentSpell(CURRENT_CHANNELED_SPELL);
-        if (curAtk)
+        AttackBegin();
+    }
+    void SpellHit()
+    {
+        AttackHit();
+        targetsHit++;
+        GetCaster()->ModifyPower(POWER_MANA, GetCaster()->GetStat(STAT_SPIRIT));
+        if (WasInAir)
         {
-            if (curAtk->m_spellInfo->Id == ELKS(ATTACK))
-            {
-                if (curAtk->GetSpellTimer() < 50)
-                {
-                    GetSpell()->skip = true;
-                    GetCaster()->AddSpellCooldown(GetSpell()->m_spellInfo->Id, 0, 100, false);
-                    QueSpell(GetCaster());
-                    return;
-                }
-                else
-                {
-                    GetSpell()->skip = true;
-                    GetCaster()->AddSpellCooldown(GetSpell()->m_spellInfo->Id, 0, 100, false);
-                    return;
-                }
-            }
+            CustomSpellValues values;
+            values.AddSpellMod(SPELLVALUE_AURA_DURATION, 2000);
+            GetCaster()->CastCustomSpell(ELKS(ATTACK_SLOW_DEBUFF), values, GetCaster(), TRIGGERED_FULL_MASK);
         }
         else
         {
-            curAtk = GetCaster()->GetCurrentSpell(CURRENT_GENERIC_SPELL);
-            if (curAtk)
-            {
-                if (curAtk->m_spellInfo->Id == ELKS(ATTACK_HIT) && curAtk->GetSpellTimer() > 0)
-                {
-                    GetSpell()->skip = true;
-                    GetCaster()->AddSpellCooldown(GetSpell()->m_spellInfo->Id, 0, 1, false);
-                    QueSpell(GetCaster());
-                    return;
-                }
-            }
+            GetCaster()->CastSpell(GetHitUnit(), ELKS(ATTACK_SLOW_DEBUFF), true);
         }
-
-        uint16 cd = 0;
-        if (GetCaster()->CanUseAttackType(BASE_ATTACK))
-            cd += GetCaster()->GetAttackTime(BASE_ATTACK);
-        if (GetCaster()->CanUseAttackType(OFF_ATTACK))
-            cd += GetCaster()->GetAttackTime(OFF_ATTACK);
-        GetSpell()->SetRuneCooldown(cd);
-
-
-        if (auto aura = GetCaster()->GetAura(ELKS(COMBO_COUNT)))
-            comboLength = aura->GetStackAmount();
     }
-
-    virtual void AttackUnique()
+    void SpellFinish()
     {
+        if (!(GetCaster()))
+            return;
 
-    }
-    void AttackHit()
-    {
-        GetCaster()->CastSpell(GetCaster(), ELKS(SPIN_ATTACK_HIT), false);
-        AttackUnique();
-    }
-    virtual void Register()
-    {
-        BeforeSpellLoad += SpellCastFn(spell_elk_spin_attack::SpellClick);
-        AfterFullChannel += SpellCastFn(spell_elk_spin_attack::AttackHit);
-    }
+        AfterAttack();
 
+
+        if (targetsHit)
+        {
+            Aura* aura = GetCaster()->GetAura(ELKS(COMBO_COUNT));
+            if (!aura)
+                GetCaster()->AddAura(ELKS(COMBO_COUNT), GetCaster());
+            else
+                aura->SetStackAmount(aura->GetStackAmount() + 1);
+        }
+    }
+    void Register() override
+    {
+        BeforeCast += SpellCastFn(spell_elk_attack_hit::SpellBegin);
+        AfterCast += SpellCastFn(spell_elk_attack_hit::SpellFinish);
+        AfterHit += SpellHitFn(spell_elk_attack_hit::SpellHit);
+    }
 };
 
 

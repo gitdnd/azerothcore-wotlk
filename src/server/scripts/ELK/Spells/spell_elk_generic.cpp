@@ -1,59 +1,6 @@
 #include "spell_elk_include.h"
 
 
-class spell_elk_attack_hit : public ELKSpellScript
-{
-    PrepareSpellScript(spell_elk_attack_hit);
-
-    bool WasInAir = false;
-    uint32 strike = 0;
-    uint8 targetsHit = 0;
-
-    void SpellBegin()
-    {
-        AttackBegin();
-    }
-    void SpellHit()
-    { 
-        AttackHit();
-        targetsHit++;
-        GetCaster()->ModifyPower(POWER_MANA, GetCaster()->GetStat(STAT_SPIRIT));
-        if (WasInAir)
-        {
-            CustomSpellValues values;
-            values.AddSpellMod(SPELLVALUE_AURA_DURATION, 2000);
-            GetCaster()->CastCustomSpell(ELKS(ATTACK_SLOW_DEBUFF), values, GetCaster(), TRIGGERED_FULL_MASK);
-        }
-        else
-        {
-            GetCaster()->CastSpell(GetHitUnit(), ELKS(ATTACK_SLOW_DEBUFF), true);
-        }
-    }
-    void SpellFinish()
-    {
-        if (!(GetCaster()))
-            return;
-
-        AfterAttack(); 
-
-
-        if (targetsHit)
-        {
-            Aura* aura = GetCaster()->GetAura(ELKS(COMBO_COUNT));
-            if (!aura)
-                GetCaster()->AddAura(ELKS(COMBO_COUNT), GetCaster());
-            else
-                aura->SetStackAmount(aura->GetStackAmount() + 1);
-        }
-    }
-    void Register() override
-    {
-        BeforeCast += SpellCastFn(spell_elk_attack_hit::SpellBegin);
-        AfterCast += SpellCastFn(spell_elk_attack_hit::SpellFinish);
-        AfterHit += SpellHitFn(spell_elk_attack_hit::SpellHit);
-    }
-};
-
 
 class spell_elk_critical_attack_hit : public ELKSpellScript
 {
@@ -81,77 +28,6 @@ class spell_elk_critical_attack_hit : public ELKSpellScript
     } 
 };
 
-
-class spell_elk_spin_attack_hit : public ELKSpellScript
-{
-    PrepareSpellScript(spell_elk_spin_attack_hit);
-
-    bool WasInAir = false;
-    uint32 strike = 0;
-    uint8 targetsHit = 0;
-
-    void SpellBegin()
-    {
-        AttackBegin();
-    }
-    void SpellHit()
-    {
-        Unit* victim = GetHitUnit();
-
-        CalcDamageInfo damageInfo;
-        GetCaster()->CalculateMeleeDamage(victim, &damageInfo);
-        damageInfo.hitOutCome = MELEE_HIT_CRIT;
-        damageInfo.HitInfo |= HITINFO_NO_ANIMATION;
-        damageInfo.damages[0].damage *= 2;
-
-        GetCaster()->ModifyPower(POWER_MANA, GetCaster()->GetStat(STAT_SPIRIT));
-        if (WasInAir)
-        {
-            CustomSpellValues values;
-            values.AddSpellMod(SPELLVALUE_AURA_DURATION, 2000);
-            GetCaster()->CastCustomSpell(ELKS(ATTACK_SLOW_DEBUFF), values, GetCaster(), TRIGGERED_FULL_MASK);
-        }
-        else
-        {
-            GetCaster()->CastSpell(GetHitUnit(), ELKS(ATTACK_SLOW_DEBUFF), true);
-        }
-
-        targetsHit++;
-        Unit::DealDamageMods(victim, damageInfo.damages[0].damage, &damageInfo.damages[0].absorb);
-        GetCaster()->PlayDistanceSound(129);
-
-        GetCaster()->DealMeleeDamage(&damageInfo, true);
-
-        DamageInfo dmgInfo(damageInfo);
-        dmgInfo.SetSpellInfo(GetSpellInfo());
-        GetCaster()->ProcDamageAndSpell(GetCaster(), damageInfo.target, damageInfo.procAttacker, damageInfo.procVictim, damageInfo.procEx, damageInfo.damages[0].damage,
-            damageInfo.attackType, nullptr, nullptr, -1, nullptr, &dmgInfo);
-        GetCaster()->DoOnAttackHitScripts(victim, dmgInfo);
-    }
-    void SpellFinish()
-    {
-        if (!(GetCaster()))
-            return;
-
-        AfterAttack();
-
-
-        if (targetsHit)
-        {
-            Aura* aura = GetCaster()->GetAura(ELKS(COMBO_COUNT));
-            if (!aura)
-                GetCaster()->AddAura(ELKS(COMBO_COUNT), GetCaster());
-            else
-                aura->SetStackAmount(aura->GetStackAmount() + 1);
-        }
-    }
-    void Register() override
-    {
-        BeforeCast += SpellCastFn(spell_elk_spin_attack_hit::SpellBegin);
-        AfterCast += SpellCastFn(spell_elk_spin_attack_hit::SpellFinish);
-        AfterHit += SpellHitFn(spell_elk_spin_attack_hit::SpellHit);
-    }
-};
 
 class spell_elk_deflect_aura : public AuraScript
 {

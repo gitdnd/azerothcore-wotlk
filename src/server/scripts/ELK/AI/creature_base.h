@@ -777,6 +777,7 @@ public:
                     if (dynamicMovement.moveTime < diff)
                     {
                         ResetDynamicMovement();
+                        RandomAction();
                     }
                     else
                         dynamicMovement.moveTime -= diff;
