@@ -3714,7 +3714,17 @@ SpellCastResult Spell::prepare(SpellCastTargets const* targets, AuraEffect const
         if (!(_triggeredCastFlags & TRIGGERED_IGNORE_GCD))
             TriggerGlobalCooldown();
     }
+    if (m_spellInfo->AltRuneCost)
+    {
+        TakeRunePower();
+    }
 
+    m_caster->DoBeforeSpellCastScripts(this);
+    if (skip)
+    {
+        cancel();
+        return SPELL_FAILED_UNKNOWN;
+    }
     return SPELL_CAST_OK;
 }
 
@@ -3807,6 +3817,7 @@ void Spell::cast(bool skipCheck)
 
     if (lastMod)
         modOwner->SetSpellModTakingSpell(lastMod, true);
+    m_caster->DoOnSpellCastScripts(this);
 }
 
 void Spell::_cast(bool skipCheck)
@@ -3819,12 +3830,6 @@ void Spell::_cast(bool skipCheck)
         return;
     }
 
-    m_caster->DoBeforeSpellCastScripts(this);
-    if (skip)
-    {
-        cancel();
-        return;
-    }
     // cancel at lost explicit target during cast
     if (m_targets.GetObjectTargetGUID() && !m_targets.GetObjectTarget())
     {
@@ -4139,7 +4144,6 @@ void Spell::_cast(bool skipCheck)
         }
     }
     m_caster->SetLastSpellUsed(m_spellInfo);
-    m_caster->DoOnSpellCastScripts(this);
 }
 
 void Spell::handle_immediate()
@@ -4934,7 +4938,7 @@ void Spell::SendSpellGo()
     if (castFlags & CAST_FLAG_POWER_LEFT_SELF)
         data << uint32(m_caster->GetPower((Powers)m_spellInfo->PowerType));
 
-    if (castFlags & CAST_FLAG_RUNE_LIST || runeCostAlt)                   // rune cooldowns list
+    if (castFlags & CAST_FLAG_RUNE_LIST || m_spellInfo->AltRuneCost)                   // rune cooldowns list
     {
         m_caster->ResyncRunes(6); 
     }
@@ -5378,11 +5382,6 @@ void Spell::TakePower()
                     }
     }
 
-    if (PowerType == POWER_RUNE || runeCostAlt)
-    {
-        TakeRunePower(hit);
-        return;
-    }
 
     if (!m_powerCost)
         return;
@@ -5443,7 +5442,7 @@ void Spell::TakeAmmo()
 
 SpellCastResult Spell::CheckRuneCost(uint32 RuneCostID)
 {
-    if ((m_spellInfo->PowerType != POWER_RUNE  && !RuneCostID) && !runeCostAlt)
+    if ((m_spellInfo->PowerType != POWER_RUNE  && !RuneCostID) && !m_spellInfo->AltRuneCost)
         return SPELL_CAST_OK;
 
     Player* player = m_caster->ToPlayer();
@@ -5454,7 +5453,7 @@ SpellCastResult Spell::CheckRuneCost(uint32 RuneCostID)
     }
 
     uint8 runeCost = 0;
-    if (!runeCostAlt)
+    if (!m_spellInfo->AltRuneCost)
     {
         SpellRuneCostEntry const* src = sSpellRuneCostStore.LookupEntry(RuneCostID);
 
@@ -5472,7 +5471,7 @@ SpellCastResult Spell::CheckRuneCost(uint32 RuneCostID)
     }
     else
     {
-        runeCost = runeCostAlt;
+        runeCost = m_spellInfo->AltRuneCost;
     }
      
 
@@ -5487,10 +5486,10 @@ SpellCastResult Spell::CheckRuneCost(uint32 RuneCostID)
     return SPELL_CAST_OK;
 }
 
-void Spell::TakeRunePower(bool didHit)
+void Spell::TakeRunePower()
 {
     uint8 runeCost = 0;
-    if (!runeCostAlt)
+    if (!m_spellInfo->AltRuneCost)
     {
         SpellRuneCostEntry const* runeCostData = sSpellRuneCostStore.LookupEntry(m_spellInfo->RuneCostID);
         if (!runeCostData || (runeCostData->NoRuneCost() && runeCostData->NoRunicPowerGain()))
@@ -5506,26 +5505,24 @@ void Spell::TakeRunePower(bool didHit)
         } 
         // Xinef: firstly consume death runes of base type
         // Xinef: in second loop consume all available
-
-
-        // you can gain some runic power when use runes
-        if (didHit)
-            if (int32 rp = int32(runeCostData->runePowerGain * sWorld->getRate(RATE_POWER_RUNICPOWER_INCOME)))
-                m_caster->ModifyPower(POWER_RUNIC_POWER, int32(rp), true, PowerChangeReason::REASON_SPELL_GENERATED, this);
-         
     }
     else
     {
         m_runesState = m_caster->GetRunesState();                 // store previous state
 
-        runeCost = runeCostAlt;
+        runeCost = m_spellInfo->AltRuneCost;
 
     }
     for (uint8 i = 0; i < MAX_RUNES; ++i)
     {
         if (!m_caster->GetRuneCooldown(i) && runeCost > 0)
         {
-            uint16 cd = runeCooldown ? runeCooldown : m_caster->GetRuneDefaultCooldown(i, false);
+            uint16 cd;
+            if (runeCooldown)
+                cd = runeCooldown;
+            else if (m_spellInfo->AltRuneCost)
+                cd = m_spellInfo->AltRuneCD;
+            else cd = m_caster->GetRuneDefaultCooldown(i, false);
             m_caster->SetRuneCooldown(i, cd);
             m_caster->SetRuneStartCooldown(i, cd);
             runeCost--;
@@ -7158,7 +7155,7 @@ SpellCastResult Spell::CheckPower()
     }
 
     //check rune cost only if a spell has PowerType == POWER_RUNE
-    if (m_spellInfo->PowerType == POWER_RUNE || runeCostAlt)
+    if (m_spellInfo->PowerType == POWER_RUNE || m_spellInfo->AltRuneCost)
     {
         SpellCastResult failReason = CheckRuneCost(m_spellInfo->RuneCostID);
         if (failReason != SPELL_CAST_OK)
@@ -8427,11 +8424,6 @@ void Spell::SetDevelopment(uint8 dev)
 void Spell::SetRuneCooldown(uint16 cd)
 {
     runeCooldown = cd; 
-}
-
-void Spell::SetRuneCost(uint8 cost)
-{
-    runeCostAlt = cost;
 }
 
 void Spell::SetBonusRange(float range)

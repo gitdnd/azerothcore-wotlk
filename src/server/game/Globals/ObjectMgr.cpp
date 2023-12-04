@@ -10377,7 +10377,7 @@ void ObjectMgr::LoadELKSpellInfo()
     uint32 oldMSTime = getMSTime();
 
 
-    QueryResult result = WorldDatabase.Query("SELECT id, elk_category, release_type FROM elk_spell_info");
+    QueryResult result = WorldDatabase.Query("SELECT id, elk_category, release_type, rune_cost, rune_cd FROM elk_spell_info");
 
     if (!result)
         return;
@@ -10389,11 +10389,15 @@ void ObjectMgr::LoadELKSpellInfo()
         uint32 id = fields[0].Get<uint32>();
         uint8 category = fields[1].Get<uint8>();
         bool release = fields[2].Get<bool>();
+        uint8 runeCost = fields[3].Get<uint8>();
+        uint16 runeCD = fields[4].Get<uint16>();
 
         SpellInfo* spell = sSpellMgr->GetSpellInfoDev(id);
         if (spell)
         {
             spell->ReleaseType = release;
+            spell->AltRuneCost = runeCost;
+            spell->AltRuneCD = runeCD;
         }
 
     } while (result->NextRow());

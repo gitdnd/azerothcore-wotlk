@@ -301,8 +301,279 @@ class spell_elk_attack : public ELKSpellScript
 {
     PrepareSpellScript(spell_elk_attack);
 
-    uint8 comboLength = 0;
+    uint8 targetsHit = 0;
 
+    void SpellClick()
+    {
+        Spell* curAtk = GetCaster()->GetCurrentSpell(CURRENT_GENERIC_SPELL);
+        if (curAtk)
+        {
+            if (curAtk->m_spellInfo->Id == ELKS(ATTACK))
+            {
+                if (curAtk->GetSpellTimer() < 50)
+                {
+                    GetSpell()->skip = true;
+                    GetCaster()->AddSpellCooldown(GetSpell()->m_spellInfo->Id, 0, 100, false);
+                    QueSpell(GetCaster());
+                    return;
+                }
+                else
+                {
+                    GetSpell()->skip = true;
+                    GetCaster()->AddSpellCooldown(GetSpell()->m_spellInfo->Id, 0, 100, false);
+                    return;
+                }
+            }
+        }
+        if (GetCaster()->IsPlayer())
+        {
+            Player* player = GetCaster()->ToPlayer();
+            if (player)
+            {
+                uint32 animSpell = ELKS(ATTACKUNARMED);
+                uint32 animSpell2 = ELKS(ATTACKUNARMED);
+                auto wep1 = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
+                auto wep2 = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND);
+                std::vector<const ItemTemplate*> weapons = { nullptr, nullptr };
+                if (wep1)
+                    weapons[0] = wep1->GetTemplate();
+                if (wep2)
+                    weapons[1] = wep2->GetTemplate();
+                if (weapons[0])
+                {
+                    switch (weapons[0]->GetSkill())
+                    {
+                    case SKILL_AXES:
+                    case SKILL_SWORDS:
+                    case SKILL_MACES:
+                        animSpell = ELKS(ATTACK1H);
+                        break;
+                    case SKILL_FISHING:
+                    case SKILL_2H_AXES:
+                    case SKILL_2H_SWORDS:
+                    case SKILL_2H_MACES:
+                        animSpell = ELKS(ATTACK);
+                        break;
+                    case SKILL_POLEARMS:
+                    case SKILL_STAVES:
+                        animSpell = ELKS(ATTACK2HL);
+                        break;
+                    case SKILL_DAGGERS:
+                        animSpell = ELKS(ATTACK1HP);
+                        break;
+                    case SKILL_SHIELD:
+                        animSpell = ELKS(ATTACKSHIELD);
+                        break;
+                    case SKILL_FIST_WEAPONS:
+                    default:
+                        animSpell = ELKS(ATTACKUNARMED);
+                        break;
+                    }
+
+                }
+
+                if (weapons[1])
+                {
+                    switch (weapons[1]->GetSkill())
+                    {
+                    case SKILL_AXES:
+                    case SKILL_SWORDS:
+                    case SKILL_MACES:
+                        animSpell2 = ELKS(ATTACKOFF);
+                        break;
+                    case SKILL_FISHING:
+                    case SKILL_2H_AXES:
+                    case SKILL_2H_SWORDS:
+                    case SKILL_2H_MACES:
+                        animSpell2 = ELKS(ATTACKOFF);
+                        break;
+                    case SKILL_POLEARMS:
+                    case SKILL_STAVES:
+                        animSpell2 = ELKS(ATTACKOFFP);
+                        break;
+                    case SKILL_DAGGERS:
+                        animSpell2 = ELKS(ATTACKOFFP);
+                        break;
+                    case SKILL_SHIELD:
+                        animSpell2 = ELKS(ATTACKSHIELD);
+                        break;
+                    case SKILL_FIST_WEAPONS:
+                    default:
+                        animSpell2 = ELKS(ATTACKUNARMED);
+                        break;
+                    }
+                }
+                if (animSpell2 == ELKS(ATTACKUNARMED) || animSpell2 == ELKS(ATTACKSHIELD) || rand() % 2 == 0)
+                    GetSpell()->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(animSpell));
+                else
+                    GetSpell()->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(animSpell2));
+            }
+        }
+        else
+        {
+            Creature* creature = GetCaster()->ToCreature();
+            if (creature)
+            {
+                uint32 animSpell = ELKS(ATTACKUNARMED);
+                uint32 animSpell2 = ELKS(ATTACKUNARMED);
+                auto weapons = creature->GetWeaponEquippedEntry();
+
+                if (weapons[0])
+                {
+                    switch (weapons[0]->GetSkill())
+                    {
+                    case SKILL_AXES:
+                    case SKILL_SWORDS:
+                    case SKILL_MACES:
+                        animSpell = ELKS(ATTACK1H);
+                    case SKILL_FISHING:
+                    case SKILL_2H_AXES:
+                    case SKILL_2H_SWORDS:
+                    case SKILL_2H_MACES:
+                        animSpell = ELKS(ATTACK);
+                    case SKILL_POLEARMS:
+                    case SKILL_STAVES:
+                        animSpell = ELKS(ATTACK2HL);
+                    case SKILL_DAGGERS:
+                        animSpell = ELKS(ATTACK1HP);
+                    case SKILL_SHIELD:
+                        animSpell = ELKS(ATTACKSHIELD);
+                    case SKILL_FIST_WEAPONS:
+                    default:
+                        animSpell = ELKS(ATTACKUNARMED);
+                    }
+
+                }
+
+                if (weapons[1])
+                {
+                    switch (weapons[1]->GetSkill())
+                    {
+                    case SKILL_AXES:
+                    case SKILL_SWORDS:
+                    case SKILL_MACES:
+                        animSpell2 = ELKS(ATTACKOFF);
+                    case SKILL_FISHING:
+                    case SKILL_2H_AXES:
+                    case SKILL_2H_SWORDS:
+                    case SKILL_2H_MACES:
+                        animSpell2 = ELKS(ATTACKOFF);
+                    case SKILL_POLEARMS:
+                    case SKILL_STAVES:
+                        animSpell2 = ELKS(ATTACKOFFP);
+                    case SKILL_DAGGERS:
+                        animSpell2 = ELKS(ATTACKOFFP);
+                    case SKILL_SHIELD:
+                        animSpell2 = ELKS(ATTACKSHIELD);
+                    case SKILL_FIST_WEAPONS:
+                    default:
+                        animSpell2 = ELKS(ATTACKUNARMED);
+                    }
+                }
+                if(animSpell2 == ELKS(ATTACKUNARMED) || animSpell2 == ELKS(ATTACKSHIELD) || rand() % 2 == 0)
+                    GetSpell()->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(animSpell));
+                else
+                    GetSpell()->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(animSpell2));
+            }
+        }
+        uint16 cd = 0;
+        if (GetCaster()->CanUseAttackType(BASE_ATTACK))
+            cd += GetCaster()->GetAttackTime(BASE_ATTACK);
+        if (GetCaster()->CanUseAttackType(OFF_ATTACK))
+            cd += GetCaster()->GetAttackTime(OFF_ATTACK);
+        GetSpell()->SetRuneCooldown(cd);
+
+        AttackBegin();
+    }
+
+    void SpellHit()
+    {
+        AttackHit();
+        targetsHit++;
+        GetCaster()->ModifyPower(POWER_MANA, GetCaster()->GetStat(STAT_SPIRIT));
+        GetCaster()->CastSpell(GetHitUnit(), ELKS(ATTACK_SLOW_DEBUFF), true);
+    }
+    void SpellFinish()
+    {
+        if (!(GetCaster()))
+            return;
+
+        AfterAttack();
+
+
+        if (targetsHit)
+        {
+            Aura* aura = GetCaster()->GetAura(ELKS(COMBO_COUNT));
+            if (!aura)
+                GetCaster()->AddAura(ELKS(COMBO_COUNT), GetCaster());
+            else
+                aura->SetStackAmount(aura->GetStackAmount() + 1);
+        }
+    }
+    virtual void Register()
+    {
+        BeforeSpellLoad += SpellCastFn(spell_elk_attack::SpellClick);
+        AfterCast += SpellCastFn(spell_elk_attack::SpellFinish);
+        AfterHit += SpellHitFn(spell_elk_attack::SpellHit);
+    }
+
+};
+
+
+
+
+
+class spell_elk_spin_attack : public ELKSpellScript
+{
+    PrepareSpellScript(spell_elk_spin_attack);
+
+    uint8 targetsHit = 0;
+
+
+
+    void SpellHit()
+    {
+        Unit* victim = GetHitUnit();
+
+        CalcDamageInfo damageInfo;
+        GetCaster()->CalculateMeleeDamage(victim, &damageInfo);
+        damageInfo.hitOutCome = MELEE_HIT_CRIT;
+        damageInfo.HitInfo |= HITINFO_NO_ANIMATION;
+        damageInfo.damages[0].damage *= 2;
+
+        GetCaster()->ModifyPower(POWER_MANA, GetCaster()->GetStat(STAT_SPIRIT));
+
+        targetsHit++;
+        Unit::DealDamageMods(victim, damageInfo.damages[0].damage, &damageInfo.damages[0].absorb);
+        GetCaster()->PlayDistanceSound(129);
+
+        GetCaster()->DealMeleeDamage(&damageInfo, true);
+
+        DamageInfo dmgInfo(damageInfo);
+        dmgInfo.SetSpellInfo(GetSpellInfo());
+        GetCaster()->ProcDamageAndSpell(GetCaster(), damageInfo.target, damageInfo.procAttacker, damageInfo.procVictim, damageInfo.procEx, damageInfo.damages[0].damage,
+            damageInfo.attackType, nullptr, nullptr, -1, nullptr, &dmgInfo);
+        GetCaster()->DoOnAttackHitScripts(victim, dmgInfo);
+
+        AttackBegin();
+    }
+    void SpellFinish()
+    {
+        if (!(GetCaster()))
+            return;
+
+        AfterAttack();
+
+
+        if (targetsHit)
+        {
+            Aura* aura = GetCaster()->GetAura(ELKS(COMBO_COUNT));
+            if (!aura)
+                GetCaster()->AddAura(ELKS(COMBO_COUNT), GetCaster());
+            else
+                aura->SetStackAmount(aura->GetStackAmount() + 1);
+        }
+    }
     void SpellClick()
     {
         Spell* curAtk = GetCaster()->GetCurrentSpell(CURRENT_CHANNELED_SPELL);
@@ -325,259 +596,27 @@ class spell_elk_attack : public ELKSpellScript
                 }
             }
         }
-        else
-        {
-            curAtk = GetCaster()->GetCurrentSpell(CURRENT_GENERIC_SPELL);
-            if (curAtk)
-            {
-                if (curAtk->m_spellInfo->Id == ELKS(ATTACK_HIT) && curAtk->GetSpellTimer() > 0)
-                {
-                    GetSpell()->skip = true;
-                    GetCaster()->AddSpellCooldown(GetSpell()->m_spellInfo->Id, 0, 1, false);
-                    QueSpell(GetCaster());
-                    return;
-                }
-            }
-        }
-        if (GetCaster()->IsPlayer())
-        {
-            Player* player = GetCaster()->ToPlayer();
-            if (player)
-            {
-                int weps = 0;
-                int anim = RandomInt(1, 4);
-                int animSpell = ELKS(ATTACKUNARMED);
-                auto wep1 = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND); 
-                auto wep2 = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND);
-                std::vector<const ItemTemplate*> weapons = {nullptr, nullptr};
-                if (wep1)
-                    weapons[0] = wep1->GetTemplate();
-                if (wep2)
-                    weapons[1] = wep2->GetTemplate(); 
-                if (weapons[0])
-                {
-                    weps += 1;
 
-                    switch (weapons[0]->GetSkill())
-                    {
-                    case SKILL_AXES:
-                    case SKILL_SWORDS:
-                    case SKILL_MACES:
-                        animSpell = ELKS(ATTACK1H);
-                        break;
-                    case SKILL_FISHING:
-                    case SKILL_2H_AXES:
-                    case SKILL_2H_SWORDS:
-                    case SKILL_2H_MACES:
-                        animSpell = ELKS(ATTACK);
-                        break;
-                    case SKILL_POLEARMS:
-                    case SKILL_STAVES:
-                        animSpell = ELKS(ATTACK2HL);
-                        break;
-                    case SKILL_DAGGERS:
-                        animSpell = ELKS(ATTACK1HP);
-                        break;
-                    case SKILL_SHIELD:
-                        animSpell = ELKS(ATTACKSHIELD);
-                        break;
-                    case SKILL_FIST_WEAPONS:
-                    default:
-                        animSpell = ELKS(ATTACKUNARMED);
-                        break;
-                    }
-
-                }
-
-                if (weapons[1])
-                {
-                    weps += 2;
-
-                    switch (weapons[1]->GetSkill())
-                    {
-                    case SKILL_AXES:
-                    case SKILL_SWORDS:
-                    case SKILL_MACES:
-                        animSpell = ELKS(ATTACKOFF);
-                        break;
-                    case SKILL_FISHING:
-                    case SKILL_2H_AXES:
-                    case SKILL_2H_SWORDS:
-                    case SKILL_2H_MACES:
-                        animSpell = ELKS(ATTACKOFF);
-                        break;
-                    case SKILL_POLEARMS:
-                    case SKILL_STAVES:
-                        animSpell = ELKS(ATTACKOFFP);
-                        break;
-                    case SKILL_DAGGERS:
-                        animSpell = ELKS(ATTACKOFFP);
-                        break;
-                    case SKILL_SHIELD:
-                        animSpell = ELKS(ATTACKSHIELD);
-                        break;
-                    case SKILL_FIST_WEAPONS:
-                    default:
-                        animSpell = ELKS(ATTACKUNARMED);
-                        break;
-                    }
-                } 
-                if (weps == 0)
-                    GetSpell()->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(ELKS(ATTACKUNARMED)));
-                else
-                    GetSpell()->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(animSpell));
-
-            }
-        }
-        else
-        {
-            Creature* creature = GetCaster()->ToCreature();
-            if (creature)
-            {
-
-                int weps = 0;
-                int anim = RandomInt(1, 4);
-                int animSpell = ELKS(ATTACKUNARMED);
-                auto weapons = creature->GetWeaponEquippedEntry();
-                 
-                if (weapons[0])
-                {
-                    weps += 1;
-
-                    switch (weapons[0]->GetSkill())
-                    {
-                    case SKILL_AXES:
-                    case SKILL_SWORDS:
-                    case SKILL_MACES:
-                        animSpell = ELKS(ATTACK1H);
-                    case SKILL_FISHING:
-                    case SKILL_2H_AXES:
-                    case SKILL_2H_SWORDS:
-                    case SKILL_2H_MACES:
-                        animSpell = ELKS(ATTACK);
-                    case SKILL_POLEARMS:
-                    case SKILL_STAVES:
-                        animSpell = ELKS(ATTACK2HL);
-                    case SKILL_DAGGERS:
-                        animSpell = ELKS(ATTACK1HP);
-                    case SKILL_SHIELD:
-                        animSpell = ELKS(ATTACKSHIELD);
-                    case SKILL_FIST_WEAPONS:
-                    default:
-                        animSpell = ELKS(ATTACKUNARMED);
-                    }
-
-                }
-
-                if (weapons[1])
-                {
-                    weps += 2;
-
-                    switch (weapons[1]->GetSkill())
-                    {
-                    case SKILL_AXES:
-                    case SKILL_SWORDS:
-                    case SKILL_MACES:
-                        animSpell = ELKS(ATTACKOFF);
-                    case SKILL_FISHING:
-                    case SKILL_2H_AXES:
-                    case SKILL_2H_SWORDS:
-                    case SKILL_2H_MACES:
-                        animSpell = ELKS(ATTACKOFF);
-                    case SKILL_POLEARMS:
-                    case SKILL_STAVES:
-                        animSpell = ELKS(ATTACKOFFP);
-                    case SKILL_DAGGERS:
-                        animSpell = ELKS(ATTACKOFFP);
-                    case SKILL_SHIELD:
-                        animSpell = ELKS(ATTACKSHIELD);
-                    case SKILL_FIST_WEAPONS:
-                    default:
-                        animSpell = ELKS(ATTACKUNARMED);
-                    }
-                } 
-                GetSpell()->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(animSpell));
-
-            }
-        }
         uint16 cd = 0;
-        if(GetCaster()->CanUseAttackType(BASE_ATTACK))
+        if (GetCaster()->CanUseAttackType(BASE_ATTACK))
             cd += GetCaster()->GetAttackTime(BASE_ATTACK);
         if (GetCaster()->CanUseAttackType(OFF_ATTACK))
             cd += GetCaster()->GetAttackTime(OFF_ATTACK);
         GetSpell()->SetRuneCooldown(cd);
 
-        if (auto aura = GetCaster()->GetAura(ELKS(COMBO_COUNT)))
-            comboLength = aura->GetStackAmount();
-    }
-    virtual void AttackUnique()
-    {
 
     }
-    void AttackHit()
-    {
-        GetCaster()->CastSpell(GetCaster(), ELKS(ATTACK_HIT), false);
-        AttackUnique();
-    }
+
     virtual void Register()
     {
-        BeforeSpellLoad += SpellCastFn(spell_elk_attack::SpellClick);
-        AfterFullChannel += SpellCastFn(spell_elk_attack::AttackHit);
+        BeforeSpellLoad += SpellCastFn(spell_elk_spin_attack::SpellClick);
+        AfterCast += SpellCastFn(spell_elk_spin_attack::SpellFinish);
+        AfterHit += SpellHitFn(spell_elk_spin_attack::SpellHit);
     }
 
 };
 
 
-class spell_elk_attack_hit : public ELKSpellScript
-{
-    PrepareSpellScript(spell_elk_attack_hit);
-
-    uint8 targetsHit = 0;
-
-    void SpellBegin()
-    {
-        AttackBegin();
-    }
-    void SpellHit()
-    {
-        AttackHit();
-        targetsHit++;
-        GetCaster()->ModifyPower(POWER_MANA, GetCaster()->GetStat(STAT_SPIRIT));
-        if (WasInAir)
-        {
-            CustomSpellValues values;
-            values.AddSpellMod(SPELLVALUE_AURA_DURATION, 2000);
-            GetCaster()->CastCustomSpell(ELKS(ATTACK_SLOW_DEBUFF), values, GetCaster(), TRIGGERED_FULL_MASK);
-        }
-        else
-        {
-            GetCaster()->CastSpell(GetHitUnit(), ELKS(ATTACK_SLOW_DEBUFF), true);
-        }
-    }
-    void SpellFinish()
-    {
-        if (!(GetCaster()))
-            return;
-
-        AfterAttack();
-
-
-        if (targetsHit)
-        {
-            Aura* aura = GetCaster()->GetAura(ELKS(COMBO_COUNT));
-            if (!aura)
-                GetCaster()->AddAura(ELKS(COMBO_COUNT), GetCaster());
-            else
-                aura->SetStackAmount(aura->GetStackAmount() + 1);
-        }
-    }
-    void Register() override
-    {
-        BeforeCast += SpellCastFn(spell_elk_attack_hit::SpellBegin);
-        AfterCast += SpellCastFn(spell_elk_attack_hit::SpellFinish);
-        AfterHit += SpellHitFn(spell_elk_attack_hit::SpellHit);
-    }
-};
 
 
 
@@ -589,7 +628,7 @@ class spell_combo_counter_aura : public AuraScript
     uint8 combo = 0;
     void PreSpellCast(Spell* spell)
     {
-        if (GetCaster()->HasUnitState(UNIT_STATE_CASTING) && dur == 0)
+        if (GetCaster()->GetCurrentSpell(CURRENT_GENERIC_SPELL) || GetCaster()->GetCurrentSpell(CURRENT_CHANNELED_SPELL) && dur == 0)
         {
             dur = GetAura()->GetDuration();
             combo = GetAura()->GetStackAmount();
@@ -598,7 +637,11 @@ class spell_combo_counter_aura : public AuraScript
     }
     void PostSpellCast(Spell* spell)
     {
-        if (!GetCaster()->HasUnitState(UNIT_STATE_CASTING) && dur > 0)
+        if (!(GetCaster()->GetCurrentSpell(CURRENT_GENERIC_SPELL) &&
+            GetCaster()->GetCurrentSpell(CURRENT_GENERIC_SPELL)->getState() != SPELL_STATE_FINISHED)
+            && !(GetCaster()->GetCurrentSpell(CURRENT_CHANNELED_SPELL) &&
+                GetCaster()->GetCurrentSpell(CURRENT_CHANNELED_SPELL)->getState() != SPELL_STATE_FINISHED)
+            && dur > 0)
         {
             if (GetAura()->GetStackAmount() > combo)
                 GetAura()->SetDuration(GetAura()->GetSpellInfo()->GetMaxDuration());

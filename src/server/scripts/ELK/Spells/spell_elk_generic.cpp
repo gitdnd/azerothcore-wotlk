@@ -29,6 +29,7 @@ class spell_elk_critical_attack_hit : public ELKSpellScript
 };
 
 
+
 class spell_elk_deflect_aura : public AuraScript
 {
     PrepareAuraScript(spell_elk_deflect_aura);
@@ -497,9 +498,7 @@ void AddSC_elk_spell_scripts()
 
     RegisterSpellScript(spell_elk_attack);
     RegisterSpellScript(spell_elk_spin_attack);
-    RegisterSpellScript(spell_elk_attack_hit);
     RegisterSpellScript(spell_elk_critical_attack_hit);
-    RegisterSpellScript(spell_elk_spin_attack_hit);
     RegisterSpellAndAuraScriptPair(spell_elk_deflect, spell_elk_deflect_aura);
     RegisterSpellScript(spell_elk_double_jump);
     RegisterSpellScript(spell_elk_sprint_aura);

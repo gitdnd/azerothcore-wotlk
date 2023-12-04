@@ -467,7 +467,7 @@ public:
     void TakePower();
     void TakeAmmo();
 
-    void TakeRunePower(bool didHit);
+    void TakeRunePower();
     void TakeReagents();
     void TakeCastItem();
 
@@ -816,7 +816,6 @@ public:
 
     uint8 development = 1;
     uint16 runeCooldown = 0;
-    uint8 runeCostAlt = 0;
     float bonusRange = 0;
     uint32 bonusSpellPower = 0;
     bool Crit = false;
@@ -851,9 +850,6 @@ public:
 
     void SetRuneCooldown(uint16 cd);
     uint16 GetRuneCooldown() { return runeCooldown; }
-
-    void SetRuneCost(uint8 cost);
-    uint8 GetRuneCost() { return runeCostAlt; }
 
     void SetBonusRange(float range);
     float GetBonusRange() { return bonusRange; }

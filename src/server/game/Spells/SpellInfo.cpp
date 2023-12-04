@@ -989,6 +989,9 @@ SpellInfo::SpellInfo(SpellEntry const* spellEntry)
     AreaGroupId = spellEntry->AreaGroupId;
     SchoolMask = spellEntry->SchoolMask;
     ReleaseType = false;
+    AltRuneCost = 0;
+    AltRuneCD = 0;
+
     for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
         Effects[i] = SpellEffectInfo(spellEntry, this, i);
 

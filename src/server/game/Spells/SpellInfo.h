@@ -393,6 +393,8 @@ public:
     uint32 ExplicitTargetMask;
     SpellChainNode const* ChainEntry;
     bool ReleaseType;
+    uint8 AltRuneCost;
+    uint16 AltRuneCD;
 
     // Mine
     AuraStateType _auraState;
