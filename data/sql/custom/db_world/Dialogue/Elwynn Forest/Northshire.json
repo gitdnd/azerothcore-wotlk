@@ -1,0 +1,12 @@
+{
+  {
+    "name": "milly",
+    "DIALOGUE": [
+      {
+        "id": "MILLY_INTRO_2_"
+        "flag": "MILLY_I2DONE",
+
+      }
+    ]
+  }
+}
