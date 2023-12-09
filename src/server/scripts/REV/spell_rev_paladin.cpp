@@ -126,6 +126,8 @@ enum PaladinSpells
     REV_AURA_MASTERY_CONENTRATION = 9000042,
     REV_AURA_MASTERY_RESISTANCCE = 9000043,
 
+    REV_TRAVELING_STAR = 9000044,
+
     REV_AURA_PROPHECY_STREAK = 9000052,
     REV_AURA_PROPHECY_STREAK_PROC = 9000053,
 
@@ -598,15 +600,23 @@ class spell_rev_traveling_star : public AuraScript
     Position posLast = (-99999, -99999, -99999);
     bool Proc(ProcEventInfo& eventInfo)
     {
-        if (eventInfo.GetHealInfo() && eventInfo.GetSpellInfo() && posLast != posCheck)
+        if (posLast == posCheck)
+        {
+            posLast.Relocate(GetUnitOwner()->GetPosition());
+            return false;
+        }
+        if (eventInfo.GetHealInfo() && eventInfo.GetSpellInfo() && eventInfo.GetSpellInfo()->Id != REV_TRAVELING_STAR)
         {
             float dist = GetUnitOwner()->GetPosition().GetExactDist2d(posLast);
-            if (dist > 10.f)
-                dist = 10.f;
-            eventInfo.GetHealInfo()->SetHeal(float(eventInfo.GetHealInfo()->GetHeal()) * 1.f + dist / 10.f);
+            if (dist > 20.f)
+                dist = 20.f;
+            HealInfo heal(GetUnitOwner(), eventInfo.GetHealInfo()->GetTarget(),
+                float(eventInfo.GetHealInfo()->GetHeal()) * (dist / 20.f), GetSpellInfo(), SPELL_SCHOOL_MASK_HOLY
+                );
+            eventInfo.GetHealInfo()->GetTarget()->HealBySpell(heal);
+            posLast.Relocate(GetUnitOwner()->GetPosition());
         }
-        posLast.Relocate(GetUnitOwner()->GetPosition());
-        return false;
+        return true;
     }
 
     void Register() override
@@ -640,8 +650,8 @@ class spell_rev_seal_of_the_vengful_aura : public AuraScript
     {
         if (eventInfo.GetHealInfo())
         {
-            if(eventInfo.GetProcTarget() != GetCaster())
-                eventInfo.GetHealInfo()->SetHeal(eventInfo.GetHealInfo()->GetHeal() / 2);
+            if (eventInfo.GetProcTarget() != GetCaster())
+                GetCaster()->ModifyHealth(int32(eventInfo.GetHealInfo()->GetHeal()) / 2 * -1);
             return false;
         }
         else if(eventInfo.GetDamageInfo())
@@ -803,10 +813,12 @@ class spell_rev_judgement : public AuraScript
 
     bool OnProc(ProcEventInfo& eventInfo)
     {
+        if (!GetUnitOwner())
+            return false;
         if (GetUnitOwner()->HasAura(REV_ENDLESS_JUDGEMENT))
         {
             std::list<Unit*> party = {};
-            GetCaster()->GetPartyMembers(party);
+            GetUnitOwner()->GetPartyMembers(party);
             for (Unit* guy : party)
             {
                 HealInfo heal(GetCaster(), guy, float(guy->GetHealth()) * 0.02f, eventInfo.GetSpellInfo(), SPELL_SCHOOL_MASK_HOLY);
@@ -816,7 +828,7 @@ class spell_rev_judgement : public AuraScript
         if (GetUnitOwner()->HasAura(REV_WISEST_JUDGEMENT))
         {
             std::list<Unit*> party = {};
-            GetCaster()->GetPartyMembers(party);
+            GetUnitOwner()->GetPartyMembers(party);
             for (Unit* guy : party)
             {
                 guy->ModifyPowerPct(POWER_MANA, 2.f);
