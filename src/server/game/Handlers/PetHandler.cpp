@@ -1124,10 +1124,7 @@ void WorldSession::HandlePetLearnTalent(WorldPacket& recvData)
 
     ObjectGuid guid;
     uint32 talent_id, requested_rank;
-    recvData >> guid >> talent_id >> requested_rank;
-
-    _player->LearnPetTalent(guid, talent_id, requested_rank);
-    _player->SendTalentsInfoData(true);
+    recvData >> guid >> talent_id >> requested_rank; 
 }
 
 void WorldSession::HandleLearnPreviewTalentsPet(WorldPacket& recvData)
@@ -1147,12 +1144,8 @@ void WorldSession::HandleLearnPreviewTalentsPet(WorldPacket& recvData)
 
     for (uint32 i = 0; i < talentsCount && i < MaxTalentsCount; ++i)
     {
-        recvData >> talentId >> talentRank;
-
-        _player->LearnPetTalent(guid, talentId, talentRank);
-    }
-
-    _player->SendTalentsInfoData(true);
+        recvData >> talentId >> talentRank; 
+    } 
 
     recvData.rfinish();
 }

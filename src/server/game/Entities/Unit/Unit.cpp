@@ -8601,7 +8601,7 @@ bool Unit::HandleDummyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggere
                     for (PlayerSpellMap::const_iterator itr = sp_list.begin(); itr != sp_list.end(); ++itr)
                     {
                         // check if shown in spell book
-                        if (!itr->second->Active || !itr->second->IsInSpec(ToPlayer()->GetActiveSpec()) || itr->second->State == PLAYERSPELL_REMOVED)
+                        if (itr->second->State == PLAYERSPELL_REMOVED)
                             continue;
 
                         SpellInfo const* spellProto = sSpellMgr->GetSpellInfo(itr->first);

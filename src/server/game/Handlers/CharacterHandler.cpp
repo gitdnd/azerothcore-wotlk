@@ -913,9 +913,7 @@ void WorldSession::HandlePlayerLoginFromDB(LoginQueryHolder const& holder)
     }
 
     if (pCurrChar->HasAtLoginFlag(AT_LOGIN_RESET_TALENTS))
-    {
-        pCurrChar->resetTalents(true);
-        pCurrChar->SendTalentsInfoData(false);              // original talents send already in to SendInitialPacketsBeforeAddToMap, resend reset state
+    { 
         SendNotification(LANG_RESET_TALENTS);
     }
 
@@ -1169,8 +1167,7 @@ void WorldSession::HandlePlayerLoginToCharInWorld(Player* pCurrChar)
     pCurrChar->ContinueTaxiFlight();
 
     // send pet data, action bar, talents, etc.
-    pCurrChar->PetSpellInitialize();
-    pCurrChar->SendTalentsInfoData(true);
+    pCurrChar->PetSpellInitialize(); 
 
     // show time before shutdown if shutdown planned.
     if (sWorld->IsShuttingDown())
@@ -1507,42 +1504,7 @@ void WorldSession::HandleAlterAppearance(WorldPacket& recvData)
 
 void WorldSession::HandleRemoveGlyph(WorldPacket& recvData)
 {
-    uint32 slot;
-    recvData >> slot;
-
-    if (slot >= MAX_GLYPH_SLOT_INDEX)
-    {
-        LOG_DEBUG("network", "Client sent wrong glyph slot number in opcode CMSG_REMOVE_GLYPH {}", slot);
-        return;
-    }
-
-    if (uint32 glyph = _player->GetGlyph(slot))
-    {
-        if (GlyphPropertiesEntry const* glyphEntry = sGlyphPropertiesStore.LookupEntry(glyph))
-        {
-            _player->RemoveAurasDueToSpell(glyphEntry->SpellId);
-
-            // Removed any triggered auras
-            Unit::AuraMap& ownedAuras = _player->GetOwnedAuras();
-            for (Unit::AuraMap::iterator iter = ownedAuras.begin(); iter != ownedAuras.end();)
-            {
-                Aura* aura = iter->second;
-                if (SpellInfo const* triggeredByAuraSpellInfo = aura->GetTriggeredByAuraSpellInfo())
-                {
-                    if (triggeredByAuraSpellInfo->Id == glyphEntry->SpellId)
-                    {
-                        _player->RemoveOwnedAura(iter);
-                        continue;
-                    }
-                }
-                ++iter;
-            }
-
-            _player->SendLearnPacket(glyphEntry->SpellId, false); // Send packet to properly handle client-side spell tooltips
-            _player->SetGlyph(slot, 0, true);
-            _player->SendTalentsInfoData(false);
-        }
-    }
+    return;
 }
 
 void WorldSession::HandleCharCustomize(WorldPacket& recvData)

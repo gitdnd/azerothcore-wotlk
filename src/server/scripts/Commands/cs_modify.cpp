@@ -368,9 +368,6 @@ public:
             {
                 return false;
             }
-
-            target->ToPlayer()->RewardDevelopmentPoints(talentPoints);
-            target->ToPlayer()->SendTalentsInfoData(false);
             return true;
         }
         else if (target->IsPet())
@@ -382,7 +379,6 @@ public:
                 if (handler->HasLowerSecurity(owner->ToPlayer()))
                     return false;
                 ((Pet*)target)->SetFreeTalentPoints(talentPoints);
-                owner->ToPlayer()->SendTalentsInfoData(true);
                 return true;
             }
         }

@@ -5310,7 +5310,6 @@ bool Player::LoadFromDB(ObjectGuid playerGuid, CharacterDatabaseQueryHolder cons
 
     // reset stats before loading any modifiers
     InitStatsForLevel();
-    InitGlyphsForLevel();
     InitTaxiNodesForLevel(); 
 
     sScriptMgr->OnPlayerLoadFromDB(this);
@@ -5347,20 +5346,15 @@ bool Player::LoadFromDB(ObjectGuid playerGuid, CharacterDatabaseQueryHolder cons
 
     // apply original stats mods before spell loading or item equipment that call before equip _RemoveStatsMods()
 
-    m_specsCount = fields[64].Get<uint8>();
-    m_activeSpec = fields[65].Get<uint8>();
 
     LearnDefaultSkills();
     LearnCustomSpells();
 
     _LoadSpells(holder.GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_SPELLS));
-    _LoadTalents(holder.GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_TALENTS));
 
     _LoadQuestStageFlags(holder.GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_QUEST_STAGE_FLAGS));
     _LoadChestFlags(holder.GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_CHEST_FLAGS));
 
-    _LoadGlyphs(holder.GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_GLYPHS));
-    _LoadGlyphAuras();
     _LoadAuras(holder.GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_AURAS), time_diff);
     // add ghost flag (must be after aura load: PLAYER_FLAGS_GHOST set in aura)
     if (HasPlayerFlag(PLAYER_FLAGS_GHOST))
@@ -5383,8 +5377,6 @@ bool Player::LoadFromDB(ObjectGuid playerGuid, CharacterDatabaseQueryHolder cons
 
 
 
-    // after spell, bonus talents, and quest load
-    InitTalentForLevel();
 
     // must be before inventory (some items required reputation check)
     m_reputationMgr->LoadFromDB(holder.GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_REPUTATION));
@@ -5548,7 +5540,7 @@ bool Player::LoadFromDB(ObjectGuid playerGuid, CharacterDatabaseQueryHolder cons
         if (!HasAuraState((AuraStateType)m_spellInfo->CasterAuraState))
             aura->HandleAllEffects(itr->second, AURA_EFFECT_HANDLE_REAL, false);
     }
-    RewardDevelopmentPoints(fields[73].Get<uint8>());
+    // RewardDevelopmentPoints(fields[73].Get<uint8>());
 
     return true;
 }
@@ -5712,38 +5704,6 @@ void Player::_LoadAuras(PreparedQueryResult result, uint32 timediff)
                 LOG_DEBUG("entities.player", "Added aura spellid {}, effectmask {}", spellInfo->Id, effmask);
             }
         } while (result->NextRow());
-    }
-}
-
-void Player::_LoadGlyphAuras()
-{
-    for (uint8 i = 0; i < MAX_GLYPH_SLOT_INDEX; ++i)
-    {
-        if (uint32 glyph = GetGlyph(i))
-        {
-            if (GlyphPropertiesEntry const* glyphEntry = sGlyphPropertiesStore.LookupEntry(glyph))
-            {
-                if (GlyphSlotEntry const* glyphSlotEntry = sGlyphSlotStore.LookupEntry(GetGlyphSlot(i)))
-                {
-                    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(glyphEntry->SpellId);
-                    if (glyphEntry->TypeFlags == glyphSlotEntry->TypeFlags)
-                    {
-                        if (!spellInfo->Stances)
-                            CastSpell(this, glyphEntry->SpellId, TriggerCastFlags(TRIGGERED_FULL_MASK & ~(TRIGGERED_IGNORE_SHAPESHIFT | TRIGGERED_IGNORE_CASTER_AURASTATE)));
-                        continue;
-                    }
-                    else
-                        LOG_ERROR("entities.player", "Player {} has glyph with typeflags {} in slot with typeflags {}, removing.", m_name, glyphEntry->TypeFlags, glyphSlotEntry->TypeFlags);
-                }
-                else
-                    LOG_ERROR("entities.player", "Player {} has not existing glyph slot entry {} on index {}", m_name, GetGlyphSlot(i), i);
-            }
-            else
-                LOG_ERROR("entities.player", "Player {} has not existing glyph entry {} on index {}", m_name, glyph, i);
-
-            // On any error remove glyph
-            SetGlyph(i, 0, true);
-        }
     }
 }
 
@@ -7027,7 +6987,6 @@ void Player::SaveToDB(CharacterDatabaseTransaction trans, bool create, bool logo
     _SaveWeeklyQuestStatus(trans);
     _SaveSeasonalQuestStatus(trans);
     _SaveMonthlyQuestStatus(trans);
-    _SaveTalents(trans);
     _SaveQuestStageFlags(trans);
     _SaveChestFlags(trans);
     _SaveSpells(trans);
@@ -7039,7 +6998,6 @@ void Player::SaveToDB(CharacterDatabaseTransaction trans, bool create, bool logo
     m_reputationMgr->SaveToDB(trans);
     _SaveEquipmentSets(trans);
     GetSession()->SaveTutorialsData(trans);                 // changed only while character in game
-    _SaveGlyphs(trans);
     _SaveInstanceTimeRestrictions(trans);
     _SavePlayerSettings(trans);
 
@@ -7079,7 +7037,7 @@ void Player::_SaveActions(CharacterDatabaseTransaction trans)
             case ACTIONBUTTON_NEW:
                 stmt = CharacterDatabase.GetPreparedStatement(CHAR_INS_CHAR_ACTION);
                 stmt->SetData(0, GetGUID().GetCounter());
-                stmt->SetData(1, m_activeSpec);
+                stmt->SetData(1, uint8(0));
                 stmt->SetData(2, itr->first);
                 stmt->SetData(3, itr->second.GetAction());
                 stmt->SetData(4, uint8(itr->second.GetType()));
@@ -7094,7 +7052,7 @@ void Player::_SaveActions(CharacterDatabaseTransaction trans)
                 stmt->SetData(1, uint8(itr->second.GetType()));
                 stmt->SetData(2, GetGUID().GetCounter());
                 stmt->SetData(3, itr->first);
-                stmt->SetData(4, m_activeSpec);
+                stmt->SetData(4, uint8(0));
                 trans->Append(stmt);
 
                 itr->second.uState = ACTIONBUTTON_UNCHANGED;
@@ -7104,7 +7062,7 @@ void Player::_SaveActions(CharacterDatabaseTransaction trans)
                 stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_CHAR_ACTION_BY_BUTTON_SPEC);
                 stmt->SetData(0, GetGUID().GetCounter());
                 stmt->SetData(1, itr->first);
-                stmt->SetData(2, m_activeSpec);
+                stmt->SetData(2, uint8(0));
                 trans->Append(stmt);
 
                 m_actionButtons.erase(itr++);
@@ -7655,7 +7613,7 @@ void Player::_SaveSpells(CharacterDatabaseTransaction trans)
             stmt = CharacterDatabase.GetPreparedStatement(CHAR_INS_CHAR_SPELL);
             stmt->SetData(0, GetGUID().GetCounter());
             stmt->SetData(1, itr->first);
-            stmt->SetData(2, itr->second->specMask);
+            stmt->SetData(2, uint8(0));
             trans->Append(stmt);
         }
 

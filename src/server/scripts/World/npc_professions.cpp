@@ -327,98 +327,98 @@ void ProfessionUnlearnSpells(Player* player, uint32 type)
     switch (type)
     {
         case S_UNLEARN_WEAPON:                              // S_UNLEARN_WEAPON
-            player->removeSpell(36125, SPEC_MASK_ALL, false);                     // Light Earthforged Blade
-            player->removeSpell(36128, SPEC_MASK_ALL, false);                     // Light Emberforged Hammer
-            player->removeSpell(36126, SPEC_MASK_ALL, false);                     // Light Skyforged Axe
+            player->removeSpell(36125, false);                     // Light Earthforged Blade
+            player->removeSpell(36128, false);                     // Light Emberforged Hammer
+            player->removeSpell(36126, false);                     // Light Skyforged Axe
             break;
         case S_UNLEARN_ARMOR:                               // S_UNLEARN_ARMOR
-            player->removeSpell(36122, SPEC_MASK_ALL, false);                     // Earthforged Leggings
-            player->removeSpell(36129, SPEC_MASK_ALL, false);                     // Heavy Earthforged Breastplate
-            player->removeSpell(36130, SPEC_MASK_ALL, false);                     // Stormforged Hauberk
-            player->removeSpell(34533, SPEC_MASK_ALL, false);                     // Breastplate of Kings
-            player->removeSpell(34529, SPEC_MASK_ALL, false);                     // Nether Chain Shirt
-            player->removeSpell(34534, SPEC_MASK_ALL, false);                     // Bulwark of Kings
-            player->removeSpell(36257, SPEC_MASK_ALL, false);                     // Bulwark of the Ancient Kings
-            player->removeSpell(36256, SPEC_MASK_ALL, false);                     // Embrace of the Twisting Nether
-            player->removeSpell(34530, SPEC_MASK_ALL, false);                     // Twisting Nether Chain Shirt
-            player->removeSpell(36124, SPEC_MASK_ALL, false);                     // Windforged Leggings
+            player->removeSpell(36122, false);                     // Earthforged Leggings
+            player->removeSpell(36129, false);                     // Heavy Earthforged Breastplate
+            player->removeSpell(36130, false);                     // Stormforged Hauberk
+            player->removeSpell(34533, false);                     // Breastplate of Kings
+            player->removeSpell(34529, false);                     // Nether Chain Shirt
+            player->removeSpell(34534, false);                     // Bulwark of Kings
+            player->removeSpell(36257, false);                     // Bulwark of the Ancient Kings
+            player->removeSpell(36256, false);                     // Embrace of the Twisting Nether
+            player->removeSpell(34530, false);                     // Twisting Nether Chain Shirt
+            player->removeSpell(36124, false);                     // Windforged Leggings
             break;
         case S_UNLEARN_HAMMER:                              // S_UNLEARN_HAMMER
-            player->removeSpell(36262, SPEC_MASK_ALL, false);                     // Dragonstrike
-            player->removeSpell(34546, SPEC_MASK_ALL, false);                     // Dragonmaw
-            player->removeSpell(34545, SPEC_MASK_ALL, false);                     // Drakefist Hammer
-            player->removeSpell(36136, SPEC_MASK_ALL, false);                     // Lavaforged Warhammer
-            player->removeSpell(34547, SPEC_MASK_ALL, false);                     // Thunder
-            player->removeSpell(34567, SPEC_MASK_ALL, false);                     // Deep Thunder
-            player->removeSpell(36263, SPEC_MASK_ALL, false);                     // Stormherald
-            player->removeSpell(36137, SPEC_MASK_ALL, false);                     // Great Earthforged Hammer
+            player->removeSpell(36262, false);                     // Dragonstrike
+            player->removeSpell(34546, false);                     // Dragonmaw
+            player->removeSpell(34545, false);                     // Drakefist Hammer
+            player->removeSpell(36136, false);                     // Lavaforged Warhammer
+            player->removeSpell(34547, false);                     // Thunder
+            player->removeSpell(34567, false);                     // Deep Thunder
+            player->removeSpell(36263, false);                     // Stormherald
+            player->removeSpell(36137, false);                     // Great Earthforged Hammer
             break;
         case S_UNLEARN_AXE:                                 // S_UNLEARN_AXE
-            player->removeSpell(36260, SPEC_MASK_ALL, false);                     // Wicked Edge of the Planes
-            player->removeSpell(34562, SPEC_MASK_ALL, false);                     // Black Planar Edge
-            player->removeSpell(34541, SPEC_MASK_ALL, false);                     // The Planar Edge
-            player->removeSpell(36134, SPEC_MASK_ALL, false);                     // Stormforged Axe
-            player->removeSpell(36135, SPEC_MASK_ALL, false);                     // Skyforged Great Axe
-            player->removeSpell(36261, SPEC_MASK_ALL, false);                     // Bloodmoon
-            player->removeSpell(34543, SPEC_MASK_ALL, false);                     // Lunar Crescent
-            player->removeSpell(34544, SPEC_MASK_ALL, false);                     // Mooncleaver
+            player->removeSpell(36260, false);                     // Wicked Edge of the Planes
+            player->removeSpell(34562, false);                     // Black Planar Edge
+            player->removeSpell(34541, false);                     // The Planar Edge
+            player->removeSpell(36134, false);                     // Stormforged Axe
+            player->removeSpell(36135, false);                     // Skyforged Great Axe
+            player->removeSpell(36261, false);                     // Bloodmoon
+            player->removeSpell(34543, false);                     // Lunar Crescent
+            player->removeSpell(34544, false);                     // Mooncleaver
             break;
         case S_UNLEARN_SWORD:                               // S_UNLEARN_SWORD
-            player->removeSpell(36258, SPEC_MASK_ALL, false);                     // Blazefury
-            player->removeSpell(34537, SPEC_MASK_ALL, false);                     // Blazeguard
-            player->removeSpell(34535, SPEC_MASK_ALL, false);                     // Fireguard
-            player->removeSpell(36131, SPEC_MASK_ALL, false);                     // Windforged Rapier
-            player->removeSpell(36133, SPEC_MASK_ALL, false);                     // Stoneforged Claymore
-            player->removeSpell(34538, SPEC_MASK_ALL, false);                     // Lionheart Blade
-            player->removeSpell(34540, SPEC_MASK_ALL, false);                     // Lionheart Champion
-            player->removeSpell(36259, SPEC_MASK_ALL, false);                     // Lionheart Executioner
+            player->removeSpell(36258, false);                     // Blazefury
+            player->removeSpell(34537, false);                     // Blazeguard
+            player->removeSpell(34535, false);                     // Fireguard
+            player->removeSpell(36131, false);                     // Windforged Rapier
+            player->removeSpell(36133, false);                     // Stoneforged Claymore
+            player->removeSpell(34538, false);                     // Lionheart Blade
+            player->removeSpell(34540, false);                     // Lionheart Champion
+            player->removeSpell(36259, false);                     // Lionheart Executioner
             break;
         case S_UNLEARN_DRAGON:                              // S_UNLEARN_DRAGON
-            player->removeSpell(10619, SPEC_MASK_ALL, false);                     // Dragonscale Guantlets
-            player->removeSpell(10650, SPEC_MASK_ALL, false);                     // Dragonscale Breastplate
-            player->removeSpell(36076, SPEC_MASK_ALL, false);                     // Dragonstrike Leggings
-            player->removeSpell(24655, SPEC_MASK_ALL, false);                     // Green Dragonscale Gauntlets
-            player->removeSpell(24654, SPEC_MASK_ALL, false);                     // Blue Dragonscale Leggings
-            player->removeSpell(36079, SPEC_MASK_ALL, false);                     // Golden Dragonstrike Breastplate
-            player->removeSpell(35576, SPEC_MASK_ALL, false);                     // Ebon Netherscale Belt
-            player->removeSpell(35577, SPEC_MASK_ALL, false);                     // Ebon Netherscale Bracers
-            player->removeSpell(35575, SPEC_MASK_ALL, false);                     // Ebon Netherscale Breastplate
-            player->removeSpell(35582, SPEC_MASK_ALL, false);                     // Netherstrike Belt
-            player->removeSpell(35584, SPEC_MASK_ALL, false);                     // Netherstrike Bracers
-            player->removeSpell(35580, SPEC_MASK_ALL, false);                     // Netherstrike Breastplate
+            player->removeSpell(10619, false);                     // Dragonscale Guantlets
+            player->removeSpell(10650, false);                     // Dragonscale Breastplate
+            player->removeSpell(36076, false);                     // Dragonstrike Leggings
+            player->removeSpell(24655, false);                     // Green Dragonscale Gauntlets
+            player->removeSpell(24654, false);                     // Blue Dragonscale Leggings
+            player->removeSpell(36079, false);                     // Golden Dragonstrike Breastplate
+            player->removeSpell(35576, false);                     // Ebon Netherscale Belt
+            player->removeSpell(35577, false);                     // Ebon Netherscale Bracers
+            player->removeSpell(35575, false);                     // Ebon Netherscale Breastplate
+            player->removeSpell(35582, false);                     // Netherstrike Belt
+            player->removeSpell(35584, false);                     // Netherstrike Bracers
+            player->removeSpell(35580, false);                     // Netherstrike Breastplate
             break;
         case S_UNLEARN_ELEMENTAL:                           // S_UNLEARN_ELEMENTAL
-            player->removeSpell(36074, SPEC_MASK_ALL, false);                     // Blackstorm Leggings
-            player->removeSpell(36077, SPEC_MASK_ALL, false);                     // Primalstorm Breastplate
-            player->removeSpell(35590, SPEC_MASK_ALL, false);                     // Primalstrike Belt
-            player->removeSpell(35591, SPEC_MASK_ALL, false);                     // Primalstrike Bracers
-            player->removeSpell(35589, SPEC_MASK_ALL, false);                     // Primalstrike Vest
-            player->removeSpell(10630, SPEC_MASK_ALL, false);                     // Gauntlets of the Sea
-            player->removeSpell(10632, SPEC_MASK_ALL, false);                     // Helm of Fire
+            player->removeSpell(36074, false);                     // Blackstorm Leggings
+            player->removeSpell(36077, false);                     // Primalstorm Breastplate
+            player->removeSpell(35590, false);                     // Primalstrike Belt
+            player->removeSpell(35591, false);                     // Primalstrike Bracers
+            player->removeSpell(35589, false);                     // Primalstrike Vest
+            player->removeSpell(10630, false);                     // Gauntlets of the Sea
+            player->removeSpell(10632, false);                     // Helm of Fire
             break;
         case S_UNLEARN_TRIBAL:                              // S_UNLEARN_TRIBAL
-            player->removeSpell(35585, SPEC_MASK_ALL, false);                     // Windhawk Hauberk
-            player->removeSpell(35587, SPEC_MASK_ALL, false);                     // Windhawk Belt
-            player->removeSpell(35588, SPEC_MASK_ALL, false);                     // Windhawk Bracers
-            player->removeSpell(36075, SPEC_MASK_ALL, false);                     // Wildfeather Leggings
-            player->removeSpell(36078, SPEC_MASK_ALL, false);                     // Living Crystal Breastplate
-            player->removeSpell(10621, SPEC_MASK_ALL, false);                     // Wolfshead Helm
-            player->removeSpell(10647, SPEC_MASK_ALL, false);                     // Feathered Breastplate
+            player->removeSpell(35585, false);                     // Windhawk Hauberk
+            player->removeSpell(35587, false);                     // Windhawk Belt
+            player->removeSpell(35588, false);                     // Windhawk Bracers
+            player->removeSpell(36075, false);                     // Wildfeather Leggings
+            player->removeSpell(36078, false);                     // Living Crystal Breastplate
+            player->removeSpell(10621, false);                     // Wolfshead Helm
+            player->removeSpell(10647, false);                     // Feathered Breastplate
             break;
         case S_UNLEARN_SPELLFIRE:                           // S_UNLEARN_SPELLFIRE
-            player->removeSpell(26752, SPEC_MASK_ALL, false);                     // Spellfire Belt
-            player->removeSpell(26753, SPEC_MASK_ALL, false);                     // Spellfire Gloves
-            player->removeSpell(26754, SPEC_MASK_ALL, false);                     // Spellfire Robe
+            player->removeSpell(26752, false);                     // Spellfire Belt
+            player->removeSpell(26753, false);                     // Spellfire Gloves
+            player->removeSpell(26754, false);                     // Spellfire Robe
             break;
         case S_UNLEARN_MOONCLOTH:                           // S_UNLEARN_MOONCLOTH
-            player->removeSpell(26760, SPEC_MASK_ALL, false);                     // Primal Mooncloth Belt
-            player->removeSpell(26761, SPEC_MASK_ALL, false);                     // Primal Mooncloth Shoulders
-            player->removeSpell(26762, SPEC_MASK_ALL, false);                     // Primal Mooncloth Robe
+            player->removeSpell(26760, false);                     // Primal Mooncloth Belt
+            player->removeSpell(26761, false);                     // Primal Mooncloth Shoulders
+            player->removeSpell(26762, false);                     // Primal Mooncloth Robe
             break;
         case S_UNLEARN_SHADOWEAVE:                          // S_UNLEARN_SHADOWEAVE
-            player->removeSpell(26756, SPEC_MASK_ALL, false);                     // Frozen Shadoweave Shoulders
-            player->removeSpell(26757, SPEC_MASK_ALL, false);                     // Frozen Shadoweave Boots
-            player->removeSpell(26758, SPEC_MASK_ALL, false);                     // Frozen Shadoweave Robe
+            player->removeSpell(26756, false);                     // Frozen Shadoweave Shoulders
+            player->removeSpell(26757, false);                     // Frozen Shadoweave Boots
+            player->removeSpell(26758, false);                     // Frozen Shadoweave Robe
             break;
     }
 }

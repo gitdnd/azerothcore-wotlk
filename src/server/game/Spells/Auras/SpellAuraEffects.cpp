@@ -1271,7 +1271,7 @@ void AuraEffect::HandleShapeshiftBoosts(Unit* target, bool apply) const
             const PlayerSpellMap& sp_list = player->GetSpellMap();
             for (PlayerSpellMap::const_iterator itr = sp_list.begin(); itr != sp_list.end(); ++itr)
             {
-                if (itr->second->State == PLAYERSPELL_REMOVED || !itr->second->IsInSpec(player->GetActiveSpec()))
+                if (itr->second->State == PLAYERSPELL_REMOVED)
                     continue;
 
                 if (itr->first == spellId || itr->first == spellId2)
@@ -1289,8 +1289,6 @@ void AuraEffect::HandleShapeshiftBoosts(Unit* target, bool apply) const
             const PlayerTalentMap& tl_list = player->GetTalentMap();
             for (PlayerTalentMap::const_iterator itr = tl_list.begin(); itr != tl_list.end(); ++itr)
             {
-                if (itr->second->State == PLAYERSPELL_REMOVED || !itr->second->IsInSpec(player->GetActiveSpec()))
-                    continue;
 
                 if (itr->first == spellId || itr->first == spellId2)
                     continue;
@@ -1304,36 +1302,6 @@ void AuraEffect::HandleShapeshiftBoosts(Unit* target, bool apply) const
                     target->CastSpell(target, itr->first, true, nullptr, this, target->GetGUID());
             }
 
-            // Also do it for Glyphs
-            for (uint32 i = 0; i < MAX_GLYPH_SLOT_INDEX; ++i)
-            {
-                if (uint32 glyphId = player->GetGlyph(i))
-                {
-                    if (GlyphPropertiesEntry const* glyph = sGlyphPropertiesStore.LookupEntry(glyphId))
-                    {
-                        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(glyph->SpellId);
-                        if (!spellInfo || !spellInfo->HasAttribute(SpellAttr0(SPELL_ATTR0_PASSIVE | SPELL_ATTR0_DO_NOT_DISPLAY)))
-                            continue;
-                        if (spellInfo->Stances & (1 << (GetMiscValue() - 1)))
-                            target->CastSpell(target, glyph->SpellId, TriggerCastFlags(TRIGGERED_FULL_MASK & ~(TRIGGERED_IGNORE_SHAPESHIFT | TRIGGERED_IGNORE_CASTER_AURASTATE)), nullptr, this, target->GetGUID());
-                    }
-                }
-            }
-
-            // Leader of the Pack
-            if (player->HasTalent(17007, player->GetActiveSpec()))
-            {
-                SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(24932);
-                if (spellInfo && spellInfo->Stances & (1 << (GetMiscValue() - 1)))
-                    target->CastSpell(target, 24932, true, nullptr, this, target->GetGUID());
-            }
-            // Improved Barkskin - apply/remove armor bonus due to shapeshift
-            if (player->HasTalent(63410, player->GetActiveSpec()) || player->HasTalent(63411, player->GetActiveSpec()))
-            {
-                target->RemoveAurasDueToSpell(66530);
-                if (GetMiscValue() == FORM_TRAVEL || GetMiscValue() == FORM_NONE) // "while in Travel Form or while not shapeshifted"
-                    target->CastSpell(target, 66530, true);
-            }
             // Heart of the Wild
             if (HotWSpellId)
             {
@@ -1422,15 +1390,7 @@ void AuraEffect::HandleShapeshiftBoosts(Unit* target, bool apply) const
         if (spellId2)
             target->RemoveOwnedAura(spellId2);
 
-        // Improved Barkskin - apply/remove armor bonus due to shapeshift
-        if (player)
-        {
-            if (player->HasTalent(63410, player->GetActiveSpec()) || player->HasTalent(63411, player->GetActiveSpec()))
-            {
-                target->RemoveAurasDueToSpell(66530);
-                target->CastSpell(target, 66530, true);
-            }
-        }
+
 
         const Unit::AuraEffectList& shapeshifts = target->GetAuraEffectsByType(SPELL_AURA_MOD_SHAPESHIFT);
         AuraEffect* newAura = nullptr;
@@ -2022,7 +1982,7 @@ void AuraEffect::HandleAuraModShapeshift(AuraApplication const* aurApp, uint8 mo
                         PlayerSpellMap const& sp_list = target->ToPlayer()->GetSpellMap();
                         for (PlayerSpellMap::const_iterator itr = sp_list.begin(); itr != sp_list.end(); ++itr)
                         {
-                            if (itr->second->State == PLAYERSPELL_REMOVED || !itr->second->IsInSpec(target->ToPlayer()->GetActiveSpec()))
+                            if (itr->second->State == PLAYERSPELL_REMOVED)
                                 continue;
 
                             SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(itr->first);
@@ -2034,8 +1994,6 @@ void AuraEffect::HandleAuraModShapeshift(AuraApplication const* aurApp, uint8 mo
                         PlayerTalentMap const& tp_list = target->ToPlayer()->GetTalentMap();
                         for (PlayerTalentMap::const_iterator itr = tp_list.begin(); itr != tp_list.end(); ++itr)
                         {
-                            if (itr->second->State == PLAYERSPELL_REMOVED || !itr->second->IsInSpec(target->ToPlayer()->GetActiveSpec()))
-                                continue;
 
                             SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(itr->first);
                             if (spellInfo && spellInfo->SpellFamilyName == SPELLFAMILY_WARRIOR && spellInfo->SpellIconID == 139)
@@ -2102,9 +2060,9 @@ void AuraEffect::HandleAuraModShapeshift(AuraApplication const* aurApp, uint8 mo
             if (!shapeInfo->stanceSpell[i])
                 continue;
             if (apply)
-                target->ToPlayer()->_addSpell(shapeInfo->stanceSpell[i], SPEC_MASK_ALL, true);
+                target->ToPlayer()->_addSpell(shapeInfo->stanceSpell[i], true);
             else
-                target->ToPlayer()->removeSpell(shapeInfo->stanceSpell[i], SPEC_MASK_ALL, true);
+                target->ToPlayer()->removeSpell(shapeInfo->stanceSpell[i], true);
         }
     }
 }
@@ -5646,7 +5604,7 @@ void AuraEffect::HandleAuraOverrideSpells(AuraApplication const* aurApp, uint8 m
         if (OverrideSpellDataEntry const* overrideSpells = sOverrideSpellDataStore.LookupEntry(overrideId))
             for (uint8 i = 0; i < MAX_OVERRIDE_SPELL; ++i)
                 if (uint32 spellId = overrideSpells->spellId[i])
-                    target->_addSpell(spellId, SPEC_MASK_ALL, true);
+                    target->_addSpell(spellId, true);
     }
     else
     {
@@ -5654,7 +5612,7 @@ void AuraEffect::HandleAuraOverrideSpells(AuraApplication const* aurApp, uint8 m
         if (OverrideSpellDataEntry const* overrideSpells = sOverrideSpellDataStore.LookupEntry(overrideId))
             for (uint8 i = 0; i < MAX_OVERRIDE_SPELL; ++i)
                 if (uint32 spellId = overrideSpells->spellId[i])
-                    target->removeSpell(spellId, SPEC_MASK_ALL, true);
+                    target->removeSpell(spellId, true);
     }
 }
 

@@ -58,7 +58,7 @@ class spell_elk_deflect_aura : public AuraScript
                     }
                 }
                 GetCaster()->SetRuneCooldown(runeToRefresh, 0);
-                GetCaster()->ResyncRunes();
+                GetCaster()->ResyncRunes(runeToRefresh);
                 success = true;
                 Aura* aura = GetCaster()->GetAura(ELKS(COMBO_COUNT));
                 if (!aura)

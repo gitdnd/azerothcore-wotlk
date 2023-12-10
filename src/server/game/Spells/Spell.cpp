@@ -4135,13 +4135,6 @@ void Spell::_cast(bool skipCheck)
             playerCaster->CastSpell(playerCaster, playerCaster->GetQuedSpell(), false);
             playerCaster->SetQuedSpell(0);
         }
-        if (Unit* target = m_targets.GetUnitTarget())
-        {
-            if (uint32 virtueSpell = playerCaster->GetSpellData(m_spellInfo->Id).virtueSpell; virtueSpell != 0)
-            {
-                playerCaster->CastSpell(m_targets.GetUnitTarget(), virtueSpell, true);
-            }
-        }
     }
     m_caster->SetLastSpellUsed(m_spellInfo);
 }
@@ -4488,13 +4481,13 @@ void Spell::update(uint32 difftime)
                             if (Crit)
                                 if (Player* player = GetCaster()->ToPlayer())
                                 {
-                                    if (auto it{ player->CritData.find(m_spellInfo->Id) }; it != std::end(player->CritData))
+                                    if (uint32 critId =player->GetCritCast(m_spellInfo->Id))
                                     {
                                         TriggerCastFlags static const flags = TriggerCastFlags(TRIGGERED_IGNORE_GCD | TRIGGERED_IGNORE_CAST_IN_PROGRESS | TRIGGERED_CAST_DIRECTLY | TRIGGERED_IGNORE_SET_FACING | TRIGGERED_DONT_REPORT_CAST_ERROR);
                                         if (m_targets.GetUnitTarget())
-                                            player->CastSpell(m_targets.GetUnitTarget(), it->second, flags);
+                                            player->CastSpell(m_targets.GetUnitTarget(), critId, flags);
                                         else if (WorldLocation const* pos = m_targets.GetDstPos())
-                                            player->CastSpell(pos->GetPositionX(), pos->GetPositionY(), pos->GetPositionZ(), it->second, flags);
+                                            player->CastSpell(pos->GetPositionX(), pos->GetPositionY(), pos->GetPositionZ(), critId, flags);
                                     }
                                 }
                         }
@@ -4610,13 +4603,13 @@ void Spell::finish(bool ok)
     if (Crit)
         if (Player* player = GetCaster()->ToPlayer())
         {
-            if (auto it{ player->CritData.find(m_spellInfo->Id) }; it != std::end(player->CritData))
+            if (uint32 critId = player->GetCritCast(m_spellInfo->Id))
             {
                 TriggerCastFlags static const flags = TriggerCastFlags(TRIGGERED_IGNORE_GCD | TRIGGERED_IGNORE_CAST_IN_PROGRESS | TRIGGERED_CAST_DIRECTLY | TRIGGERED_IGNORE_SET_FACING | TRIGGERED_DONT_REPORT_CAST_ERROR);
                 if (m_targets.GetUnitTarget())
-                    player->CastSpell(m_targets.GetUnitTarget(), it->second, flags);
+                    player->CastSpell(m_targets.GetUnitTarget(), critId, flags);
                 else if(WorldLocation const* pos = m_targets.GetDstPos())
-                    player->CastSpell(pos->GetPositionX(), pos->GetPositionY(), pos->GetPositionZ(), it->second, flags);
+                    player->CastSpell(pos->GetPositionX(), pos->GetPositionY(), pos->GetPositionZ(), critId, flags);
             }
         }
 }

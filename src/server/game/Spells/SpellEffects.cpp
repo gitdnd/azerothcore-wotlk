@@ -1351,7 +1351,7 @@ void Spell::EffectUnlearnSpecialization(SpellEffIndex effIndex)
 
     uint32 spellToUnlearn = m_spellInfo->Effects[effIndex].TriggerSpell;
 
-    player->removeSpell(spellToUnlearn, SPEC_MASK_ALL, false);
+    player->removeSpell(spellToUnlearn, false);
     LOG_DEBUG("spells.aura", "Spell: Player {} has unlearned spell {} from Npc: {}",
         player->GetGUID().ToString(), spellToUnlearn, m_caster->GetGUID().ToString());
 }
@@ -4343,7 +4343,7 @@ void Spell::EffectApplyGlyph(SpellEffIndex effIndex)
     if (effectHandleMode != SPELL_EFFECT_HANDLE_HIT)
         return;
 
-    if (m_caster->GetTypeId() != TYPEID_PLAYER || m_glyphIndex >= MAX_GLYPH_SLOT_INDEX)
+    if (m_caster->GetTypeId() != TYPEID_PLAYER)
         return;
 
     Player* player = m_caster->ToPlayer();
@@ -4375,51 +4375,6 @@ void Spell::EffectApplyGlyph(SpellEffIndex effIndex)
         return;
     }
 
-    // apply new one
-    if (uint32 glyph = m_spellInfo->Effects[effIndex].MiscValue)
-    {
-        if (GlyphPropertiesEntry const* glyphEntry = sGlyphPropertiesStore.LookupEntry(glyph))
-        {
-            if (GlyphSlotEntry const* glyphSlotEntry = sGlyphSlotStore.LookupEntry(player->GetGlyphSlot(m_glyphIndex)))
-            {
-                if (glyphEntry->TypeFlags != glyphSlotEntry->TypeFlags)
-                {
-                    SendCastResult(SPELL_FAILED_INVALID_GLYPH);
-                    return;                                 // glyph slot mismatch
-                }
-            }
-
-            // remove old glyph aura
-            if (uint32 oldGlyph = player->GetGlyph(m_glyphIndex))
-                if (GlyphPropertiesEntry const* oldGlyphEntry = sGlyphPropertiesStore.LookupEntry(oldGlyph))
-                {
-                    player->RemoveAurasDueToSpell(oldGlyphEntry->SpellId);
-
-                    // Removed any triggered auras
-                    Unit::AuraMap& ownedAuras = player->GetOwnedAuras();
-                    for (Unit::AuraMap::iterator iter = ownedAuras.begin(); iter != ownedAuras.end();)
-                    {
-                        Aura* aura = iter->second;
-                        if (SpellInfo const* triggeredByAuraSpellInfo = aura->GetTriggeredByAuraSpellInfo())
-                        {
-                            if (triggeredByAuraSpellInfo->Id == oldGlyphEntry->SpellId)
-                            {
-                                player->RemoveOwnedAura(iter);
-                                continue;
-                            }
-                        }
-                        ++iter;
-                    }
-
-                    player->SendLearnPacket(oldGlyphEntry->SpellId, false); // Send packet to properly handle client-side spell tooltips
-                }
-
-            player->SendLearnPacket(glyphEntry->SpellId, true); // Send packet to properly handle client-side spell tooltips
-            player->CastSpell(m_caster, glyphEntry->SpellId, TriggerCastFlags(TRIGGERED_FULL_MASK & ~(TRIGGERED_IGNORE_SHAPESHIFT | TRIGGERED_IGNORE_CASTER_AURASTATE)));
-            player->SetGlyph(m_glyphIndex, glyph, !player->GetSession()->PlayerLoading());
-            player->SendTalentsInfoData(false);
-        }
-    }
 }
 
 void Spell::EffectEnchantHeldItem(SpellEffIndex effIndex)
@@ -6156,12 +6111,7 @@ void Spell::EffectSpecCount(SpellEffIndex /*effIndex*/)
         return;
 
     if (!unitTarget)
-        return;
-
-    if (Player* player = unitTarget->ToPlayer())
-    {
-        player->UpdateSpecCount(damage);
-    }
+        return; 
 }
 
 void Spell::EffectActivateSpec(SpellEffIndex /*effIndex*/)
@@ -6170,12 +6120,7 @@ void Spell::EffectActivateSpec(SpellEffIndex /*effIndex*/)
         return;
 
     if (!unitTarget)
-        return;
-
-    if (Player* player = unitTarget->ToPlayer())
-    {
-        player->ActivateSpec(damage - 1); // damage is 1 or 2, spec is 0 or 1
-    }
+        return; 
 }
 
 void Spell::EffectPlaySound(SpellEffIndex effIndex)

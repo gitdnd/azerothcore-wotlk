@@ -785,12 +785,6 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver, 
             SetTitle(titleEntry);
     }
 
-    if (quest->GetBonusTalents())
-    {
-        m_developmentPoints += quest->GetBonusTalents();
-        InitTalentForLevel();
-    }
-
     if (quest->GetRewArenaPoints())
         ModifyArenaPoints(quest->GetRewArenaPoints());
 

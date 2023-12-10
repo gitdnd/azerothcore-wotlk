@@ -439,7 +439,6 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petEntry, uint32 petnumber, bool c
         LOG_DEBUG("entities.pet", "New Pet has {}", GetGUID().ToString());
 
         owner->PetSpellInitialize();
-        owner->SendTalentsInfoData(true);
 
         if (owner->GetGroup())
             owner->SetGroupUpdateFlag(GROUP_UPDATE_PET);
@@ -2212,9 +2211,6 @@ void Pet::InitTalentForLevel()
         resetTalents(); // Remove all talent points
 
     SetFreeTalentPoints(talentPointsForLevel - m_usedTalentCount);
-
-    if (!m_loading)
-        owner->ToPlayer()->SendTalentsInfoData(true);
 }
 
 uint8 Pet::GetMaxTalentPointsForLevel(uint8 level)

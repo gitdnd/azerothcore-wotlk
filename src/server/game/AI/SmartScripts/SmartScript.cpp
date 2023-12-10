@@ -3610,47 +3610,6 @@ void SmartScript::GetTargets(ObjectVector& targets, SmartScriptHolder const& e, 
 
             break;
         }
-        case SMART_TARGET_ROLE_SELECTION:
-        {
-            ObjectVector units;
-            GetWorldObjectsInDist(units, static_cast<float>(e.target.playerDistance.dist));
-            // 1 = Tanks, 2 = Healer, 4 = Damage
-            uint32 roleMask = e.target.roleSelection.roleMask;
-            for (WorldObject* unit : units)
-                if (Player* targetPlayer = unit->ToPlayer())
-                    if (targetPlayer->IsAlive() && !targetPlayer->IsGameMaster())
-                    {
-                        if (roleMask & SMART_TARGET_ROLE_FLAG_TANKS)
-                        {
-                            if (targetPlayer->HasTankSpec())
-                            {
-                                targets.push_back(unit);
-                                continue;
-                            }
-                        }
-                        if (roleMask & SMART_TARGET_ROLE_FLAG_HEALERS)
-                        {
-                            if (targetPlayer->HasHealSpec())
-                            {
-                                targets.push_back(unit);
-                                continue;
-                            }
-                        }
-                        if (roleMask & SMART_TARGET_ROLE_FLAG_DAMAGERS)
-                        {
-                            if (targetPlayer->HasCasterSpec() || targetPlayer->HasMeleeSpec())
-                            {
-                                targets.push_back(unit);
-                                continue;
-                            }
-                        }
-                    }
-
-            if (e.target.roleSelection.resize > 0)
-                Acore::Containers::RandomResize(targets, e.target.roleSelection.resize);
-
-            break;
-        }
         case SMART_TARGET_VEHICLE_PASSENGER:
         {
             if (me && me->IsVehicle())

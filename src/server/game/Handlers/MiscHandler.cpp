@@ -1071,8 +1071,7 @@ void WorldSession::HandleInspectOpcode(WorldPacket& recv_data)
     data << player->GetPackGUID();
 
     if (sWorld->getBoolConfig(CONFIG_TALENTS_INSPECTING) || _player->IsGameMaster())
-    {
-        player->BuildPlayerTalentsInfoData(&data);
+    { 
     }
     else
     {

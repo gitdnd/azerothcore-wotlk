@@ -57,10 +57,6 @@ bool Acore::PlayerCommand::HandleLearnSpellCommand(ChatHandler* handler, Player*
         }
     }
 
-    if (GetTalentSpellCost(spell->GetFirstRankSpell()->Id))
-    {
-        targetPlayer->SendTalentsInfoData(false);
-    }
 
     return true;
 }
@@ -76,17 +72,14 @@ bool Acore::PlayerCommand::HandleUnlearnSpellCommand(ChatHandler* handler, Playe
 
     if (target->HasSpell(spellId))
     {
-        target->removeSpell(spellId, SPEC_MASK_ALL, false);
+        target->removeSpell(spellId, false);
     }
     else
     {
         handler->SendSysMessage(LANG_FORGET_SPELL);
     }
 
-    if (GetTalentSpellCost(spellId))
-    {
-        target->SendTalentsInfoData(false);
-    }
+
 
     return true;
 }

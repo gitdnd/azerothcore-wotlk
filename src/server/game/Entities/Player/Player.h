@@ -121,56 +121,15 @@ enum PlayerSpellState
 struct PlayerSpell
 {
     PlayerSpellState State : 7; // UPPER CASE TO CAUSE CONSOLE ERRORS (CHECK EVERY USAGE)!
-    bool Active            : 1; // UPPER CASE TO CAUSE CONSOLE ERRORS (CHECK EVERY USAGE)! lower rank of a spell are not useable, but learnt
-    uint8 specMask         : 8;
-    bool IsInSpec(uint8 spec) { return (specMask & (1 << spec)); }
+    uint32 CritCast;
 };
 
 struct PlayerTalent
 {
-    PlayerSpellState State : 8; // UPPER CASE TO CAUSE CONSOLE ERRORS (CHECK EVERY USAGE)!
-    uint8 specMask         : 8;
     uint32 talentID;
-    bool inSpellBook;
-    bool IsInSpec(uint8 spec) { return (specMask & (1 << spec)); }
     uint8 development = 1;
 };
 
-enum TalentTree // talent tabs
-{
-    TALENT_TREE_WARRIOR_ARMS = 161,
-    TALENT_TREE_WARRIOR_FURY = 164,
-    TALENT_TREE_WARRIOR_PROTECTION = 163,
-    TALENT_TREE_PALADIN_HOLY = 382,
-    TALENT_TREE_PALADIN_PROTECTION = 383,
-    TALENT_TREE_PALADIN_RETRIBUTION = 381,
-    TALENT_TREE_HUNTER_BEAST_MASTERY = 361,
-    TALENT_TREE_HUNTER_MARKSMANSHIP = 363,
-    TALENT_TREE_HUNTER_SURVIVAL = 362,
-    TALENT_TREE_ROGUE_ASSASSINATION = 182,
-    TALENT_TREE_ROGUE_COMBAT = 181,
-    TALENT_TREE_ROGUE_SUBTLETY = 183,
-    TALENT_TREE_PRIEST_DISCIPLINE = 201,
-    TALENT_TREE_PRIEST_HOLY = 202,
-    TALENT_TREE_PRIEST_SHADOW = 203,
-    TALENT_TREE_DEATH_KNIGHT_BLOOD = 398,
-    TALENT_TREE_DEATH_KNIGHT_FROST = 399,
-    TALENT_TREE_DEATH_KNIGHT_UNHOLY = 400,
-    TALENT_TREE_SHAMAN_ELEMENTAL = 261,
-    TALENT_TREE_SHAMAN_ENHANCEMENT = 263,
-    TALENT_TREE_SHAMAN_RESTORATION = 262,
-    TALENT_TREE_MAGE_ARCANE = 81,
-    TALENT_TREE_MAGE_FIRE = 41,
-    TALENT_TREE_MAGE_FROST = 61,
-    TALENT_TREE_WARLOCK_AFFLICTION = 302,
-    TALENT_TREE_WARLOCK_DEMONOLOGY = 303,
-    TALENT_TREE_WARLOCK_DESTRUCTION = 301,
-    TALENT_TREE_DRUID_BALANCE = 283,
-    TALENT_TREE_DRUID_FERAL_COMBAT = 281,
-    TALENT_TREE_DRUID_RESTORATION = 282
-};
-
-#define SPEC_MASK_ALL 255
 
 typedef std::unordered_map<uint32, PlayerTalent*> PlayerTalentMap;
 typedef std::unordered_map<uint32, PlayerSpell*> PlayerSpellMap;
@@ -1651,10 +1610,10 @@ public:
     void SendProficiency(ItemClass itemClass, uint32 itemSubclassMask);
     void SendInitialSpells();
     void SendLearnPacket(uint32 spellId, bool learn);
-    bool addSpell(uint32 spellId, uint8 addSpecMask, bool updateActive, bool temporary = false, bool learnFromSkill = false);
-    bool _addSpell(uint32 spellId, uint8 addSpecMask, bool temporary, bool learnFromSkill = false);
+    bool addSpell(uint32 spellId, bool updateActive, bool temporary = false, bool learnFromSkill = false);
+    bool _addSpell(uint32 spellId, bool temporary, bool learnFromSkill = false);
     void learnSpell(uint32 spellId, bool temporary = false, bool learnFromSkill = false);
-    void removeSpell(uint32 spellId, uint8 removeSpecMask, bool onlyTemporary);
+    void removeSpell(uint32 spellId, bool onlyTemporary);
     void resetSpells();
     void LearnCustomSpells();
     void LearnDefaultSkills();
@@ -1666,59 +1625,16 @@ public:
     void AddReputation(uint32 factionentry, float value);
     [[nodiscard]] uint32 GetReputation(uint32 factionentry) const;
     std::string const& GetGuildName();
-    [[nodiscard]] uint32 GetFreeTalentPoints() const { return GetUInt32Value(PLAYER_CHARACTER_POINTS1); }
-    void SetFreeTalentPoints(uint32 points);
-    bool resetTalents(bool noResetCost = false);
-    [[nodiscard]] uint32 resetTalentsCost() const;
-    void InitTalentForLevel();
-    void BuildPlayerTalentsInfoData(WorldPacket* data);
-    void BuildPetTalentsInfoData(WorldPacket* data);
-    void SendTalentsInfoData(bool pet);
-    void LearnTalent(uint32 talentId, uint32 talentRank, bool command = false);
-    void LearnPetTalent(ObjectGuid petGuid, uint32 talentId, uint32 talentRank);
 
-    bool addTalent(uint32 spellId, uint8 addSpecMask, uint8 oldTalentRank, uint8 development = 1);
-    void _removeTalent(PlayerTalentMap::iterator& itr, uint8 specMask);
-    void _removeTalent(uint32 spellId, uint8 specMask);
-    void _removeTalentAurasAndSpells(uint32 spellId);
-    void _addTalentAurasAndSpells(uint32 spellId, uint8 development);
-    [[nodiscard]] bool HasTalent(uint32 spell_id, uint8 spec) const;
+    void ObtainTalentRank(uint32 id, uint8 rank);
+    bool AttuneTalent(uint32 id);
+    void ResetAllTalents();
 
     [[nodiscard]] uint32 RecalculateLevel() const;
     void SetLevel(uint8 lvl, bool showLevelChange = true);
 
-    // Dual Spec
-    void UpdateSpecCount(uint8 count);
-    [[nodiscard]] uint8 GetActiveSpec() const { return m_activeSpec; }
-    [[nodiscard]] uint8 GetActiveSpecMask() const { return (1 << m_activeSpec); }
-    void SetActiveSpec(uint8 spec) { m_activeSpec = spec; }
-    [[nodiscard]] uint8 GetSpecsCount() const { return m_specsCount; }
-    void SetSpecsCount(uint8 count) { m_specsCount = count; }
-    void ActivateSpec(uint8 spec);
     void LoadActions(PreparedQueryResult result);
-    void GetTalentTreePoints(uint8 (&specPoints)[3]) const;
-    [[nodiscard]] uint8 GetMostPointsTalentTree() const;
-    bool HasTankSpec();
-    bool HasMeleeSpec();
-    bool HasCasterSpec();
-    bool HasHealSpec();
-    uint32 GetSpec(int8 spec = -1);
 
-    void InitGlyphsForLevel();
-    void SetGlyphSlot(uint8 slot, uint32 slottype) { SetUInt32Value(PLAYER_FIELD_GLYPH_SLOTS_1 + slot, slottype); }
-    [[nodiscard]] uint32 GetGlyphSlot(uint8 slot) const { return GetUInt32Value(PLAYER_FIELD_GLYPH_SLOTS_1 + slot); }
-    void SetGlyph(uint8 slot, uint32 glyph, bool save)
-    {
-        m_Glyphs[m_activeSpec][slot] = glyph;
-        SetUInt32Value(PLAYER_FIELD_GLYPHS_1 + slot, glyph);
-
-        if (save)
-            SetNeedToSaveGlyphs(true);
-    }
-    [[nodiscard]] uint32 GetGlyph(uint8 slot) const { return m_Glyphs[m_activeSpec][slot]; }
-
-    [[nodiscard]] uint32 GetFreePrimaryProfessionPoints() const { return GetUInt32Value(PLAYER_CHARACTER_POINTS2); }
-    void SetFreePrimaryProfessions(uint16 profs) { SetUInt32Value(PLAYER_CHARACTER_POINTS2, profs); }
     void InitPrimaryProfessions();
 
     [[nodiscard]] PlayerSpellMap const& GetSpellMap() const { return m_spells; }
@@ -2040,7 +1956,6 @@ public:
      *
      * 2). Data initing situation (like PlayerScript:OnLoadFromDB)
      */
-    void RewardDevelopmentPoints(uint32 bonusDevelopmentPoints);
     void RewardQuestPoints(uint32 bonusQuestPoints);
 
     uint16 GetCharacterQuestLevel() { return m_questLevel; }
@@ -2560,7 +2475,6 @@ public:
 
     void _LoadActions(PreparedQueryResult result);
     void _LoadAuras(PreparedQueryResult result, uint32 timediff);
-    void _LoadGlyphAuras();
     void _LoadInventory(PreparedQueryResult result, uint32 timeDiff);
     void _LoadMail(PreparedQueryResult mailsResult, PreparedQueryResult mailItemsResult);
     static Item* _LoadMailedItem(ObjectGuid const& playerGuid, Player* player, uint32 mailId, Mail* mail, Field* fields);
@@ -2580,8 +2494,6 @@ public:
     void _LoadArenaTeamInfo();
     void _LoadEquipmentSets(PreparedQueryResult result);
     void _LoadEntryPointData(PreparedQueryResult result);
-    void _LoadGlyphs(PreparedQueryResult result);
-    void _LoadTalents(PreparedQueryResult result);
     void _LoadQuestStageFlags(PreparedQueryResult result);
     void _LoadChestFlags(PreparedQueryResult result);
     void _LoadInstanceTimeRestrictions(PreparedQueryResult result);
@@ -2605,8 +2517,6 @@ public:
     void _SaveSpells(CharacterDatabaseTransaction trans);
     void _SaveEquipmentSets(CharacterDatabaseTransaction trans);
     void _SaveEntryPoint(CharacterDatabaseTransaction trans);
-    void _SaveGlyphs(CharacterDatabaseTransaction trans);
-    void _SaveTalents(CharacterDatabaseTransaction trans);
     void _SaveQuestStageFlags(CharacterDatabaseTransaction trans);
     void _SaveChestFlags(CharacterDatabaseTransaction trans);
     void _SaveStats(CharacterDatabaseTransaction trans);
@@ -2670,10 +2580,6 @@ public:
 
     GlobalCooldownMgr m_GlobalCooldownMgr;
 
-    uint8 m_activeSpec;
-    uint8 m_specsCount;
-
-    uint32 m_Glyphs[MAX_TALENT_SPECS][MAX_GLYPH_SLOT_INDEX];
 
     ActionButtonList m_actionButtons;
 
@@ -2855,12 +2761,6 @@ private:
 
     uint32 quedSpell = 0;
 
-    struct SpellData
-    {
-        uint8 development = 1;
-        uint32 virtueSpell = 0;
-    };
-    std::map<uint32, SpellData> m_spellData;
 
     uint8 doubleJumps = 0;
     uint8 doubleJumpsMax = 1;
@@ -2868,8 +2768,6 @@ public:
     uint8 CanDoubleJump() { return doubleJumps < doubleJumpsMax; }
     void AddDoubleJump() { doubleJumps++; }
     void ModDoubleJumpMax(uint8 amount) { doubleJumpsMax += amount; }
-
-    SpellData& GetSpellData(uint32 key) { return m_spellData[key]; }
 
     void SetQuedSpell(uint32 spell) { quedSpell = spell; }
     uint32 GetQuedSpell() { return quedSpell; }
@@ -2901,7 +2799,6 @@ public:
     If Y has cooldown, it will only try to crit off cooldown.
     */
 
-    std::map<uint32, uint32> CritData = {};
     bool AddCritCast(uint32 X, uint32 Y)
     {
         if (!HasSpell(Y) || !HasSpell(X))
@@ -2917,11 +2814,17 @@ public:
         if (infoY->IsChanneled())
             return false;
 
-        if (CritData.count(Y))
-            CritData.erase(Y);
-        CritData[X] = Y;
+        m_spells[Y]->CritCast = 0;
+        m_spells[X]->CritCast = Y;
 
         return true;
+    }
+    uint32 GetCritCast(uint32 id)
+    {
+        PlayerSpellMap::const_iterator itr = m_spells.find(id);
+        if (itr == m_spells.end())
+            return 0;
+        return itr->second->CritCast;
     }
     const SpellInfo* AttackReplacer = nullptr;
     const SpellInfo* DeflectReplacer = nullptr;

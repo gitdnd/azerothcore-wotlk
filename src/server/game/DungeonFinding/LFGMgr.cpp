@@ -1049,7 +1049,6 @@ namespace lfg
                     talents[0] = 0;
                     talents[1] = 0;
                     talents[2] = 0;
-                    p->GetTalentTreePoints(talents);
                     spellDamage = p->SpellBasePowerBonusDone(SPELL_SCHOOL_MASK_ALL);
                     spellHeal = p->SpellBasePowerBonusDone(SPELL_SCHOOL_MASK_ALL);
                     mp5 = p->GetFloatValue(UNIT_FIELD_POWER_REGEN_FLAT_MODIFIER);
@@ -1094,7 +1093,6 @@ namespace lfg
                         if (mplr)
                         {
                             iLevel = mplr->GetAverageItemLevel();
-                            mplr->GetTalentTreePoints(talents);
                         }
                         currInternalInfoMap[mitr->guid] = RBInternalInfo(guid, emptyComment, false, groupGuid, 0, 0, ObjectGuid::Empty,
                                                           (mplr ? 1 : 0), level, Class, race, iLevel,

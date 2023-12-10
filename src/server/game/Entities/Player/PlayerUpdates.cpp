@@ -2118,55 +2118,6 @@ void Player::UpdateFallInformationIfNeed(MovementInfo const& minfo,
         SetFallInformation(minfo.fallTime, minfo.pos.GetPositionZ());
 }
 
-void Player::UpdateSpecCount(uint8 count)
-{
-    uint32 curCount = GetSpecsCount();
-    if (curCount == count)
-        return;
-
-    if (m_activeSpec >= count)
-        ActivateSpec(0);
-
-    CharacterDatabaseTransaction        trans = CharacterDatabase.BeginTransaction();
-    CharacterDatabasePreparedStatement* stmt  = nullptr;
-
-    // Copy spec data
-    if (count > curCount)
-    {
-        _SaveActions(trans); // make sure the button list is cleaned up
-        for (ActionButtonList::iterator itr = m_actionButtons.begin();
-             itr != m_actionButtons.end(); ++itr)
-        {
-            stmt = CharacterDatabase.GetPreparedStatement(CHAR_INS_CHAR_ACTION);
-            stmt->SetData(0, GetGUID().GetCounter());
-            stmt->SetData(1, 1);
-            stmt->SetData(2, itr->first);
-            stmt->SetData(3, itr->second.GetAction());
-            stmt->SetData(4, uint8(itr->second.GetType()));
-            trans->Append(stmt);
-        }
-    }
-    // Delete spec data for removed spec.
-    else if (count < curCount)
-    {
-        _SaveActions(trans);
-
-        stmt = CharacterDatabase.GetPreparedStatement(
-            CHAR_DEL_CHAR_ACTION_EXCEPT_SPEC);
-        stmt->SetData(0, m_activeSpec);
-        stmt->SetData(1, GetGUID().GetCounter());
-        trans->Append(stmt);
-
-        m_activeSpec = 0;
-    }
-
-    CharacterDatabase.CommitTransaction(trans);
-
-    SetSpecsCount(count);
-
-    SendTalentsInfoData(false);
-}
-
 void Player::SendUpdateWorldState(uint32 variable, uint32 value) const
 {
     WorldPackets::WorldState::UpdateWorldState worldstate;
