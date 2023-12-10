@@ -25,14 +25,7 @@ public:
         }
         void UpdateAI(uint32 diff) override
         {
-            if (!UpdateVictim())
-                return;
-            if (ELKUpdateAI(diff))
-                return;
-            if (me->HasUnitState(UNIT_STATE_CASTING))
-            {
-                return;
-            }
+            ELKCUpdateAI();
 
 
             if (me->IsWithinMeleeRange(me->GetVictim()))
@@ -71,14 +64,7 @@ public:
         }
         void UpdateAI(uint32 diff) override
         {
-            if (ELKUpdateAI(diff))
-                return;
-            if (!UpdateVictim())
-                return;
-            if (me->HasUnitState(UNIT_STATE_CASTING))
-            {
-                return;
-            }
+            ELKCUpdateAI();
 
 
             if (me->IsWithinMeleeRange(me->GetVictim()))
@@ -117,15 +103,7 @@ public:
         }
         void UpdateAI(uint32 diff) override
         {
-            if (ELKUpdateAI(diff))
-                return;
-            if (!UpdateVictim())
-                return;
-            if (me->HasUnitState(UNIT_STATE_CASTING))
-            {
-                return;
-            }
-
+            ELKCUpdateAI();
 
             if (me->IsWithinMeleeRange(me->GetVictim()))
                 chanceAtk = script->chanceAtk;
@@ -161,14 +139,7 @@ public:
         }
         void UpdateAI(uint32 diff) override
         {
-            if (ELKUpdateAI(diff))
-                return;
-            if (!UpdateVictim())
-                return;
-            if (me->HasUnitState(UNIT_STATE_CASTING))
-            {
-                return;
-            }
+            ELKCUpdateAI();
 
 
             if (me->IsWithinMeleeRange(me->GetVictim()))
@@ -206,14 +177,7 @@ public:
         }
         void UpdateAI(uint32 diff) override
         {
-            if (ELKUpdateAI(diff))
-                return;
-            if (!UpdateVictim())
-                return;
-            if (me->HasUnitState(UNIT_STATE_CASTING))
-            {
-                return;
-            }
+            ELKCUpdateAI();
 
 
             if (me->IsWithinMeleeRange(me->GetVictim()))
@@ -251,14 +215,7 @@ public:
         }
         void UpdateAI(uint32 diff) override
         {
-            if (ELKUpdateAI(diff))
-                return;
-            if (!UpdateVictim())
-                return;
-            if (me->HasUnitState(UNIT_STATE_CASTING))
-            {
-                return;
-            }
+            ELKCUpdateAI();
 
 
             if (me->IsWithinMeleeRange(me->GetVictim()))

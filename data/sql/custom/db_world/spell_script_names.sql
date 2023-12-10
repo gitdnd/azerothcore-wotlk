@@ -64,6 +64,7 @@ REPLACE INTO `spell_script_names` (`spell_id`, `ScriptName`) VALUES
 	(1100001, 'spell_elk_reflect'),
 	(1200001, 'spell_elk_static_link'),
 	(1300003, 'spell_elk_summon_imps'),
+	(1300004, 'spell_elk_metamorphosis'),
 	(1400001, 'spell_elk_force_of_nature'),
 	(1500001, 'spell_elk_spin_fury'),
 	(1700001, 'spell_elk_pin_down_aura'),

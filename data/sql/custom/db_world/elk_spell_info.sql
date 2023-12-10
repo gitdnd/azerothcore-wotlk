@@ -11,6 +11,8 @@ BEGIN
 	release_type bool NOT NULL,
 	rune_cost tinyint NOT NULL,
 	rune_cd smallint NOT NULL,
+	attack_replacer int NOT NULL,
+	deflect_replacer int NOT NULL,
 	UNIQUE (id)
    );
 END;;
@@ -22,13 +24,14 @@ TRUNCATE TABLE elk_spell_info;
 
 SET @category_attack = 1;
 
-REPLACE INTO `elk_spell_info` (`id`, `elk_category`, `release_type`, `rune_cost`, `rune_cd`) VALUES
-(100003, @category_attack, false, 1, 0),
-(100006, 0, false, 1, 0),
-(100009, @category_attack, false, 0, 0),
-(100010, @category_attack, false, 1, 0),
-(100044, @category_attack, false, 0, 0),
-(100045, @category_attack, false, 1, 0),
-(100046, 0, true, 1, 0),
-(1100006, 0, true, 0, 0),
-(1300003, 0, true, 0, 0);
+REPLACE INTO `elk_spell_info` (`id`, `elk_category`, `release_type`, `rune_cost`, `rune_cd`, `attack_replacer`, `deflect_replacer`) VALUES
+(100003, @category_attack, false, 1, 0, 0, 0),
+(100006, 0, false, 1, 0, 0, 0),
+(100009, @category_attack, false, 0, 0,0,0),
+(100010, @category_attack, false, 1, 0,0,0),
+(100044, @category_attack, false, 0, 0,0,0),
+(100045, @category_attack, false, 1, 0,0,0),
+(100046, 0, true, 1, 0,0,0),
+(1100006, 0, true, 0, 0,0,0),
+(1300003, 0, true, 0, 0,0,0),
+(1300004, 0, false, 0, 0,1300005,1300006);

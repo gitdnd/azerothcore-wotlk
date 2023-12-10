@@ -11477,10 +11477,21 @@ void Player::resetSpells()
 
 void Player::LearnCustomSpells()
 {
-    if (!sWorld->getBoolConfig(CONFIG_START_CUSTOM_SPELLS))
-    {
-        return;
-    }
+
+    addSpell(100023, SPEC_MASK_ALL, true);
+    addSpell(100024, SPEC_MASK_ALL, true);
+    addSpell(100020, SPEC_MASK_ALL, true);
+    addSpell(100021, SPEC_MASK_ALL, true);
+    addSpell(100018, SPEC_MASK_ALL, true);
+    addSpell(100019, SPEC_MASK_ALL, true);
+    addSpell(100011, SPEC_MASK_ALL, true);
+    addSpell(100017, SPEC_MASK_ALL, true);
+    addSpell(100015, SPEC_MASK_ALL, true);
+    addSpell(100018, SPEC_MASK_ALL, true);
+    addSpell(100003, SPEC_MASK_ALL, true);
+    addSpell(100006, SPEC_MASK_ALL, true);
+
+
 
     // learn default race/class spells
     PlayerInfo const* info = sObjectMgr->GetPlayerInfo(getRace(), getClass());
@@ -11499,18 +11510,6 @@ void Player::LearnCustomSpells()
             learnSpell(tspell);
         }
     }
-    addSpell(100023, SPEC_MASK_ALL, true);
-    addSpell(100024, SPEC_MASK_ALL, true);
-    addSpell(100020, SPEC_MASK_ALL, true);
-    addSpell(100021, SPEC_MASK_ALL, true);
-    addSpell(100018, SPEC_MASK_ALL, true);
-    addSpell(100019, SPEC_MASK_ALL, true);
-    addSpell(100011, SPEC_MASK_ALL, true);
-    addSpell(100017, SPEC_MASK_ALL, true);
-    addSpell(100015, SPEC_MASK_ALL, true);
-    addSpell(100018, SPEC_MASK_ALL, true);
-    addSpell(100003, SPEC_MASK_ALL, true);
-    addSpell(100006, SPEC_MASK_ALL, true);
 }
 
 void Player::LearnDefaultSkills()

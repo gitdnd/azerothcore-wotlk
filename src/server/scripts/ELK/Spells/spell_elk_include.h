@@ -256,6 +256,11 @@ public:
 class ELKAuraScript : public AuraScript
 {
 protected:
+    void RecheckReplacers(AuraEffect const* aurEff, AuraEffectHandleModes mode)
+    {
+        if (Player* player = GetUnitOwner()->ToPlayer(); player)
+            player->CheckReplacers();
+    }
 };
 
 class ELKSpellScript : public SpellScript
@@ -305,108 +310,120 @@ class spell_elk_attack : public ELKSpellScript
 
     void SpellClick()
     {
+        if (Player* player = GetCaster()->ToPlayer())
+            if (player->AttackReplacer && !player->HasSpellCooldown(player->AttackReplacer->Id))
+            {
+                GetSpell()->skip = true;
+                player->CastSpell(player, player->AttackReplacer);
+                return;
+            }
         Spell* curAtk = GetCaster()->GetCurrentSpell(CURRENT_GENERIC_SPELL);
         if (curAtk)
         {
+            GetSpell()->skip = true;
+            GetCaster()->AddSpellCooldown(GetSpell()->m_spellInfo->Id, 0, 100, false);
             if (curAtk->m_spellInfo->Id == ELKS(ATTACK))
             {
-                if (curAtk->GetSpellTimer() < 50)
+                if (curAtk->GetSpellTimer() < 100)
                 {
-                    GetSpell()->skip = true;
-                    GetCaster()->AddSpellCooldown(GetSpell()->m_spellInfo->Id, 0, 100, false);
                     QueSpell(GetCaster());
-                    return;
                 }
                 else
                 {
-                    GetSpell()->skip = true;
                     GetCaster()->AddSpellCooldown(GetSpell()->m_spellInfo->Id, 0, 100, false);
-                    return;
                 }
             }
+            return;
         }
         if (GetCaster()->IsPlayer())
         {
             Player* player = GetCaster()->ToPlayer();
             if (player)
             {
-                uint32 animSpell = ELKS(ATTACKUNARMED);
-                uint32 animSpell2 = ELKS(ATTACKUNARMED);
-                auto wep1 = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
-                auto wep2 = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND);
-                std::vector<const ItemTemplate*> weapons = { nullptr, nullptr };
-                if (wep1)
-                    weapons[0] = wep1->GetTemplate();
-                if (wep2)
-                    weapons[1] = wep2->GetTemplate();
-                if (weapons[0])
+                uint32 animSpell = ELKS(ATTACK);
+                uint32 animSpell2 = ELKS(ATTACK);
+                if (player->GetShapeshiftForm() != ShapeshiftForm::FORM_NONE)
                 {
-                    switch (weapons[0]->GetSkill())
-                    {
-                    case SKILL_AXES:
-                    case SKILL_SWORDS:
-                    case SKILL_MACES:
-                        animSpell = ELKS(ATTACK1H);
-                        break;
-                    case SKILL_FISHING:
-                    case SKILL_2H_AXES:
-                    case SKILL_2H_SWORDS:
-                    case SKILL_2H_MACES:
-                        animSpell = ELKS(ATTACK);
-                        break;
-                    case SKILL_POLEARMS:
-                    case SKILL_STAVES:
-                        animSpell = ELKS(ATTACK2HL);
-                        break;
-                    case SKILL_DAGGERS:
-                        animSpell = ELKS(ATTACK1HP);
-                        break;
-                    case SKILL_SHIELD:
-                        animSpell = ELKS(ATTACKSHIELD);
-                        break;
-                    case SKILL_FIST_WEAPONS:
-                    default:
-                        animSpell = ELKS(ATTACKUNARMED);
-                        break;
-                    }
-
-                }
-
-                if (weapons[1])
-                {
-                    switch (weapons[1]->GetSkill())
-                    {
-                    case SKILL_AXES:
-                    case SKILL_SWORDS:
-                    case SKILL_MACES:
-                        animSpell2 = ELKS(ATTACKOFF);
-                        break;
-                    case SKILL_FISHING:
-                    case SKILL_2H_AXES:
-                    case SKILL_2H_SWORDS:
-                    case SKILL_2H_MACES:
-                        animSpell2 = ELKS(ATTACKOFF);
-                        break;
-                    case SKILL_POLEARMS:
-                    case SKILL_STAVES:
-                        animSpell2 = ELKS(ATTACKOFFP);
-                        break;
-                    case SKILL_DAGGERS:
-                        animSpell2 = ELKS(ATTACKOFFP);
-                        break;
-                    case SKILL_SHIELD:
-                        animSpell2 = ELKS(ATTACKSHIELD);
-                        break;
-                    case SKILL_FIST_WEAPONS:
-                    default:
-                        animSpell2 = ELKS(ATTACKUNARMED);
-                        break;
-                    }
-                }
-                if (animSpell2 == ELKS(ATTACKUNARMED) || animSpell2 == ELKS(ATTACKSHIELD) || rand() % 2 == 0)
                     GetSpell()->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(animSpell));
+                }
                 else
-                    GetSpell()->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(animSpell2));
+                {
+                    auto wep1 = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
+                    auto wep2 = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND);
+                    std::vector<const ItemTemplate*> weapons = { nullptr, nullptr };
+                    if (wep1)
+                        weapons[0] = wep1->GetTemplate();
+                    if (wep2)
+                        weapons[1] = wep2->GetTemplate();
+                    if (weapons[0])
+                    {
+                        switch (weapons[0]->GetSkill())
+                        {
+                        case SKILL_AXES:
+                        case SKILL_SWORDS:
+                        case SKILL_MACES:
+                            animSpell = ELKS(ATTACK1H);
+                            break;
+                        case SKILL_FISHING:
+                        case SKILL_2H_AXES:
+                        case SKILL_2H_SWORDS:
+                        case SKILL_2H_MACES:
+                            animSpell = ELKS(ATTACK);
+                            break;
+                        case SKILL_POLEARMS:
+                        case SKILL_STAVES:
+                            animSpell = ELKS(ATTACK2HL);
+                            break;
+                        case SKILL_DAGGERS:
+                            animSpell = ELKS(ATTACK1HP);
+                            break;
+                        case SKILL_SHIELD:
+                            animSpell = ELKS(ATTACKSHIELD);
+                            break;
+                        case SKILL_FIST_WEAPONS:
+                        default:
+                            animSpell = ELKS(ATTACKUNARMED);
+                            break;
+                        }
+
+                    }
+
+                    if (weapons[1])
+                    {
+                        switch (weapons[1]->GetSkill())
+                        {
+                        case SKILL_AXES:
+                        case SKILL_SWORDS:
+                        case SKILL_MACES:
+                            animSpell2 = ELKS(ATTACKOFF);
+                            break;
+                        case SKILL_FISHING:
+                        case SKILL_2H_AXES:
+                        case SKILL_2H_SWORDS:
+                        case SKILL_2H_MACES:
+                            animSpell2 = ELKS(ATTACKOFF);
+                            break;
+                        case SKILL_POLEARMS:
+                        case SKILL_STAVES:
+                            animSpell2 = ELKS(ATTACKOFFP);
+                            break;
+                        case SKILL_DAGGERS:
+                            animSpell2 = ELKS(ATTACKOFFP);
+                            break;
+                        case SKILL_SHIELD:
+                            animSpell2 = ELKS(ATTACKSHIELD);
+                            break;
+                        case SKILL_FIST_WEAPONS:
+                        default:
+                            animSpell2 = ELKS(ATTACKUNARMED);
+                            break;
+                        }
+                    }
+                    if (animSpell2 == ELKS(ATTACKUNARMED) || animSpell2 == ELKS(ATTACKSHIELD) || rand() % 2 == 0)
+                        GetSpell()->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(animSpell));
+                    else
+                        GetSpell()->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(animSpell2));
+                }
             }
         }
         else
@@ -414,66 +431,73 @@ class spell_elk_attack : public ELKSpellScript
             Creature* creature = GetCaster()->ToCreature();
             if (creature)
             {
-                uint32 animSpell = ELKS(ATTACKUNARMED);
-                uint32 animSpell2 = ELKS(ATTACKUNARMED);
-                auto weapons = creature->GetWeaponEquippedEntry();
-
-                if (weapons[0])
+                uint32 animSpell = ELKS(ATTACK);
+                uint32 animSpell2 = ELKS(ATTACK);
+                if (creature->GetShapeshiftForm() != ShapeshiftForm::FORM_NONE)
                 {
-                    switch (weapons[0]->GetSkill())
-                    {
-                    case SKILL_AXES:
-                    case SKILL_SWORDS:
-                    case SKILL_MACES:
-                        animSpell = ELKS(ATTACK1H);
-                    case SKILL_FISHING:
-                    case SKILL_2H_AXES:
-                    case SKILL_2H_SWORDS:
-                    case SKILL_2H_MACES:
-                        animSpell = ELKS(ATTACK);
-                    case SKILL_POLEARMS:
-                    case SKILL_STAVES:
-                        animSpell = ELKS(ATTACK2HL);
-                    case SKILL_DAGGERS:
-                        animSpell = ELKS(ATTACK1HP);
-                    case SKILL_SHIELD:
-                        animSpell = ELKS(ATTACKSHIELD);
-                    case SKILL_FIST_WEAPONS:
-                    default:
-                        animSpell = ELKS(ATTACKUNARMED);
-                    }
-
-                }
-
-                if (weapons[1])
-                {
-                    switch (weapons[1]->GetSkill())
-                    {
-                    case SKILL_AXES:
-                    case SKILL_SWORDS:
-                    case SKILL_MACES:
-                        animSpell2 = ELKS(ATTACKOFF);
-                    case SKILL_FISHING:
-                    case SKILL_2H_AXES:
-                    case SKILL_2H_SWORDS:
-                    case SKILL_2H_MACES:
-                        animSpell2 = ELKS(ATTACKOFF);
-                    case SKILL_POLEARMS:
-                    case SKILL_STAVES:
-                        animSpell2 = ELKS(ATTACKOFFP);
-                    case SKILL_DAGGERS:
-                        animSpell2 = ELKS(ATTACKOFFP);
-                    case SKILL_SHIELD:
-                        animSpell2 = ELKS(ATTACKSHIELD);
-                    case SKILL_FIST_WEAPONS:
-                    default:
-                        animSpell2 = ELKS(ATTACKUNARMED);
-                    }
-                }
-                if(animSpell2 == ELKS(ATTACKUNARMED) || animSpell2 == ELKS(ATTACKSHIELD) || rand() % 2 == 0)
                     GetSpell()->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(animSpell));
+                }
                 else
-                    GetSpell()->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(animSpell2));
+                {
+                    auto weapons = creature->GetWeaponEquippedEntry();
+
+                    if (weapons[0])
+                    {
+                        switch (weapons[0]->GetSkill())
+                        {
+                        case SKILL_AXES:
+                        case SKILL_SWORDS:
+                        case SKILL_MACES:
+                            animSpell = ELKS(ATTACK1H);
+                        case SKILL_FISHING:
+                        case SKILL_2H_AXES:
+                        case SKILL_2H_SWORDS:
+                        case SKILL_2H_MACES:
+                            animSpell = ELKS(ATTACK);
+                        case SKILL_POLEARMS:
+                        case SKILL_STAVES:
+                            animSpell = ELKS(ATTACK2HL);
+                        case SKILL_DAGGERS:
+                            animSpell = ELKS(ATTACK1HP);
+                        case SKILL_SHIELD:
+                            animSpell = ELKS(ATTACKSHIELD);
+                        case SKILL_FIST_WEAPONS:
+                        default:
+                            animSpell = ELKS(ATTACKUNARMED);
+                        }
+
+                    }
+
+                    if (weapons[1])
+                    {
+                        switch (weapons[1]->GetSkill())
+                        {
+                        case SKILL_AXES:
+                        case SKILL_SWORDS:
+                        case SKILL_MACES:
+                            animSpell2 = ELKS(ATTACKOFF);
+                        case SKILL_FISHING:
+                        case SKILL_2H_AXES:
+                        case SKILL_2H_SWORDS:
+                        case SKILL_2H_MACES:
+                            animSpell2 = ELKS(ATTACKOFF);
+                        case SKILL_POLEARMS:
+                        case SKILL_STAVES:
+                            animSpell2 = ELKS(ATTACKOFFP);
+                        case SKILL_DAGGERS:
+                            animSpell2 = ELKS(ATTACKOFFP);
+                        case SKILL_SHIELD:
+                            animSpell2 = ELKS(ATTACKSHIELD);
+                        case SKILL_FIST_WEAPONS:
+                        default:
+                            animSpell2 = ELKS(ATTACKUNARMED);
+                        }
+                    }
+                    if (animSpell2 == ELKS(ATTACKUNARMED) || animSpell2 == ELKS(ATTACKSHIELD) || rand() % 2 == 0)
+                        GetSpell()->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(animSpell));
+                    else
+                        GetSpell()->SetSpellInfo(SpellMgr::instance()->AssertSpellInfo(animSpell2));
+                }
             }
         }
         uint16 cd = 0;

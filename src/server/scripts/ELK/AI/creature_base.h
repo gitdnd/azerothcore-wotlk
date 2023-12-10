@@ -16,6 +16,15 @@
 
 #define AddScriptFlag(name, var) scriptFlagIds.emplace(name, & var)
 
+#define ELKCUpdateAI() if (!UpdateVictim())     \
+return;                                         \
+if (ELKUpdateAI(diff))                          \
+return;                                         \
+if (me->HasUnitState(UNIT_STATE_CASTING))       \
+{                                               \
+    return;                                     \
+}
+
 enum Events : uint16
 {
     NONE,

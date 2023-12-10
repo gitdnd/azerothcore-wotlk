@@ -58,6 +58,7 @@ class spell_elk_deflect_aura : public AuraScript
                     }
                 }
                 GetCaster()->SetRuneCooldown(runeToRefresh, 0);
+                GetCaster()->ResyncRunes();
                 success = true;
                 Aura* aura = GetCaster()->GetAura(ELKS(COMBO_COUNT));
                 if (!aura)
@@ -84,12 +85,19 @@ class spell_elk_deflect : public SpellScript
     PrepareSpellScript(spell_elk_deflect);
     void SpamCheck()
     {
+        if (Player* player = GetCaster()->ToPlayer())
+            if (player->DeflectReplacer && !player->HasSpellCooldown(player->DeflectReplacer->Id))
+            {
+                GetSpell()->skip = true;
+                player->CastSpell(player, player->DeflectReplacer);
+                return;
+            }
         GetSpell()->SetRuneCooldown(15000);
     } 
     void Register() override
     {
      
-        BeforeCastTime += SpellCastFn(spell_elk_deflect::SpamCheck);
+        BeforeSpellLoad += SpellCastFn(spell_elk_deflect::SpamCheck);
     }
 };
 

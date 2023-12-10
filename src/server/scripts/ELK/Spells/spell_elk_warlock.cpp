@@ -33,7 +33,20 @@ class spell_elk_summon_imps : public SpellScript
         WhileCast += SpellCastFn(spell_elk_summon_imps::Periodic);
     }
 };
+
+class spell_elk_metamorphosis : public ELKAuraScript
+{
+    PrepareAuraScript(spell_elk_metamorphosis);
+
+    void Register() override
+    {
+        OnEffectApply += AuraEffectApplyFn(spell_elk_metamorphosis::RecheckReplacers, EFFECT_0, SPELL_AURA_MOD_SHAPESHIFT, AURA_EFFECT_HANDLE_REAL);
+        AfterEffectRemove += AuraEffectRemoveFn(spell_elk_metamorphosis::RecheckReplacers, EFFECT_0, SPELL_AURA_MOD_SHAPESHIFT, AURA_EFFECT_HANDLE_REAL);
+    }
+};
 void AddSC_elk_warlock_scripts()
 {
     RegisterSpellScript(spell_elk_summon_imps);
+    RegisterSpellScript(spell_elk_metamorphosis);
 }
+

@@ -395,6 +395,8 @@ public:
     bool ReleaseType;
     uint8 AltRuneCost;
     uint16 AltRuneCD;
+    uint32 AttackReplacer;
+    uint32 DeflectReplacer;
 
     // Mine
     AuraStateType _auraState;

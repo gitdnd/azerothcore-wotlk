@@ -93,14 +93,8 @@ public:
         }
         void UpdateAI(uint32 diff) override
         {
-            if (ELKUpdateAI(diff))
-                return;
-            if (!UpdateVictim())
-                return;
-            if (me->HasUnitState(UNIT_STATE_CASTING))
-            {
-                return;
-            }
+            ELKCUpdateAI();
+
             if (currentCombo.type == ELKActionType::NONE)
                 if (Aura* aura = me->GetAura(uint32(ELKSpells::COMBO_COUNT)); aura && aura->GetStackAmount() > 4)
                     if (EasyCast(uint32(SpellsC::CRUSHING_WAVE)))

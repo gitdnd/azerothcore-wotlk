@@ -2923,6 +2923,31 @@ public:
 
         return true;
     }
+    const SpellInfo* AttackReplacer = nullptr;
+    const SpellInfo* DeflectReplacer = nullptr;
+
+    void CheckReplacers()
+    {
+        AttackReplacer = nullptr;
+        DeflectReplacer = nullptr;
+        for (AuraApplicationMap::const_iterator iter = m_appliedAuras.begin(); iter != m_appliedAuras.end(); ++iter)
+        {
+            if (!AttackReplacer)
+            {
+                uint32 aR = iter->second->GetBase()->GetSpellInfo()->AttackReplacer;
+                if (aR)
+                    AttackReplacer = sSpellMgr->GetSpellInfo(aR);
+            }
+            if (!DeflectReplacer)
+            {
+                uint32 dR = iter->second->GetBase()->GetSpellInfo()->DeflectReplacer;
+                if (dR)
+                    DeflectReplacer = sSpellMgr->GetSpellInfo(dR);
+            }
+            if (AttackReplacer && DeflectReplacer)
+                return;
+        }
+    }
 };
 
 void AddItemsSetItem(Player* player, Item* item);
