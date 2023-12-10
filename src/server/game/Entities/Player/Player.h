@@ -121,13 +121,14 @@ enum PlayerSpellState
 struct PlayerSpell
 {
     PlayerSpellState State : 7; // UPPER CASE TO CAUSE CONSOLE ERRORS (CHECK EVERY USAGE)!
-    uint32 CritCast;
 };
 
 struct PlayerTalent
 {
     uint32 talentID;
     uint8 development = 1;
+    uint32 CritCast = 0;
+    uint32 BonusSpelPower = 0;
 };
 
 
@@ -2801,7 +2802,11 @@ public:
 
     bool AddCritCast(uint32 X, uint32 Y)
     {
-        if (!HasSpell(Y) || !HasSpell(X))
+        PlayerTalentMap::const_iterator itrX = m_talents.find(X);
+        if(itrX != m_talents.end())
+            return false;
+        PlayerTalentMap::const_iterator itrY = m_talents.find(Y);
+        if (itrY != m_talents.end())
             return false;
         const SpellInfo* infoX = sSpellMgr->GetSpellInfo(X);
         if (!infoX)
@@ -2814,15 +2819,15 @@ public:
         if (infoY->IsChanneled())
             return false;
 
-        m_spells[Y]->CritCast = 0;
-        m_spells[X]->CritCast = Y;
+        itrY->second->CritCast = 0;
+        itrX->second->CritCast = Y;
 
         return true;
     }
     uint32 GetCritCast(uint32 id)
     {
-        PlayerSpellMap::const_iterator itr = m_spells.find(id);
-        if (itr == m_spells.end())
+        PlayerTalentMap::const_iterator itr = m_talents.find(id);
+        if (itr == m_talents.end())
             return 0;
         return itr->second->CritCast;
     }

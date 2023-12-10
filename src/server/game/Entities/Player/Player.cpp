@@ -2868,7 +2868,6 @@ bool Player::_addSpell(uint32 spellId, bool temporary, bool learnFromSkill /*= f
     {
         PlayerSpell* newspell = new PlayerSpell;
         newspell->State = temporary ? PLAYERSPELL_TEMPORARY : (isBeingLoaded() ? PLAYERSPELL_UNCHANGED : PLAYERSPELL_NEW);
-        newspell->CritCast = 0;
 
         m_spells[spellId] = newspell;
     }
