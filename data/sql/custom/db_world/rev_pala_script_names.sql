@@ -47,4 +47,5 @@ REPLACE INTO `spell_script_names` (`spell_id`, `ScriptName`) VALUES
     (9000059, 'spell_rev_guardian_of_ancient_kings'),
     (9000066, 'spell_rev_intervention'),
     (9000067, 'spell_rev_protection'),
-    (9000068, 'spell_rev_sacrifice');
+    (9000068, 'spell_rev_sacrifice'),
+	(9000051, 'spell_rev_holy_bondage');

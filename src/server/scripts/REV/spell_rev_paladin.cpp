@@ -146,10 +146,6 @@ enum PaladinSpells
     REV_AURA_SACRIFICE_TRIGGER = 9000068,
 };
 
-#define SaveCDs()   player->AddSpellCooldown(REV_AURA_INTERVENTION_TRIGGER, 9, 60000, true);        \
-player->AddSpellCooldown(REV_AURA_PROTECTION_TRIGGER, 9, 60000, true);                              \
-player->AddSpellCooldown(REV_AURA_SACRIFICE_TRIGGER, 9, 60000, true)                       
-
 class spell_rev_holy_shock : public SpellScript
 {
     PrepareSpellScript(spell_rev_holy_shock);
@@ -946,6 +942,8 @@ class spell_rev_intervention : public SpellScript
         }
         if (!aura)
         {
+                    player->RemoveSpellCooldown(GetSpellInfo()->Id);
+            player->RemoveCategoryCooldown(1253);
             player->AddAura(REV_AURA_INTERVENTION, player);
             return;
         }
@@ -955,7 +953,6 @@ class spell_rev_intervention : public SpellScript
             player->AddAura(SPELL_PALADIN_FORBEARANCE, player);
             player->AddAura(aura, player);
         }
-        SaveCDs();
     }
 
     void Register() override
@@ -991,6 +988,8 @@ class spell_rev_protection : public SpellScript
         }
         if (!aura)
         {
+            player->RemoveSpellCooldown(GetSpellInfo()->Id);
+            player->RemoveCategoryCooldown(1253);
             player->AddAura(REV_AURA_PROTECTION, player);
             return;
         }
@@ -1005,7 +1004,6 @@ class spell_rev_protection : public SpellScript
             player->AddAura(aura, player);
             player->AddAura(SPELL_PALADIN_FORBEARANCE, player);
         }
-        SaveCDs();
 
     }
 
@@ -1042,6 +1040,8 @@ class spell_rev_sacrifice : public SpellScript
         }
         if (!aura)
         {
+            player->RemoveSpellCooldown(GetSpellInfo()->Id);
+            player->RemoveCategoryCooldown(1253);
             player->AddAura(REV_AURA_SACRIFICE, player);
             return;
         }
@@ -1060,7 +1060,6 @@ class spell_rev_sacrifice : public SpellScript
             }
             guy->AddAura(SPELL_PALADIN_FORBEARANCE, guy);
         }
-        SaveCDs();
         return;
 
     }
@@ -1132,6 +1131,22 @@ class spell_rev_guardian_of_ancient_kings : public AuraScript
     }
 };
 
+class spell_rev_holy_bondage : public SpellScript
+{
+    PrepareSpellScript(spell_rev_holy_bondage);
+
+
+    void Hit()
+    {
+        Position pos = GetCaster()->GetPosition();
+        GetHitUnit()->CastSpell(pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ(), 9000070, true);
+    }
+
+    void Register() override
+    {
+        OnHit += SpellHitFn(spell_rev_holy_bondage::Hit);
+    }
+};
 void AddSC_paladin_rev_scripts()
 {
     RegisterSpellScript(spell_rev_holy_shock);
@@ -1165,4 +1180,5 @@ void AddSC_paladin_rev_scripts()
     RegisterSpellScript(spell_rev_protection);
     RegisterSpellScript(spell_rev_sacrifice);
 
+    RegisterSpellScript(spell_rev_holy_bondage);
 }
