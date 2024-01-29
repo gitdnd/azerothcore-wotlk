@@ -547,6 +547,21 @@ public:
 
     bool CheckElixirStacking(Unit const* caster) const;
 
+    struct ELKTalentInfo
+    {
+        uint8 element;
+        uint8 armor_class;
+        uint8 page_position;
+        float xp_cost_rank_multi;
+        uint32 xp_cost_base;
+        uint8 s1;
+        float s1a;
+        uint8 s2;
+        float s2a;
+        uint8 s3;
+        float s3a;
+    };
+    ELKTalentInfo* m_talentInfo = nullptr;
 private:
     std::array<SpellEffectInfo, MAX_SPELL_EFFECTS>& _GetEffects() { return Effects; }
     SpellEffectInfo& _GetEffect(SpellEffIndex index) { ASSERT(index < Effects.size()); return Effects[index]; }

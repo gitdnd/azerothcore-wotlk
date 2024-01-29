@@ -1,0 +1,55 @@
+{
+  "eternal_lich_king": {
+    "name": "eternal_lich_king",
+
+    "reinforcementCall": 0,
+    "chanceAtk": 8,
+    "chanceDef": 2,
+    "chanceSpell": 3,
+    "SpellPowerBonus": 0,
+    "regularCheck": 1500,
+    "regularCheckHP": 10,
+
+    "DMmoveTime": 500,
+    "DMangleBase": 1,
+    "DMangleRaw": 0.83,
+    "DMdist": 250,
+    "DModds": 5,
+
+    "ACTIONS": {
+      "0": {
+        "index": 0,
+        "max_dist": 4,
+        "min_dist": 1,
+        "id": "JUMP",
+        "target": "VICTIM",
+        "angle": 0,
+        "speedXY": 1,
+        "speedZ": 3,
+        "next_mutate": 1
+      },
+      "1": {
+        "index": 1,
+        "id": "100003"
+      },
+      "2": {
+        "index": 2,
+        "target": "VICTIM",
+        "id": "150004",
+        "delay": 200
+      }
+    },
+    "ATTACK": {
+      "LEAP_ATTACK": [ 0, 1 ],
+      "REG_COMBO_A": [ 2, 2, 2 ]
+    },
+    "DEFEND": {
+    },
+    "SPELL": {
+    }
+  }
+}
+
+
+
+

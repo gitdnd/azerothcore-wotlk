@@ -4801,6 +4801,23 @@ void Player::_LoadEntryPointData(PreparedQueryResult result)
     m_entryPointData.mountSpell = fields[7].Get<uint32>();
 }
 
+void Player::_LoadTalents(PreparedQueryResult result)
+{
+	if (result)
+	{
+		do
+		{
+			// xinef: checked
+            PlayerTalent* talent = new PlayerTalent();
+            talent->talentID = (*result)[0].Get<uint8>();
+            talent->development = (*result)[2].Get<uint8>();
+            talent->rank = (*result)[3].Get<uint8>();
+            talent->CritCast = (*result)[4].Get<uint8>();
+            m_talents[talent->talentID] = talent;
+		} while (result->NextRow());
+	}
+}
+
 bool Player::LoadPositionFromDB(uint32& mapid, float& x, float& y, float& z, float& o, bool& in_flight, ObjectGuid::LowType guid)
 {
     CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_CHAR_POSITION);
@@ -4936,7 +4953,7 @@ bool Player::LoadFromDB(ObjectGuid playerGuid, CharacterDatabaseQueryHolder cons
     SetFloatValue(UNIT_FIELD_HOVERHEIGHT, 1.0f);
 
     // load character creation date, relevant for achievements of type average
-    SetCreationTime(fields[74].Get<Seconds>());
+    SetCreationTime(fields[73].Get<Seconds>());
 
     // load achievements before anything else to prevent multiple gains for the same achievement/criteria on every loading (as loading does call UpdateAchievementCriteria)
     m_achievementMgr->LoadFromDB(holder.GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_ACHIEVEMENTS), holder.GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_CRITERIA_PROGRESS));

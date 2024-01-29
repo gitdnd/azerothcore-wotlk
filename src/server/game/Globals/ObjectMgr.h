@@ -1122,6 +1122,7 @@ public:
     void LoadELKFlags();
     void LoadELKCraftingChance();
     void LoadELKSpellInfo();
+    void LoadELKTalentInfo();
 
     std::string GeneratePetName(uint32 entry);
     std::string GeneratePetNameLocale(uint32 entry, LocaleConstant locale);

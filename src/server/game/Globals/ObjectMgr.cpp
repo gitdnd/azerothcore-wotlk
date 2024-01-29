@@ -10408,3 +10408,53 @@ void ObjectMgr::LoadELKSpellInfo()
 
     LOG_INFO("server.loading", ">> Loaded {} ELK Spell Info in {} ms", GetMSTimeDiffToNow(oldMSTime));
 }
+
+void ObjectMgr::LoadELKTalentInfo()
+{
+    uint32 oldMSTime = getMSTime();
+
+
+    QueryResult result = WorldDatabase.Query("SELECT id, element, armor_class, page_position, xp_cost_rank_multi, xp_cost_base, stat1, stat1amount, stat2, stat2amount, stat3, stat3amount FROM elk_talent_info");
+
+    if (!result)
+        return;
+
+    do
+    {
+        Field* fields = result->Fetch();
+
+        uint32 id = fields[0].Get<uint32>();
+        uint8 element = fields[1].Get<uint8>();
+        uint8 armor_class = fields[2].Get<uint8>();
+        uint8 page_position = fields[3].Get<uint8>();
+        uint8 xp_cost_rank_multi = fields[4].Get<uint8>();
+        uint32 xp_cost_base = fields[5].Get<uint32>();
+        uint8 s1 = fields[6].Get<uint8>();
+        uint8 s1a = fields[7].Get<uint8>();
+        uint8 s2 = fields[8].Get<uint8>();
+        uint8 s2a = fields[9].Get<uint8>();
+        uint8 s3 = fields[10].Get<uint8>();
+        uint8 s3a = fields[11].Get<uint8>();
+
+
+        SpellInfo* spell = sSpellMgr->GetSpellInfoDev(id);
+        if (spell)
+        {
+            spell->m_talentInfo = new SpellInfo::ELKTalentInfo();
+            spell->m_talentInfo->element = element;
+            spell->m_talentInfo->armor_class = armor_class;
+            spell->m_talentInfo->page_position = page_position;
+            spell->m_talentInfo->xp_cost_rank_multi = float(xp_cost_rank_multi);
+            spell->m_talentInfo->xp_cost_base = xp_cost_base;
+            spell->m_talentInfo->s1 = s1;
+            spell->m_talentInfo->s1a = float(s1a) / 10.f;
+            spell->m_talentInfo->s2 = s2;
+            spell->m_talentInfo->s2a = float(s2a) / 10.f;
+            spell->m_talentInfo->s3 = s3;
+            spell->m_talentInfo->s3a = float(s3a) / 10.f;
+        }
+
+    } while (result->NextRow());
+
+    LOG_INFO("server.loading", ">> Loaded {} ELK Talent Info in {} ms", GetMSTimeDiffToNow(oldMSTime));
+}

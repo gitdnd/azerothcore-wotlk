@@ -1473,10 +1473,22 @@ class spell_dk_death_strike : public SpellScript
             caster->CastCustomSpell(caster, SPELL_DK_DEATH_STRIKE_HEAL, &bp, nullptr, nullptr, false);
         }
     }
-
+    void ResetGCD()
+    {
+        Player* player = GetCaster()->ToPlayer();
+        if (!player)
+            return;
+        player->RemoveSpellCooldown(GetSpellInfo()->Id, true);
+        player->AddSpellCooldown(GetSpellInfo()->Id, 0, 3000, true);
+        WorldPacket data;
+        player->BuildCooldownPacket(data, SPELL_COOLDOWN_FLAG_NONE, GetSpellInfo()->Id, 3000);
+        player->SendDirectMessage(&data);
+        player->GetGlobalCooldownMgr().CancelGlobalCooldown(GetSpellInfo());
+    }
     void Register() override
     {
         OnEffectHitTarget += SpellEffectFn(spell_dk_death_strike::HandleDummy, EFFECT_2, SPELL_EFFECT_DUMMY);
+        AfterCast += SpellCastFn(spell_dk_death_strike::ResetGCD);
     }
 };
 

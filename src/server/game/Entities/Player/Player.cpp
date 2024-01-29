@@ -171,7 +171,6 @@ Player::Player(WorldSession* session): Unit(true), m_mover(this)
 
     m_usedTalentCount = 0;
     m_questLevel = 0;
-    m_developmentPoints = 0;
 
     m_regenTimer = 0;
     m_regenTimerCount = 0;
@@ -13465,7 +13464,6 @@ void Player::_SaveCharacter(bool create, CharacterDatabaseTransaction trans)
         stmt->SetData(index++, GetByteValue(PLAYER_FIELD_BYTES, 2));
         stmt->SetData(index++, m_grantableLevels);
         stmt->SetData(index++, _innTriggerId);
-        stmt->SetData(index++, m_developmentPoints);
     }
     else
     {
@@ -13605,7 +13603,6 @@ void Player::_SaveCharacter(bool create, CharacterDatabaseTransaction trans)
         stmt->SetData(index++, GetByteValue(PLAYER_FIELD_BYTES, 2));
         stmt->SetData(index++, m_grantableLevels);
         stmt->SetData(index++, _innTriggerId);
-        stmt->SetData(index++, m_developmentPoints);
 
         stmt->SetData(index++, IsInWorld() && !GetSession()->PlayerLogout() ? 1 : 0);
         // Index
@@ -13614,6 +13611,106 @@ void Player::_SaveCharacter(bool create, CharacterDatabaseTransaction trans)
 
     trans->Append(stmt);
 }
+
+void Player::_SaveTalents(CharacterDatabaseTransaction trans)
+{
+    CharacterDatabasePreparedStatement* stmt = nullptr;
+    for (PlayerTalentMap::iterator itr = m_talents.begin(); itr != m_talents.end();)
+    {
+        // xinef: skip temporary spells
+        if (itr->second->State == PLAYERSPELL_TEMPORARY)
+        {
+            ++itr;
+            continue;
+        }
+        // xinef: delete statement for removed / updated talent
+        if (itr->second->State == PLAYERSPELL_REMOVED || itr->second->State == PLAYERSPELL_CHANGED)
+        {
+            stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_CHAR_TALENT_BY_SPELL);
+            stmt->SetData(0, GetGUID().GetCounter());
+            stmt->SetData(1, itr->first);
+            trans->Append(stmt);
+        }
+        // xinef: insert statement for new / updated spell
+        if (itr->second->State == PLAYERSPELL_NEW || itr->second->State == PLAYERSPELL_CHANGED)
+        {
+            stmt = CharacterDatabase.GetPreparedStatement(CHAR_INS_CHAR_TALENT);
+            stmt->SetData(0, GetGUID().GetCounter());
+            stmt->SetData(1, itr->first);
+            stmt->SetData(2, 0);
+            stmt->SetData(3, itr->second->development);
+            stmt->SetData(4, itr->second->rank);
+            stmt->SetData(5, itr->second->CritCast);
+            trans->Append(stmt);
+        }
+        if (itr->second->State == PLAYERSPELL_REMOVED)
+        {
+            delete itr->second;
+            m_talents.erase(itr++);
+        }
+        else
+        {
+            itr->second->State = PLAYERSPELL_UNCHANGED;
+            ++itr;
+        }
+    }
+}
+
+
+void Player::_removeTalentAurasAndSpells(uint32 spellId)
+{
+    RemoveOwnedAura(spellId);
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+    for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+    {
+        // pussywizard: remove pet auras
+        if (PetAura const* petSpell = sSpellMgr->GetPetAura(spellId, i))
+            RemovePetAura(petSpell);
+        // pussywizard: remove all triggered auras
+        if (spellInfo->Effects[i].TriggerSpell > 0)
+            RemoveAurasDueToSpell(spellInfo->Effects[i].TriggerSpell);
+        // xinef: remove temporary spells added by talent
+        // xinef: recursively remove all learnt spells
+        if (spellInfo->Effects[i].TriggerSpell > 0 && spellInfo->Effects[i].Effect == SPELL_EFFECT_LEARN_SPELL)
+        {
+            removeSpell(spellInfo->Effects[i].TriggerSpell, true);
+            _removeTalentAurasAndSpells(spellInfo->Effects[i].TriggerSpell);
+        }
+    }
+}
+void Player::_addTalentAurasAndSpells(uint32 spellId, uint8 development)
+{
+    // pussywizard: spells learnt from talents are added as TEMPORARY, so not saved to db (only the talent itself is saved)
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+    if (spellInfo->HasEffect(SPELL_EFFECT_LEARN_SPELL))
+    {
+        uint8 i = 0;
+        for (i = 0; i < MAX_SPELL_EFFECTS; ++i)
+            if (spellInfo->Effects[i].Effect == SPELL_EFFECT_LEARN_SPELL && !sSpellMgr->IsAdditionalTalentSpell(spellInfo->Effects[i].TriggerSpell))
+            {
+                _addSpell(spellInfo->Effects[i].TriggerSpell, true);
+                PlayerSpell* learnedSpell;
+                for (const auto& [key, value] : m_spells) {
+                    if (key == spellInfo->Effects[i].TriggerSpell)
+                    {
+                        learnedSpell = value;
+                        break;
+                    }
+                }
+            }
+    }
+    else if (spellInfo->IsPassive() || (spellInfo->HasAttribute(SPELL_ATTR0_DO_NOT_DISPLAY) && spellInfo->Stances))
+    {
+        if (IsNeedCastPassiveSpellAtLearn(spellInfo))
+            CastSpell(this, spellId, true);
+        auto aura = GetAura(spellId);
+        if (aura)
+        {
+            aura->SetDevelopment(development);
+        }
+    }
+}
+
 
 void Player::_LoadQuestStageFlags(PreparedQueryResult result)
 {
@@ -13700,17 +13797,80 @@ std::string const& Player::GetGuildName()
     return sGuildMgr->GetGuildById(GetGuildId())->GetName();
 }
 
-void Player::ObtainTalentRank(uint32 id, uint8 rank)
+uint8 Player::ObtainTalentRank(uint32 id, uint8 rank)
 {
+    auto it = m_talents.find(id);
+    if (it == m_talents.end())
+    {
+
+        SpellInfo* spell = sSpellMgr->GetSpellInfoDev(id);
+        if (spell && spell->m_talentInfo)
+        {
+            PlayerTalent* talent = new PlayerTalent();
+            talent->talentID = id;
+            talent->State = PLAYERSPELL_NEW;
+            m_talents[id] = talent;
+        }
+    }
+    else if (it->second->rank < rank)
+    {
+        it->second->rank++;
+        it->second->State = PLAYERSPELL_CHANGED;
+        return it->second->rank;
+    }
+    return 0;
 }
 
-bool Player::AttuneTalent(uint32 id)
+uint8 Player::AttuneTalent(uint32 id)
 {
-    return false;
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(id);
+    if (!SpellMgr::CheckSpellValid(spellInfo, id, true))
+        return 0;
+    if (!spellInfo->m_talentInfo)
+        return 0;
+    auto it = m_talents.find(id);
+    if (it == m_talents.end())
+        return 0;
+    if (it->second->rank > it->second->development)
+    {
+        uint32 xp = spellInfo->m_talentInfo->xp_cost_base;
+        if (it->second->development == 0)
+        {
+            learnSpell(id);
+        }
+        else
+            for (uint8 i = 0; i < it->second->development + 1; i++)
+                xp *= spellInfo->m_talentInfo->xp_cost_rank_multi;
+        uint32 currXP = GetUInt32Value(PLAYER_XP);
+        if (currXP >= xp)
+        {
+            currXP -= xp;
+            SetUInt32Value(PLAYER_XP, currXP);
+            it->second->State = PLAYERSPELL_CHANGED;
+            it->second->development++;
+            Aura* aura = GetAura(id);
+            if (aura && aura->GetSpellInfo()->IsPassive())
+                aura->SetDevelopment(it->second->development);
+            return it->second->development;
+        }
+    }
+    return 0;
 }
+
+std::pair<uint8, uint8> Player::GetTalentRankDevelopment(uint32 id)
+{
+    auto it = m_talents.find(id);
+    if (it == m_talents.end())
+        return { 0, 0};
+    return { it->second->rank, it->second->development };
+}
+
 
 void Player::ResetAllTalents()
 {
+    for (PlayerTalentMap::const_iterator itr = m_talents.begin(); itr != m_talents.end(); ++itr)
+        delete itr->second;
+    m_talents.empty();
 }
 
 void Player::SendDuelCountdown(uint32 counter)

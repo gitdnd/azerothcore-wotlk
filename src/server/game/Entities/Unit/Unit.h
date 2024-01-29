@@ -2893,6 +2893,8 @@ public:
 
     void DoDamageYourself(Unit* target, uint32 damage, const SpellInfo* spellInfo, uint8 effect);
 
+	float SpellTakenCritChance(Unit const* caster, SpellInfo const* spellProto, SpellSchoolMask schoolMask, float doneChance, WeaponAttackType attackType, bool skipEffectCheck);
+
     static inline std::vector<AuraApplicationMap::iterator*> currentAuraIterators = {};
 
     #define CallScriptIteration(func)                           \

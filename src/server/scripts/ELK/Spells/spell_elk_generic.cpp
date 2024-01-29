@@ -1,6 +1,26 @@
 #include "spell_elk_include.h"
 
+class spell_elk_learn_rank : public ELKSpellScript
+{
+    PrepareSpellScript(spell_elk_learn_rank);
 
+    void Attempt()
+    {
+        Item* item = GetCastItem();
+        
+        if(item && rand() % (item->GetLvlBonus() / 3 + 1)== 0)
+        {
+            return;
+        }
+        Player* player = GetCaster()->ToPlayer();
+        if (player)
+            player->AddItem(1000001, 100);
+    }
+    void Register() override
+    {
+        AfterCast += SpellCastFn(spell_elk_learn_rank::Attempt);
+    }
+};
 
 class spell_elk_critical_attack_hit : public ELKSpellScript
 {

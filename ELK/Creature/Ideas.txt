@@ -1,0 +1,263 @@
+SSS Leap SSS
+Leap Leap Leap
+give leaps a minimum range btw. did I make the on-mutate abilities that have delays actually delay after on-mutate? hmm. is there a point to not auto on-mutate if a move is a jump? Yeah, but not a good, logic should be inverted (auto set to on mutate if previous is a Leap/charge/dynamic movement) so they can mid-air thunderclap
+make dynamic movements actual moves that can be called. can still be just 1 per guy, just make them callable in combos.
+Send Wave + Jump Back + Slow Move Speed until next action ayyy I can do that with just a buff proc.
+Hit harpy in air and she falls
+Enemies will kick spells you use commonly - thus spells need to have a commonality multiplier
+Go invis while doing dynamic movement
+Dynamic movement that lasts until you start casting and if you do, gets a big MS and DMG buff.
+Cast Shadowstep, attack with +1000% dmg, each tick check if enemy is facing you, if so recast shadow step.
+Guy who leaves behind chain lightning GOBs as he teleports around, occasionally using that Neo-Thunder Clap.
+Need a good Cyclone/Rush attack spell base, does damage to all in path.
+Instead of dying, Ghoul turns into GIGA UNDEAD and SLAPS FAST. the rest just explode doing AoE damage.
+Dragon that turns slowly like vehicle
+small AoE, jump in air, huuuuuge aoe
+aoe dmg + power ups are cool.
+big shield guy that if you get too close to does a shield bash, otherwise blocks everything so you have to go around him.
+wolf howl puts other's wolves howl on CD, calls in more.
+Hero units dont regen out of combat - tbh none of them should without healers. anyway, one Hero regens by killing "allied" units a lot like Necro. and he leaves a stacking debuff that affects max HP per %. higher tier debuffs like this have low rng on being removed by low lvl items.
+make idle guys do RandomAction () on enemy begin cast sometimes, with a shorter delay. if any of them is a heal (loop through spellinfo on build and set it programatically + ELKInfo) the length is short.
+Potions?.... they, along with any unstored ingredients will vanish on logout like conjured items.
+hmmm... player spells shouldnt be "PoEable" but what about NPC spells. add multicast on all ai fireballs etc ehhh I think this is much better solved with Cast on Crit buckets. NPCs can get 2 cast on crits lmao.
+guy who goes at light speed, teleports leaving behind several after images and summoning after images as he attacks (several) that immediately fade out. his dynamic movement spawns an after image behind him every time he turns.
+carcass from Eternal. Also a spike-summoning guy like the Shadow from DMC.
+charge forward - big shockwave - keep going past - repeat twice more.
+consume all ELEMENT you own on you and target and do effect.
+ETERANLIZE talents, ultraaa rarrreeeee, every level each ETERANLIZE'd talent has an (X% = ETERNALIZATIONS of this talent) chance to DEV UP for free and not cost anything.
+random portals can give free instance keys that have to be used locationally, so finder sets the password.
+commonly mobs in the overworld drop items but they are damaged. no repairing, and when you Warforge a damaged item there's a chance equal to the durability of the item to reduce durability of the improved item by 1 * warforge (eg doing this with a 0 durability 200 warforge is a 100% chance to reduce durability by 200 ; or replace it with missing durability * warforge instead).
++drop % bonuses in the Friendship Atlas are per gear, currency etc and shared between friends. You get Friendship points playing with anyone, and the guy you invest into has shared tree with you. use lower GUID to store index 1.
+Fake XP buffer. every 100 XP adds 1 second to the buffer (max 5mins). each second of not-in-combat grants you (your total skill level * % of those 5 mins that are not buffered) XP per sec up to a maximum of 5mins worth.
+
+// Quest
+1 of 3 is murderer chosen randomly. 3 clues per. 1 for both will be "on" but won't be damning enough, while for the killer all will be on + damning.
+
+// Spells
+No stuns - only slows and silences?
+Shockwave is usable if you have combo and last cast was deflect.
+Phys - focus on ultrakill "inputs that can intuitively combine into being much cooler". that is, short charge - makes thunderclap instant - makes next few attacks spins and fast - shockwave - makes next storm bolt take double offense - knocks enemy up - apply rend which for each attack increases next phys spell dmg that has CD, pummel spammable on enemies in air without cooldown, builds combo.
+Resistances are now: Reduced Crit Chance (default %, each one has a chance scaled inversly with cooldown/mana to apply a crit version of a spell which applies a per-element unique debuff) and reduced mana cost (flat) of this spell school per resist (after spell power bonuses).
+Morde pull, and ground slams that mark the area of hitting as red like in wow.
+Hold to shoot 1 bullet in Line thing, tap to shotgun. another is hold and aim towards target, then lock on, longer you do release for giga damage.
+frost trap ground effect that makes enemies get knocked down and slide lmaoooo. would be nice to have some dark messiah shit buuut it cant work with ACores current pathing - no, it can. keep moving them forward, then on stop do a raycast strrrrraight forward (or in their trajectory using old x y z in case they're going up a slope) and then if its open, just do a triggered leap on them in the open direction.
+kick like dark messiah w/ ray cast.
+need more mine spells to incentivize dodge, and 
+fireball has no GCD. if you cast it RIGHT before GCD finishes, it doesn't go on cooldown and instead procs a 500 gcd for the caster, you can do this thrice. Pyroblast is hold and release, if you get it right in the middle of the cast time it's fullpower, otherwise it's dmg is whatever the pct was.
+if you turn in a direction every tick while casting attack, reduce its cast time.
+put a map in them thats saved to db.
+also save to DB instance mask
+Culling Blade, needs you to jump and sends you downward after cast.
+Track damage every second up to 5s in a map, move numbers back, on cast loop through all, remove and heal equal to amount.
+When youd be hit-stunned, dont be and TP back.
+Prep-magic, ahead of time choose spells and their next uses are guaranteed crits or twice as storng.
+Spells like Pin Down dont scale by Dev but get total uses until rest like vancian
+Jumpscare: Jumpscare targets screen and spin them away from caster/180 degrees.
+summon mine
+summon totem that makes caster invulnerable while its active 
+summon totem that throws slow projectile to location of nearest enemy every 5s
+NPC spells giving +spellpower, mana cost reduction and increasing spellcast chance.
+potions/scrolls of perma-til-rest (incl going into instance) stats. You can get scroll pieces and still need to put it together.
+
+//combat 
+hmm if runes had flat regen and started on the first attack you could encourage combos and trying harder during the time, and combine combo with the spell stacks, with finishers consuming spell stacks, and obv spells making the last combo longer so you can regain cooldowns or w/e.
+ok new rule, unless ESCAPE is used to make a hit not break on stun (code specific behaviours for AI to use this), getting hit while attacking stops the hit. actually, make it per combo rather than attack, similarly ends early for players if their combo breaks. also make it cause combo to reset even on unsuccesful hits, otherwise move to extension; does not give full CC immunity during combo only interrupt immunity, but the cast removes CC while costing a duration based rune based on how long CC it removed; doesn't remove undispellable.
+on-target-cast-spell, sometimes deflect (if its attack hit especially) or dodge (if it's regular attack), interrupting combo.
+if you walk too much around not being in range or
+interrupt whole enemy's combo if you stun/interrupt/hit them during during certain attacks and while they're mid air from leap. need that "hit" animation on slow's cast for when it interrupts.
+some enemies will select combos based on whether you are in an unstunnable state, or if you are attacking.
+instead of dodge always giving CDR, theres 1 for each spell element, on Leather, for after moving your mouse left and getting a combo point w/ attack/block, dashing left makes it give the exceed. or maybe each tick of movement in the same direction that is registered increases dmg by 1% (while cast time for players, first tick sets orientation, second sets +-, every one afterwards rechecks same direction). put it in male phys.
+
+
+//////////// OLD
+Hearthstone replaced by Mark and Swap/Recall.
+some creatures will rush GObjects/buildings for objectives ignoring players.
+give all XP command to avoid trading by murder.
+one friendship atlas node is: players whose items (made/dropped) you warforge and consumables you use you get favor with.
+you start out with 1 stat/slot (usually health or armor or mana) and then can add on +STR AGI INT, and even +%, conversion etc (anything but UNIQUE:) and some items can even have just +1000 STR (or maybe +500 +500, whichever is cooler)
+what if mana % was your cast animations at 100% mana are instant, at 0% full cast time.
+enemy NPCs will also collect resources and get stronger over time from it, often avoiding engaging if dmg harass on them isn't high enough, until it is for each NPC type they wont engage.
+NPCs get back XP you stole from them if they kill you instead of Dark Souls pickup, think trading supports in Dota while cores live. All XP you stole you didnt succeed in using you give back. Make resources not be a cast bar but rather an HP bar that when someone stops someone else picks up from their progress.
+shadow fiend w/ 3 ranged razes
+objectively better ways to maintain world systems - that is, the more people they help go to a higher world, the more benefits everyone in the strand that helped gets resources, but the more the world decays the old guys lose their bonuses or w/e. basically enemies will grow in power the more friction there is unless shut down deliberately by players to prevent being overwhelmed in which case reset back to the new normal.
+you cant buy gear, players donate hot gear to vendors for rep, players spend influence (used in voting and buying gear) to get gear other players donated by bid.
+instead of donating wood to an abstract barracks being built, the "questing" itself is made dynamic with future rewards for all players being affected by what you do - you make the world better for others (including their questing) by doing well. generic global upgrades like +% modifiers can happen from the cumulative nature of these small quests, but they are not in a vacuum, instead you make its so players get more XP and Renown from donating those planks.
+Strand type gameplay for leaving consumables you don't need in the wilderness.
+Items crafted may spawn with a random Gem in one of their slots which are transfered to items that they are warforged into.
+when a world "ends" with the week, you choose to keep your progress and go to a higher world if you succeeded in doing the attunements and everyone won the big event, or stay in this one but reset your items. The higher the world you're at the harder it gets.
+emphasis in roleplaying - Life (Physical) Str (Fire) Dex (Frost) Wisdom (Arcane) Fortune (Voltaic) Intuition (Light) Flexibility (Shadow)
+Each world has a "grid" of nodes representing it's history, and nodes in the right place can make a massive difference.
+when you enter a subzone you see "objectives" with their patrol routes and patterns, including: Coward - if survives will TP out, heal and come back over and over. Farmer - gets stronger the later you go for him. Important - Others will converge on this guy's position if he dies. Rotation - This guy will come and fight anytime you engage a character. And of course, obelisks which give the enemies local or global buffs you need to destroy to weaken them in this and other areas. Obelisks can have Countdown - if you fail to destroy it fast enough after engaging it (or its guardians), it becomes permanent, and Reinforcements - will summon guys in waves to help. all of them have their own over-time objectives to take care of.
+Potions - instant have cast time, over time elixirs do not.
+enemies can loop through all ground auras and dummies of units in combat and detect "I want to be here", "I dont want to be here" and same for "other guy wants/doesnt want to be here" and they'll use movement imparing effects if you are where they want you (or at the very least not where they dont want you), escapes if they dont want to be there (or you're melee weapons and they dont want you where you are), grabs if they want you where they are and push. whats even better is combos: they can combo blink-to-where-they-dont-want-you, cast a grip and pull you into mines (this is done through 2 conditional actions - these mines can be from an ally)
+add Eternal Marauder
+turn dynamic movement into an action.
+enemies can "disappear" and reappear in a future fight if you let them get away, they'll usually say "did you forget about me" or w/e.
+bake in a map of condition checker scripts that are in C++ that can be added by the script  for more complex spells. bake the map into the super class
+Wild Beasts are stronger, and fight both players and the area's faction units (eg wolves will fight defias, and packs can be pulled into fighting patrols n shit)
+loot mana portals in the overwrold that you are encouraged to tell other players of the right element to invade. in the overworld, there are multi-portals aka an obelisk guarded by 3 different portals that you need to clear to activate the loot in the obelisk.
+more "tower" units, more things to walk out of (explosions w/ delay), etc.
+item: turn item w/ warforge 100+ into an item of 1 tier higher, reroll all gems or turn into another item of the same tier but with less durability.
+enchants are unique, cannot be changed no matter what and are gotten through heavy rng gating.
+enemies that will on combat start set to 0 action pause to make you go "o shit", and also do their own little growth during the fight as well, idk if by extension sys or some other growth, sth like nemesis but for enemy types. hmm nah growth is zone wide and not per player, insteaaaaad the more you kill in a zone the bigger bounty you get from that zone's enemies, just like the Zone-system has fighting against the enemies, it has fighting for the enemies to turn a profit, one way is to sabotage players who did a lot of killing, another is doing mini quests, defending certain areas or donating resources, ofc this puts you at the other end of not recieving resources from the AI being defeated rather from how long they stay. the opportunities available in a zone are determined by quest results.
+ohh i know, on-cooldown stuff that they only do "on hit" like Shockwave, aka when they have a combo, put all that shit on cooldowns but with 100% chances to create those oh shit moments.
+cached "solved" zone history (from beggining to end) affects things globally based on how well things went with just a flat +hp multi to everyone in the zone and adjescent ones. and as said, ongoing events will, based on how long they were going, negatively affects overall leveling by adding flat extra XP requirements on lvl up.
+plaguelands turned into horror vile, dark, shorter sight vision, and a bunch of perma negatives on being hit, also enemies will disappear and reapper later for you.
+aggro for non-elite NPCs replaced with exclusively conal rather than circular
+only people active in a zone's activies somehow are affecting the spawn rates (again, based on quest results)
+with consumables and their reagents disappearing on rest, being BoP and being something you craft directly to a player or to a shared locker, they can be much stronger.
+Deflecting a finisher does the big plong with a thunderclap on both attacker and deflecter (visual) and add a damn visual already lmao.
+Consumables are bind on pickup and removed on reset, but can be stashed in Strand places for other to use.
+Radiant quests can involve using a single enchanted sword a specific way on 5 DIFFERENT enemies in order to complete it, eg parry 5 different shadow spells with this shield.
+Minidungeons are once per day, no release spirit only resurrect.
+Radiant quests, involving items, involving deliveries, you can do for other players - items drop on death and require a lot of player traversal to do. doing this splits the rewards (by mail to the other guy).
+Strand game stuff, from campfires to altars to meditation spots that can be reused, and track uses, with cds per user/use, and can be upgraded with scavanged resources (so different people do this).
+Ghost in duskwood, gives -5% all stats debuff permanently then flees, killing him reduces stacks by 1 for everyone in duskwood.
+Boons and Maluses. Maluses (eg "wound" can have, eg "salted" that adds a modifier, and adds another condition to remove to clear. These modifiers, negative and solvers, are elemental so speccing in one element helps deal w/ a category).
+Combo system - all the spells a guy uses when you start an attack on him is stuff he risks getting hurt from the rest of your combo if you dont get the Last Laugh. In other words, after getting hit, track last spell used and all spells you use since and his combo affects everything since the first one unless you get last laugh.
+All debuffs also increment their future effectiveness. This is countered by items that work like this: Anti Venom. On getting hit by a  "Venom" spell, remove all stacks of that Venom.
+players you kill you get +1 Rivalry. Players you like (max 3 guys once a day) you get +1 friendship. both require Frenemy Currency to develop with, but these points are like talent points for interacting with them, and affect synergy like nemesis in SoW. you can permanently end up affecting both, but you can only do so many things with those powers a day. including permanent stuff. you can also extend both of these influence onto the friends of your rivals. each day, if you kill 1 guy you get 1 point, and you can only do guys you had bounties for this run (or people you've a deep seated rivalry with).
+armor with cool round numbers eg chest with +1000 health.
+Floating eyes in Elwyn (Frost Familiars, Acherus Eye model) that channel a target location with Mana Drain beam then cast frost nova.
+for dynamic movement: when to add extra angle (if negative in json, its inverse the starting direction). apply Cooldown (for reinforcement calls) and also a reinforcemenet call package where NPCs just waddle around before calling an NPC, or wait until a buff fades and will only attack if provoked.
+channel for 10s, get map updated with latest info.
+make less spammed spells have better crit and offense building.
+Portals, friendly and enemy, that spawn mobs, and need mana-cost-in-spells-of-element cast on them to disable them. Like Illidan in TFT.
+low-tier raids have higher tier protection (in the form of "above this number, enemy attribute bases are reduced"
+attacking skills can cause problems that last several rests unless cured.
+You can constantly make choices in the world, increasing/decreasing spawns of 1 at the cost of something else. doing the "less popular" choice is riskier but more rewarding and may let you steal the whole pot from the opposition. eg you can take sides with the kolkar.
+consequences that last several days as Boons from doing stuff in the open world.
+Theres no "power ceiling" thus theres.
+Should have bottlenecks aka bossess with specific abilities you have to 1v1 (seed stored, per character/Id) that serve as "stopgaps" like in PoE campaign. Kill them to unlock a higher tier of spell or whatever. theres no "fake progression". or a personal boon or w/e. this boss has a 1 week timer so collect as many boons in that week as you can to roll him.
+boons can be + effective dev to select talents.
+invading raids, by name.
+In overworld, you can tick "inherit control points to this player when he logs on/if  hes logged on" so parties/guilds can pool resources. all usage of resources on a zone by a guild can be intercepted by AI or player attacks.
+arenas are tournaments instead until last man standing, 100g entry fee. winner gets 75% of losers money in the tourney (not showing up = lose).
+all players have automatically, after rest a blue ! mark buff meaning "looking for party" that will make them instantly accept any party invite in same zone. they can manually turn it off like all buffs.
+resists give -flat mana cost to element of spell too.
+Each item's stats you need as a base to equip. You get those stats from attuning spells per spells, rarely in combat.
+Enemies can get random X (bonus speed) on Y objective (eg hit you), CoC and all
+Journey cards are ultra rare drops dependin on what you're doing. Say you're fighting demons, there's a chance to get to get the Devil tarot. use a lot of elements, chance for the magician.
+Enemies have alfa tactics that are used when a mob also uses alfa tactics (eg raptor - all raptors also use dynamic movement and charge you when they're done)
+Gear works around the idea of - you take items that are similar sequels to what you were previously wearing and you can only make that choice 'on occasion' so you can go from haste/str chest to another haste/str chest with bigger numbers or a haste/str/fire res chest, after choosing you'd need to go back to wearing the OG and earning enough XP with it.
+Cooldowns shared between mobs like howl, and make it call reinforcements in?
+Each talent displays on the other half of the screen the stats. each talent has its related subtalents listed.
+Spell rank gives + 10% on that spell's power or something, so you still have dev to invest into it.
+Research of Shadowbolt Rank 3 is 5% to get it and expires in 24h. If you accumulate 10 you get 1 rank higher. Using Research requires using Arcanery BUT only if it consumes it, otherwise it refunds it (just a papers currency you get from quests/world interactions and is the rare limiter so you have to not roll for every spell you find).
+High importance events that if you dont find and interupt, enemy gets a lot of power, rather than just everything being rewards. Also includes occasions where you KNOW an enemy will get X Y and Z power and if you win a fight, you choose one of the 3 to disable. You can track their patrol routes, bait them away (if they;re near they go defend) so you can cap some obejctives, all very visible but you need to intercept certain objectives for said info.
+Rare mobs merged into "Leaders" that have unique abilities.
+Base meta-AI on TF2 classes, pick primary secondary and tertiary.
+Glyphs modify skills per-element directly eg A strike gets +1 cleave. Shadow also deals 20% as fire. Summon a totem that casts that at original target. Basically buffs rather than facelifts. Each glyph has a cost, and spells have multipliers on being glyphed.
+Blessings give generic stuff eg randomly +1ning your skill.
+There's rare stealthy enemies that if you find you can takedown, otherwise enemy will get  better ambushes and lots of power.
+AI director - notice under utilizied spots, grow in power there. Alsoo keeping track of activity in past 7 times, then cycle through for each location the delta of activity, increase it a lot in places below average, and also if the problems are solve too quickly, boost overall toughness of the event.
+
+To sum it up:
+
+Locations:
+>Location Type
+>Power
+>Reward
+
+Armies:
+>Bonuses
+>Overall Power
+
+Packs:
+>TF2 Class
+>Objective
+>Patrol route
+
+Enemies
+>entry-specific bonuses
+
+Player
+>Spells : Can have CoC or Glyph.
+>Spells over-use : enemies will try and silence/interrupt these specifically.
+
+
+Ally
+{	
+	Item = item he wants, will only be revealed to 30% of players per npc (but can be reboosted with rare gift items). Give item and get instantly learned talent.
+}
+Place
+{	
+	Location(s)[]
+	Units spawned[]
+}
+Patrol
+{
+	Start, Dest
+}
+Ambuesh
+{
+	Player
+	intensity
+	onSUCC 
+	onFAIL // usually like a lot of level down or w/e.
+}
+UpcominEvents
+{
+	enum(Invasion, Ambush, Wave Defense)
+	Cards = stuff that modifies this zone's events specifically, drops on the mobs and affects the future until reset. usuaslly very powerful, eg give every humanoid a poison enchant.
+	// everything is tied to this zone system. world bossess, quest opportunities, farming spots, gobject interactables. even solo dungeon availability
+}
+Card
+{
+	Event Ticket - spend to upgrade the zone.
+}
+Zone
+{
+	Place[]
+	Strength
+	UpcomingEvents
+	// Every time a series of events ends, the first used 0, 1 or 2 sets of tickets get offloaded. innn other words, tickets from an event may make an area inhospitable for a few days.
+}
+Tarrot
+{
+	Type
+	Level
+	// you can use 1 per rest per character (and have to) and they permanently affect your future adventuring. takes a lot of dough to clear up.
+	// downways: affects next X cards // upright: has direct effect
+	// The magician: more xp gained but more damage. upside down - next time you attune to magician, increase the card before it's intensity based on the distance between the 2
+	// The Devil: upon engaging an enemy player, 10% of dmg to them you deal within the first 10s you gain as perma max hp.
+}
+Puzzle
+{
+	Puzzle() // on create, pick random enemy creature spawn in zone, offset in a random direction. Each use of puzzle gem pulsates saying if its nearer of further from last use. Puzzle has hint of "is near X unit type"
+}
+Package
+{
+	Like the SoD ones but work on all items of the category and scale up to 200 use bonus ilvl.
+}
+SecretPortal
+{
+	When used, TP portal to user location.
+	TPs to a room that has a Gob or some items, but you can use it only a limited amount per character per hour, and it can satisfy up to idk 20-50 uses. Can even set passwords w/ an arcane encrypter, that can be broken with expensive things equal to password strength, that takes minutes to decode (an item w a 5min CD with a % chance to open). The power of these can vary wildly and make them very desirable.
+}
+GlyphMemory
+{
+	Zone
+	EventType
+	Quant
+	// combine a lot of these for a very personalized buff.
+}
+Talent
+{
+	DevelopmentMax
+	TempDevelopment // eg, kill a miniboss, drops an all your frost talents below lvl 3 and dev 3 get +1 dev.
+}
+Player
+{
+	LastRestedZone = all bordering zones are fair game for exploring
+	Talents = Earned from XP
+	EnemyTempo = upon starting combat, boost enemies by this much. increased by staying in combat w/ enemies, them doing hits up to a cap
+	Rivals = [] if the guy logs out or rests (in this case remove him), add a new one. Reset this list when you rest. lets you kill these guys in the OW and track them, and steal their XP.
+	GlyphMemories[]
+	Gold = used to buy stuff, unspent money gets used up when you rest and buffs allies.
+}
+NecroSpell
+{
+	Stacks of Flesh, Bone and Spirit Stone = in reserve, auto gained on exhume
+	
+}

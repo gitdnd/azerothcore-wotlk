@@ -109,7 +109,7 @@ enum BuyBankSlotResult
     ERR_BANKSLOT_OK                 = 3
 };
 
-enum PlayerSpellState
+enum PlayerSpellState : uint8
 {
     PLAYERSPELL_UNCHANGED = 0,
     PLAYERSPELL_CHANGED   = 1,
@@ -126,9 +126,11 @@ struct PlayerSpell
 struct PlayerTalent
 {
     uint32 talentID;
+    PlayerSpellState State = PlayerSpellState::PLAYERSPELL_UNCHANGED;
     uint8 development = 1;
+    uint8 rank = 1;
     uint32 CritCast = 0;
-    uint32 BonusSpelPower = 0;
+    uint32 BonusSpellPower = 0;
 };
 
 
@@ -1627,9 +1629,16 @@ public:
     [[nodiscard]] uint32 GetReputation(uint32 factionentry) const;
     std::string const& GetGuildName();
 
-    void ObtainTalentRank(uint32 id, uint8 rank);
-    bool AttuneTalent(uint32 id);
+
+
+    void _removeTalentAurasAndSpells(uint32 spellId);
+    void _addTalentAurasAndSpells(uint32 spellId, uint8 development);
+
+    uint8 ObtainTalentRank(uint32 id, uint8 rank);
+    uint8 AttuneTalent(uint32 id);
+    std::pair<uint8, uint8> GetTalentRankDevelopment(uint32 id);
     void ResetAllTalents();
+
 
     [[nodiscard]] uint32 RecalculateLevel() const;
     void SetLevel(uint8 lvl, bool showLevelChange = true);
@@ -2495,6 +2504,7 @@ public:
     void _LoadArenaTeamInfo();
     void _LoadEquipmentSets(PreparedQueryResult result);
     void _LoadEntryPointData(PreparedQueryResult result);
+    void _LoadTalents(PreparedQueryResult result);
     void _LoadQuestStageFlags(PreparedQueryResult result);
     void _LoadChestFlags(PreparedQueryResult result);
     void _LoadInstanceTimeRestrictions(PreparedQueryResult result);
@@ -2518,6 +2528,7 @@ public:
     void _SaveSpells(CharacterDatabaseTransaction trans);
     void _SaveEquipmentSets(CharacterDatabaseTransaction trans);
     void _SaveEntryPoint(CharacterDatabaseTransaction trans);
+    void _SaveTalents(CharacterDatabaseTransaction trans);
     void _SaveQuestStageFlags(CharacterDatabaseTransaction trans);
     void _SaveChestFlags(CharacterDatabaseTransaction trans);
     void _SaveStats(CharacterDatabaseTransaction trans);
@@ -2637,7 +2648,6 @@ public:
     time_t m_resetTalentsTime;
     uint32 m_usedTalentCount;
     uint32 m_questLevel;
-    uint32 m_developmentPoints;
     Seconds m_creationTime;
     // Social
     PlayerSocial* m_social;
