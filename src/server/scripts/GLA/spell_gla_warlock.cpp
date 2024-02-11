@@ -30,6 +30,8 @@
 
 enum GlaWarlockSpells
 {
+    SPELL_WARLOCK_DEMONIC_CIRCLE_SUMMON     = 48018,
+
     SPELL_WARLOCK_FINGER_OF_DEATH           = 110001,
     SPELL_WARLOCK_FINGER_OF_DEATH_AURA      = 110002,
     SPELL_WARLOCK_BANISH_AURA               = 110005,
@@ -57,6 +59,18 @@ enum GlaWarlockSpells
     SPELL_WARLOCK_SUCCUBUS_ALLURE           = 110073,
     SPELL_WARLOCK_FELHUNTERS_HUNGER         = 110074,
     SPELL_WARLOCK_FELGUARDS_PERSISTENCE     = 110075,
+    SPELL_WARLOCK_DEMONIC_CIRCLE_IMPRISON   = 110076,
+    SPELL_WARLOCK_DEMONIC_CIRCLE_DEMONMPORT = 110077,
+    SPELL_WARLOCK_BLOOD_BOIL                = 110078,
+    SPELL_WARLOCK_BLOOD_BOIL_DUMMY          = 110079,
+    SPELL_WARLOCK_HARDENED_SKIN             = 110087,
+    SPELL_WARLOCK_ENRAGE                    = 110090,
+    SPELL_WARLOCK_KILL_ME                   = 110091,
+    SPELL_WARLOCK_SHIVARRAS_WRATH           = 110092,
+    SPELL_WARLOCK_BEHOLDERS_CRUELTY         = 110093,
+    SPELL_WARLOCK_TYRANTS_VITALITY          = 110094,
+    SPELL_WARLOCK_VILEFIENDS_ALACRITY       = 110095,
+
 };
 enum GlaWarlockUnits
 {
@@ -65,7 +79,212 @@ enum GlaWarlockUnits
     SUCCUBUS                                = 1863,
     FELHUNTER                               = 417,
     FELGUARD                                = 30146,
-    WARLOCK_TOWER                           = 1000001
+    WARLOCK_TOWER                           = 1000001,
+    SHIVARRA                                = 1000002,
+    BEHOLDER                                = 1000003,
+    TYRANT                                  = 1000004,
+    VILEFIEND                               = 1000005,
+};
+
+class spell_gla_feral_demon : public AuraScript
+{
+    PrepareAuraScript(spell_gla_feral_demon);
+    bool Validate(SpellInfo const* spellInfo) override
+    {
+        return ValidateSpellInfo({ SPELL_WARLOCK_KILL_ME, SPELL_WARLOCK_SHIVARRAS_WRATH,
+            SPELL_WARLOCK_BEHOLDERS_CRUELTY, SPELL_WARLOCK_TYRANTS_VITALITY, SPELL_WARLOCK_VILEFIENDS_ALACRITY
+            });
+    }
+    void Proc(ProcEventInfo& eventInfo)
+    {
+        switch (eventInfo.GetActor()->GetEntry())
+        {
+        case SHIVARRA:
+            eventInfo.GetActor()->AddAura(SPELL_WARLOCK_SHIVARRAS_WRATH, eventInfo.GetActor());
+            break;
+        case BEHOLDER:
+            eventInfo.GetActor()->AddAura(SPELL_WARLOCK_BEHOLDERS_CRUELTY, eventInfo.GetActor());
+            break;
+        case TYRANT:
+            eventInfo.GetActor()->AddAura(SPELL_WARLOCK_TYRANTS_VITALITY, eventInfo.GetActor());
+            break;
+        case VILEFIEND:
+            eventInfo.GetActor()->AddAura(SPELL_WARLOCK_VILEFIENDS_ALACRITY, eventInfo.GetActor());
+            break;
+        default:
+            break;
+        }
+    }
+    void Register() override
+    {
+        OnProc += AuraProcFn(spell_gla_feral_demon::Proc);
+    }
+};
+class spell_gla_enrage : public AuraScript
+{
+    PrepareAuraScript(spell_gla_enrage);
+
+    bool Validate(SpellInfo const* spellInfo) override
+    {
+        return ValidateSpellInfo({ SPELL_WARLOCK_ENRAGE });
+    }
+
+    void CalculateAmount(AuraEffect const* /*aurEff*/, int32& amount, bool& /*canBeRecalculated*/)
+    {
+        amount = -1;
+    }
+
+    void Absorb(AuraEffect* /*aurEff*/, DamageInfo& dmgInfo, uint32& absorbAmount)
+    {
+        int32 remainingHp = int32(GetTarget()->GetHealth() - dmgInfo.GetDamage());
+        int32 minHp = int32(GetTarget()->CountPctFromMaxHealth(GetAura()->GetEffect(EFFECT_1)->CalculateAmount(GetCaster())));
+
+        if (remainingHp < minHp)
+            GetAura()->GetEffect(EFFECT_2)->SetAmount(GetAura()->GetEffect(EFFECT_1)->CalculateAmount(GetCaster()));
+        else
+            GetAura()->GetEffect(EFFECT_2)->SetAmount(0);
+        absorbAmount = 0;
+    }
+
+    void Register() override
+    {
+        DoEffectCalcAmount += AuraEffectCalcAmountFn(spell_gla_enrage::CalculateAmount, EFFECT_0, SPELL_AURA_SCHOOL_ABSORB);
+        OnEffectAbsorb += AuraEffectAbsorbFn(spell_gla_enrage::Absorb, EFFECT_0);
+    }
+};
+
+class spell_gla_hardened_skin : public AuraScript
+{
+    PrepareAuraScript(spell_gla_hardened_skin);
+
+    bool Validate(SpellInfo const* spellInfo) override
+    {
+        return ValidateSpellInfo({ SPELL_WARLOCK_HARDENED_SKIN });
+    }
+
+    uint32 absorbPct;
+
+    bool Load() override
+    {
+        absorbPct = GetSpellInfo()->Effects[EFFECT_0].CalcValue(GetCaster());
+        return true;
+    }
+
+    void CalculateAmount(AuraEffect const* /*aurEff*/, int32& amount, bool& /*canBeRecalculated*/)
+    {
+        amount = -1;
+    }
+
+    void Absorb(AuraEffect* /*aurEff*/, DamageInfo& dmgInfo, uint32& absorbAmount)
+    {
+        int32 remainingHp = int32(GetTarget()->GetHealth() - dmgInfo.GetDamage());
+        int32 maxHp = int32(GetTarget()->CountPctFromMaxHealth(GetAura()->GetEffect(EFFECT_1)->CalculateAmount(GetCaster())));
+
+        if (remainingHp > maxHp)
+            absorbAmount = CalculatePct(dmgInfo.GetDamage(), absorbPct);
+    }
+
+    void Register() override
+    {
+        DoEffectCalcAmount += AuraEffectCalcAmountFn(spell_gla_hardened_skin::CalculateAmount, EFFECT_0, SPELL_AURA_SCHOOL_ABSORB);
+        OnEffectAbsorb += AuraEffectAbsorbFn(spell_gla_hardened_skin::Absorb, EFFECT_0);
+    }
+};
+
+class spell_gla_blood_boil : public SpellScript
+{
+    PrepareSpellScript(spell_gla_blood_boil);
+
+    bool Validate(SpellInfo const* /*spellInfo*/) override
+    {
+        return ValidateSpellInfo({ SPELL_WARLOCK_BLOOD_BOIL, SPELL_WARLOCK_BLOOD_BOIL_DUMMY });
+    }
+
+    void Cast()
+    {
+        if (Unit* pet = GetCaster()->GetGuardianPet())
+        {
+            GetCaster()->DealDamage(GetCaster(), pet, (float)pet->GetMaxHealth() * float(GetSpellInfo()->Effects[EFFECT_0].CalcValue(GetCaster(), nullptr, pet)) / 100.f);
+            pet->CastSpell(pet->GetPositionX(), pet->GetPositionY(), pet->GetPositionZ(), SPELL_WARLOCK_BLOOD_BOIL_DUMMY, true);
+        }
+    }
+
+    void Register() override
+    {
+        BeforeCast += SpellCastFn(spell_gla_blood_boil::Cast);
+    }
+};
+
+class spell_gla_demonic_circle_demonport : public AuraScript
+{
+    PrepareAuraScript(spell_gla_demonic_circle_demonport);
+
+    bool Validate(SpellInfo const* /*spellInfo*/) override
+    {
+        return ValidateSpellInfo({ SPELL_WARLOCK_DEMONIC_CIRCLE_DEMONMPORT, SPELL_WARLOCK_DEMONIC_CIRCLE_SUMMON });
+    }
+
+    void HandleTeleport(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+    {
+        if (Player* player = GetCaster()->ToPlayer())
+        {
+            if (GameObject* circle = player->GetGameObject(SPELL_WARLOCK_DEMONIC_CIRCLE_SUMMON))
+            {
+                if (Unit* pet = player->GetGuardianPet())
+                {
+                    pet->NearTeleportTo(circle->GetPositionX(), circle->GetPositionY(), circle->GetPositionZ(), circle->GetOrientation(), false, false, false, true);
+                    pet->RemoveAurasWithMechanic(1 << MECHANIC_SNARE);
+                    HealInfo heal(player, pet, float(pet->GetMaxHealth()) * float(GetSpellInfo()->Effects[EFFECT_1].CalcValue(player, nullptr, pet)) / 100.f, GetSpellInfo(), GetSpellInfo()->GetSchoolMask());
+                    pet->HealBySpell(heal, false);
+                }
+            }
+        }
+    }
+
+    void Register() override
+    {
+        OnEffectApply += AuraEffectApplyFn(spell_gla_demonic_circle_demonport::HandleTeleport, EFFECT_0, SPELL_AURA_MECHANIC_IMMUNITY, AURA_EFFECT_HANDLE_REAL);
+    }
+};
+class spell_gla_demonic_circle_imprison : public AuraScript
+{
+    PrepareAuraScript(spell_gla_demonic_circle_imprison);
+
+    bool Validate(SpellInfo const* /*spellInfo*/) override
+    {
+        return ValidateSpellInfo({ SPELL_WARLOCK_DEMONIC_CIRCLE_IMPRISON, SPELL_WARLOCK_DEMONIC_CIRCLE_SUMMON });
+    }
+
+    void HandleTeleport(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+    {
+        if (Player* player = GetCaster()->ToPlayer())
+        {
+            if (GameObject* circle = player->GetGameObject(SPELL_WARLOCK_DEMONIC_CIRCLE_SUMMON))
+            {
+                if (Unit* unit = GetTarget(); unit && unit->GetExactDist(circle->GetPosition()) <= (float)GetSpellInfo()->GetEffect(EFFECT_2).BasePoints)
+                {
+                    unit->NearTeleportTo(circle->GetPositionX(), circle->GetPositionY(), circle->GetPositionZ(), circle->GetOrientation(), false, false, false, true);
+                    for (auto aura : unit->GetAppliedAuras())
+                    {
+                        for (uint8 i = EFFECT_0; i <= EFFECT_2; i++)
+                        {
+                            if (aura.second->GetBase()->GetEffect(i)->GetAuraType() == SPELL_AURA_PERIODIC_DAMAGE
+                                || aura.second->GetBase()->GetEffect(i)->GetAuraType() == SPELL_AURA_PERIODIC_DAMAGE_PERCENT
+                                || aura.second->GetBase()->GetEffect(i)->GetAuraType() == SPELL_AURA_PERIODIC_LEECH)
+                            {
+                                aura.second->GetBase()->Remove();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    void Register() override
+    {
+        OnEffectApply += AuraEffectApplyFn(spell_gla_demonic_circle_imprison::HandleTeleport, EFFECT_0, SPELL_AURA_MOD_STUN, AURA_EFFECT_HANDLE_REAL);
+    }
 };
 
 class spell_gla_felgaurds_persistence : public AuraScript
@@ -267,7 +486,7 @@ class spell_gla_devour_magic : public SpellScript
             }
         }
         SetHitDamage(damage * debuffs);
-        HealInfo heal(unit, unit, float(unit->GetMaxHealth()) * float(GetSpellInfo()->Effects[EFFECT_1].CalcValue(unit, nullptr, GetHitUnit())) / 100.f, GetSpellInfo(), SPELL_SCHOOL_MASK_SHADOW);
+        HealInfo heal(unit, unit, float(unit->GetMaxHealth()) * float(GetSpellInfo()->Effects[EFFECT_1].CalcValue(unit, nullptr, GetHitUnit())) / 100.f, GetSpellInfo(), GetSpellInfo()->GetSchoolMask());
         unit->HealBySpell(heal, false);
     }
 
@@ -536,8 +755,28 @@ class spell_gla_finger_of_death_aura : public AuraScript
     }
 };
 
-void AddSC_gla_rogue_spell_scripts()
+void AddSC_gla_warlock_spell_scripts()
 {
 
+    RegisterSpellScript(spell_gla_feral_demon);
+    RegisterSpellScript(spell_gla_enrage);
+    RegisterSpellScript(spell_gla_hardened_skin);
+    RegisterSpellScript(spell_gla_blood_boil);
+    RegisterSpellScript(spell_gla_demonic_circle_demonport);
+    RegisterSpellScript(spell_gla_demonic_circle_imprison);
+    RegisterSpellScript(spell_gla_felgaurds_persistence);
+    RegisterSpellScript(spell_gla_demonic_sacrifice);
+    RegisterSpellScript(spell_gla_demonic_enhancements);
+    RegisterSpellScript(spell_gla_bane_of_portals);
+    RegisterSpellScript(spell_gla_cripple);
+    RegisterSpellScript(spell_gla_devour_magic);
+    RegisterSpellScript(spell_gla_ritual_of_tower);
+    RegisterSpellScript(spell_gla_wither);
+    RegisterSpellScript(spell_gla_curse_of_imprudence);
+    RegisterSpellScript(spell_gla_ritual_strike);
+    RegisterSpellScript(spell_gla_drain_life);
+    RegisterSpellScript(spell_gla_agony);
+    RegisterSpellScript(spell_gla_bane_of_havoc);
+    RegisterSpellScript(spell_gla_banish_aura);
     RegisterSpellScript(spell_gla_finger_of_death_aura);
 }
