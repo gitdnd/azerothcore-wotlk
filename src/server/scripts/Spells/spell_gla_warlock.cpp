@@ -508,7 +508,10 @@ class spell_gla_ritual_of_tower : public SpellScript
     {
         TempSummon* summon = GetCaster()->SummonCreature(WARLOCK_TOWER, GetCaster()->GetPosition(), TEMPSUMMON_TIMED_OR_CORPSE_DESPAWN, 100000, 0, sSummonPropertiesStore.LookupEntry(36070));
         summon->SetFaction(GetCaster()->GetFaction());
-        GetCaster()->SetMinion(summon, true);
+        summon->SetOwnerGUID(GetCaster()->GetGUID());
+        GetCaster()->m_Controlled.insert(summon);
+        summon->m_ControlledByPlayer = true;
+        summon->SetUnitFlag(UNIT_FLAG_PLAYER_CONTROLLED);
     }
 
     void Register() override
