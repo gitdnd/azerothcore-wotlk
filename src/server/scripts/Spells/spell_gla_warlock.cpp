@@ -37,6 +37,7 @@ enum GlaWarlockSpells
     SPELL_WARLOCK_BANISH_AURA               = 110005,
     SPELL_WARLOCK_BANISH_AURA_DUMMY         = 110006,
     SPELL_WARLOCK_BANE_OF_HAVOC             = 110007,
+    SPELL_WARLOCK_BANE_OF_DESPAIR           = 110018,
     SPELL_WARLOCK_AGONY                     = 110014,
     SPELL_WARLOCK_DRAIN_LIFE                = 110013,
     SPELL_WARLOCK_DRAIN_LIFE_ENEMY          = 110015,
@@ -45,6 +46,8 @@ enum GlaWarlockSpells
     SPELL_WARLOCK_CURSE_OF_IMPRUDENCE       = 110020,
     SPELL_WARLOCK_WITHER                    = 110022,
     SPELL_WARLOCK_RITUAL_OF_TOWER           = 110027,
+    SPELL_WARLOCK_DRAIN_SOUL_SLOW           = 110029,
+    SPELL_WARLOCK_SOUL_FRAGMENTS_HIT        = 110031,
     SPELL_WARLOCK_DEVOUR_MAGIC              = 110033,
     SPELL_WARLOCK_CRIPPLE                   = 110034,
     SPELL_WARLOCK_BANE_OF_PORTALS           = 110058,
@@ -70,15 +73,25 @@ enum GlaWarlockSpells
     SPELL_WARLOCK_BEHOLDERS_CRUELTY         = 110093,
     SPELL_WARLOCK_TYRANTS_VITALITY          = 110094,
     SPELL_WARLOCK_VILEFIENDS_ALACRITY       = 110095,
+    SPELL_WARLOCK_BANE_OF_DESPAIR_WARRIOR   = 110096,
+    SPELL_WARLOCK_BANE_OF_DESPAIR_PALADIN   = 110097,
+    SPELL_WARLOCK_BANE_OF_DESPAIR_HUNTER    = 110098,
+    SPELL_WARLOCK_BANE_OF_DESPAIR_ROGUE     = 110099,
+    SPELL_WARLOCK_BANE_OF_DESPAIR_PRIEST    = 110100,
+    SPELL_WARLOCK_BANE_OF_DESPAIR_DEATH_KNIGHT  = 110101,
+    SPELL_WARLOCK_BANE_OF_DESPAIR_SHAMAN    = 110102,
+    SPELL_WARLOCK_BANE_OF_DESPAIR_MAGE      = 110103,
+    SPELL_WARLOCK_BANE_OF_DESPAIR_WARLOCK   = 110104,
+    SPELL_WARLOCK_BANE_OF_DESPAIR_DRUID     = 110105,
 
 };
 enum GlaWarlockUnits
 {
-    IMP                                     = 688,
+    IMP                                     = 416,
     VOIDWALKER                              = 1860,
     SUCCUBUS                                = 1863,
     FELHUNTER                               = 417,
-    FELGUARD                                = 30146,
+    FELGUARD                                = 17252,
     WARLOCK_TOWER                           = 1000001,
     SHIVARRA                                = 1000002,
     BEHOLDER                                = 1000003,
@@ -243,7 +256,7 @@ class spell_gla_demonic_circle_demonport : public AuraScript
 
     void Register() override
     {
-        OnEffectApply += AuraEffectApplyFn(spell_gla_demonic_circle_demonport::HandleTeleport, EFFECT_0, SPELL_AURA_MECHANIC_IMMUNITY, AURA_EFFECT_HANDLE_REAL);
+        AfterEffectApply += AuraEffectApplyFn(spell_gla_demonic_circle_demonport::HandleTeleport, EFFECT_0, SPELL_AURA_MECHANIC_IMMUNITY, AURA_EFFECT_HANDLE_REAL);
     }
 };
 class spell_gla_demonic_circle_imprison : public AuraScript
@@ -268,6 +281,8 @@ class spell_gla_demonic_circle_imprison : public AuraScript
                     {
                         for (uint8 i = EFFECT_0; i <= EFFECT_2; i++)
                         {
+                            if (!aura.second->GetBase()->GetEffect(i))
+                                continue;
                             if (aura.second->GetBase()->GetEffect(i)->GetAuraType() == SPELL_AURA_PERIODIC_DAMAGE
                                 || aura.second->GetBase()->GetEffect(i)->GetAuraType() == SPELL_AURA_PERIODIC_DAMAGE_PERCENT
                                 || aura.second->GetBase()->GetEffect(i)->GetAuraType() == SPELL_AURA_PERIODIC_LEECH)
@@ -283,7 +298,7 @@ class spell_gla_demonic_circle_imprison : public AuraScript
 
     void Register() override
     {
-        OnEffectApply += AuraEffectApplyFn(spell_gla_demonic_circle_imprison::HandleTeleport, EFFECT_0, SPELL_AURA_MOD_STUN, AURA_EFFECT_HANDLE_REAL);
+        AfterEffectApply += AuraEffectApplyFn(spell_gla_demonic_circle_imprison::HandleTeleport, EFFECT_0, SPELL_AURA_MOD_STUN, AURA_EFFECT_HANDLE_REAL);
     }
 };
 
@@ -391,6 +406,28 @@ class spell_gla_demonic_enhancements : public SpellScript
     }
 };
 
+class spell_gla_soul_fragments_hit : public SpellScript
+{
+    PrepareSpellScript(spell_gla_soul_fragments_hit);
+
+    bool Validate(SpellInfo const* /*spellInfo*/) override
+    {
+        return ValidateSpellInfo({ SPELL_WARLOCK_SOUL_FRAGMENTS_HIT, SPELL_WARLOCK_DRAIN_SOUL_SLOW });
+    }
+    void Hit(SpellMissInfo missInfo)
+    {
+        Aura* aura = GetHitUnit()->GetAura(SPELL_WARLOCK_DRAIN_SOUL_SLOW);
+        if (!aura)
+            return;
+        SetHitDamage(float(GetHitDamage()) * (1.f + float(aura->GetStackAmount()) * float(aura->GetEffect(EFFECT_1)->GetAmount())));
+    }
+
+
+    void Register() override
+    {
+        BeforeHit += BeforeSpellHitFn(spell_gla_soul_fragments_hit::Hit);
+    }
+};
 class spell_gla_bane_of_portals : public AuraScript
 {
     PrepareAuraScript(spell_gla_bane_of_portals);
@@ -405,7 +442,7 @@ class spell_gla_bane_of_portals : public AuraScript
         if (Player* player = eventInfo.GetActor()->ToPlayer(); player)
         {
             if (eventInfo.GetProcSpell())
-            {
+            {   
                 uint32 id = eventInfo.GetProcSpell()->GetSpellInfo()->Id;
                 player->ModifySpellCooldown(id, GetAura()->GetEffect(EFFECT_1)->GetAmplitude());
             }
@@ -420,8 +457,8 @@ class spell_gla_bane_of_portals : public AuraScript
 
     void Register() override
     {
-        OnProc += AuraProcFn(spell_gla_bane_of_portals::Proc);
-        AfterEffectRemove += AuraEffectRemoveFn(spell_gla_bane_of_portals::Remove, SPELL_AURA_DUMMY, EFFECT_1, AURA_EFFECT_HANDLE_REAL);
+        AfterProc += AuraProcFn(spell_gla_bane_of_portals::Proc);
+        AfterEffectRemove += AuraEffectRemoveFn(spell_gla_bane_of_portals::Remove, EFFECT_1, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
     }
 };
 
@@ -476,6 +513,8 @@ class spell_gla_devour_magic : public SpellScript
                 continue;
             for (uint8 i = EFFECT_0; i <= EFFECT_2; i++)
             {
+                if (!aura.second->GetBase()->GetEffect(i))
+                    continue;
                 if (aura.second->GetBase()->GetEffect(i)->GetAuraType() == SPELL_AURA_PERIODIC_DAMAGE
                     || aura.second->GetBase()->GetEffect(i)->GetAuraType() == SPELL_AURA_PERIODIC_DAMAGE_PERCENT
                     || aura.second->GetBase()->GetEffect(i)->GetAuraType() == SPELL_AURA_PERIODIC_LEECH)
@@ -591,6 +630,8 @@ class spell_gla_ritual_strike : public SpellScript
                 continue;
             for (uint8 i = EFFECT_0; i <= EFFECT_2; i++)
             {
+                if (!aura.second->GetBase()->GetEffect(i))
+                    continue;
                 if (aura.second->GetBase()->GetEffect(i)->GetAuraType() == SPELL_AURA_PERIODIC_DAMAGE
                     || aura.second->GetBase()->GetEffect(i)->GetAuraType() == SPELL_AURA_PERIODIC_DAMAGE_PERCENT
                     || aura.second->GetBase()->GetEffect(i)->GetAuraType() == SPELL_AURA_PERIODIC_LEECH)
@@ -603,6 +644,78 @@ class spell_gla_ritual_strike : public SpellScript
     void Register() override
     {
         BeforeHit += BeforeSpellHitFn(spell_gla_ritual_strike::Hit);
+    }
+};
+
+class spell_gla_bane_of_despair : public AuraScript
+{
+    PrepareAuraScript(spell_gla_bane_of_despair);
+
+    bool Validate(SpellInfo const* /*spellInfo*/) override
+    {
+        return ValidateSpellInfo({ SPELL_WARLOCK_BANE_OF_DESPAIR,
+        SPELL_WARLOCK_BANE_OF_DESPAIR_WARRIOR,
+        SPELL_WARLOCK_BANE_OF_DESPAIR_PALADIN,
+        SPELL_WARLOCK_BANE_OF_DESPAIR_HUNTER,
+        SPELL_WARLOCK_BANE_OF_DESPAIR_ROGUE,
+        SPELL_WARLOCK_BANE_OF_DESPAIR_PRIEST,
+        SPELL_WARLOCK_BANE_OF_DESPAIR_DEATH_KNIGHT,
+        SPELL_WARLOCK_BANE_OF_DESPAIR_SHAMAN,
+        SPELL_WARLOCK_BANE_OF_DESPAIR_MAGE,
+        SPELL_WARLOCK_BANE_OF_DESPAIR_WARLOCK,
+        SPELL_WARLOCK_BANE_OF_DESPAIR_DRUID
+            });
+    }
+
+    void Apply(AuraEffect const* aurEff, AuraEffectHandleModes mode)
+    {
+        Aura* newAura;
+        switch (GetTarget()->getClass())
+        {
+        case CLASS_WARRIOR:
+            newAura = GetCaster()->AddAura(SPELL_WARLOCK_BANE_OF_DESPAIR_WARRIOR, GetTarget());
+            break;
+        case CLASS_PALADIN:
+            newAura = GetCaster()->AddAura(SPELL_WARLOCK_BANE_OF_DESPAIR_PALADIN, GetTarget());
+            break;
+        case CLASS_HUNTER:
+            newAura = GetCaster()->AddAura(SPELL_WARLOCK_BANE_OF_DESPAIR_HUNTER, GetTarget());
+            break;
+        case CLASS_ROGUE:
+            newAura = GetCaster()->AddAura(SPELL_WARLOCK_BANE_OF_DESPAIR_ROGUE, GetTarget());
+            break;
+        case CLASS_PRIEST:
+            newAura = GetCaster()->AddAura(SPELL_WARLOCK_BANE_OF_DESPAIR_PRIEST, GetTarget());
+            break;
+        case CLASS_DEATH_KNIGHT:
+            newAura = GetCaster()->AddAura(SPELL_WARLOCK_BANE_OF_DESPAIR_DEATH_KNIGHT, GetTarget());
+            break;
+        case CLASS_SHAMAN:
+            newAura = GetCaster()->AddAura(SPELL_WARLOCK_BANE_OF_DESPAIR_SHAMAN, GetTarget());
+            break;
+        case CLASS_MAGE:
+            newAura = GetCaster()->AddAura(SPELL_WARLOCK_BANE_OF_DESPAIR_MAGE, GetTarget());
+            break;
+        case CLASS_WARLOCK:
+            newAura = GetCaster()->AddAura(SPELL_WARLOCK_BANE_OF_DESPAIR_WARLOCK, GetTarget());
+            break;
+        case CLASS_DRUID:
+            newAura = GetCaster()->AddAura(SPELL_WARLOCK_BANE_OF_DESPAIR_DRUID, GetTarget());
+            break;
+        default:
+            return;
+            break;
+        }
+        newAura->SetDuration(GetAura()->GetDuration());
+        newAura->GetEffect(EFFECT_0)->SetAmount(GetAura()->GetEffect(EFFECT_0)->GetAmount());
+        newAura->GetEffect(EFFECT_1)->SetAmount(GetAura()->GetEffect(EFFECT_1)->GetAmount());
+        GetAura()->Remove();
+
+    }
+    void Register() override
+    {
+        AfterEffectApply += AuraEffectApplyFn(spell_gla_bane_of_despair::Apply, EFFECT_1, SPELL_AURA_ADD_PCT_MODIFIER, AURA_EFFECT_HANDLE_REAL);
+
     }
 };
 
@@ -666,16 +779,23 @@ class spell_gla_agony : public AuraScript
         return ValidateSpellInfo({ SPELL_WARLOCK_AGONY });
     }
 
-    void Calc(AuraEffect const* aurEff, int32& amount, bool& canBeRecalculated)
+    float amount = 0;
+    void Apply(AuraEffect const* aurEff, AuraEffectHandleModes mode)
+    {
+        amount = float(GetAura()->GetEffect(EFFECT_0)->GetAmount());
+        
+    }
+    void Calc(AuraEffect const* aurEff)
     {
 
         float tickMulti = float(aurEff->GetTickNumber()) / (float(aurEff->GetTotalTicks()) / 2.f);
-        amount = float(amount) * tickMulti;
+        GetAura()->GetEffect(EFFECT_0)->SetAmount(amount * tickMulti);
 
     }
     void Register() override
     {
-        DoEffectCalcAmount += AuraEffectCalcAmountFn(spell_gla_agony::Calc, EFFECT_0, SPELL_AURA_PERIODIC_DAMAGE);
+        AfterEffectApply += AuraEffectApplyFn(spell_gla_agony::Apply, EFFECT_0, SPELL_AURA_PERIODIC_DAMAGE, AURA_EFFECT_HANDLE_REAL);
+        OnEffectPeriodic += AuraEffectPeriodicFn(spell_gla_agony::Calc, EFFECT_0, SPELL_AURA_PERIODIC_DAMAGE);
     }
 };
 
@@ -728,8 +848,8 @@ class spell_gla_banish_aura : public AuraScript
 
     void Register() override
     {
-        AfterEffectApply += AuraEffectApplyFn(spell_gla_banish_aura::Apply, SPELL_AURA_MOD_DECREASE_SPEED, EFFECT_1, AURA_EFFECT_HANDLE_REAL);
-        AfterEffectRemove += AuraEffectRemoveFn(spell_gla_banish_aura::Remove, SPELL_AURA_MOD_DECREASE_SPEED, EFFECT_1, AURA_EFFECT_HANDLE_REAL);
+        AfterEffectApply += AuraEffectApplyFn(spell_gla_banish_aura::Apply, EFFECT_1, SPELL_AURA_MOD_DECREASE_SPEED, AURA_EFFECT_HANDLE_REAL);
+        AfterEffectRemove += AuraEffectRemoveFn(spell_gla_banish_aura::Remove, EFFECT_1, SPELL_AURA_MOD_DECREASE_SPEED, AURA_EFFECT_HANDLE_REAL);
     }
 };
 
@@ -771,6 +891,7 @@ void AddSC_gla_warlock_spell_scripts()
     RegisterSpellScript(spell_gla_demonic_sacrifice);
     RegisterSpellScript(spell_gla_demonic_enhancements);
     RegisterSpellScript(spell_gla_bane_of_portals);
+    RegisterSpellScript(spell_gla_bane_of_despair);
     RegisterSpellScript(spell_gla_cripple);
     RegisterSpellScript(spell_gla_devour_magic);
     RegisterSpellScript(spell_gla_ritual_of_tower);
@@ -781,5 +902,6 @@ void AddSC_gla_warlock_spell_scripts()
     RegisterSpellScript(spell_gla_agony);
     RegisterSpellScript(spell_gla_bane_of_havoc);
     RegisterSpellScript(spell_gla_banish_aura);
-    RegisterSpellScript(spell_gla_finger_of_death_aura);
+    RegisterSpellScript(spell_gla_finger_of_death_aura); 
+    RegisterSpellScript(spell_gla_soul_fragments_hit);
 }
