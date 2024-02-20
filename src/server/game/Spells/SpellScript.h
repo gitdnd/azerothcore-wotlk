@@ -167,9 +167,11 @@ enum SpellScriptHookType
     SPELL_SCRIPT_HOOK_OBJECT_TARGET_SELECT,
     SPELL_SCRIPT_HOOK_DESTINATION_TARGET_SELECT,
     SPELL_SCRIPT_HOOK_CHECK_CAST,
+    SPELL_SCRIPT_HOOK_BEFORE_CAST_TIME,
     SPELL_SCRIPT_HOOK_BEFORE_CAST,
     SPELL_SCRIPT_HOOK_ON_CAST,
     SPELL_SCRIPT_HOOK_AFTER_CAST,
+
 };
 
 #define HOOK_SPELL_HIT_START SPELL_SCRIPT_HOOK_EFFECT_HIT
@@ -315,6 +317,9 @@ public:
     // SpellScript interface
     // hooks to which you can attach your functions
     //
+    // example: OnCheckCast += SpellCheckCastFn();
+    // where function is SpellCastResult function()
+	HookList<CastHandler> BeforeCastTime;
     // example: BeforeCast += SpellCastFn(class::function);
     HookList<CastHandler> BeforeCast;
     // example: OnCast += SpellCastFn(class::function);
@@ -364,6 +369,7 @@ public:
 #define SpellDestinationTargetSelectFn(F, I, N) DestinationTargetSelectHandlerFunction(&F, I, N)
 
     // hooks are executed in following order, at specified event of spell:
+    // 0. BeforeCastTime - after the spell loads before cast time starts
     // 1. BeforeCast - executed when spell preparation is finished (when cast bar becomes full) before cast is handled
     // 2. OnCheckCast - allows to override result of CheckCast function
     // 3a. OnObjectAreaTargetSelect - executed just before adding selected targets to final target list (for area targets)

@@ -589,6 +589,8 @@ public:
 
     [[nodiscard]] TriggerCastFlags GetTriggeredCastFlags() const { return _triggeredCastFlags; }
 
+    [[nodiscard]] void AddTriggeredCastFlags(TriggerCastFlags flags) { _triggeredCastFlags = TriggerCastFlags(flags | _triggeredCastFlags); }
+
     [[nodiscard]] SpellSchoolMask GetSpellSchoolMask() const { return m_spellSchoolMask; }
 
  protected:
@@ -724,6 +726,7 @@ public:
     // Scripting system
     bool _scriptsLoaded;
     //void LoadScripts();
+	void CallScriptBeforeCastTimeHandlers();
     void CallScriptBeforeCastHandlers();
     void CallScriptOnCastHandlers();
     void CallScriptAfterCastHandlers();

@@ -66,6 +66,7 @@ enum GlaWarlockSpells
     SPELL_WARLOCK_DEMONIC_CIRCLE_DEMONMPORT = 110077,
     SPELL_WARLOCK_BLOOD_BOIL                = 110078,
     SPELL_WARLOCK_BLOOD_BOIL_DUMMY          = 110079,
+    SPELL_WARLOCK_BLOOD_BOIL_DUMMY_2        = 110106,
     SPELL_WARLOCK_HARDENED_SKIN             = 110087,
     SPELL_WARLOCK_ENRAGE                    = 110090,
     SPELL_WARLOCK_KILL_ME                   = 110091,
@@ -153,9 +154,9 @@ class spell_gla_enrage : public AuraScript
         int32 minHp = int32(GetTarget()->CountPctFromMaxHealth(GetAura()->GetEffect(EFFECT_1)->CalculateAmount(GetCaster())));
 
         if (remainingHp < minHp)
-            GetAura()->GetEffect(EFFECT_2)->SetAmount(GetAura()->GetEffect(EFFECT_1)->CalculateAmount(GetCaster()));
+            GetAura()->GetEffect(EFFECT_2)->ChangeAmount(GetAura()->GetEffect(EFFECT_1)->CalculateAmount(GetCaster()), false);
         else
-            GetAura()->GetEffect(EFFECT_2)->SetAmount(0);
+            GetAura()->GetEffect(EFFECT_2)->ChangeAmount(0, false);
         absorbAmount = 0;
     }
 
@@ -210,7 +211,7 @@ class spell_gla_blood_boil : public SpellScript
 
     bool Validate(SpellInfo const* /*spellInfo*/) override
     {
-        return ValidateSpellInfo({ SPELL_WARLOCK_BLOOD_BOIL, SPELL_WARLOCK_BLOOD_BOIL_DUMMY });
+        return ValidateSpellInfo({ SPELL_WARLOCK_BLOOD_BOIL, SPELL_WARLOCK_BLOOD_BOIL_DUMMY, SPELL_WARLOCK_BLOOD_BOIL_DUMMY_2 });
     }
 
     void Cast()
@@ -218,7 +219,7 @@ class spell_gla_blood_boil : public SpellScript
         if (Unit* pet = GetCaster()->GetGuardianPet())
         {
             GetCaster()->DealDamage(GetCaster(), pet, (float)pet->GetMaxHealth() * float(GetSpellInfo()->Effects[EFFECT_0].CalcValue(GetCaster(), nullptr, pet)) / 100.f);
-            pet->CastSpell(pet->GetPositionX(), pet->GetPositionY(), pet->GetPositionZ(), SPELL_WARLOCK_BLOOD_BOIL_DUMMY, true);
+            pet->CastSpell(pet, SPELL_WARLOCK_BLOOD_BOIL_DUMMY, true);
         }
     }
 
@@ -276,21 +277,28 @@ class spell_gla_demonic_circle_imprison : public AuraScript
             {
                 if (Unit* unit = GetTarget(); unit && unit->GetExactDist(circle->GetPosition()) <= (float)GetSpellInfo()->GetEffect(EFFECT_2).BasePoints)
                 {
+                    std::vector<int32> toRemove = {};
                     unit->NearTeleportTo(circle->GetPositionX(), circle->GetPositionY(), circle->GetPositionZ(), circle->GetOrientation(), false, false, false, true);
-                    for (auto aura : unit->GetAppliedAuras())
+                    for (auto aura = unit->GetAppliedAuras().begin(); aura != unit->GetAppliedAuras().end(); ++aura)
                     {
                         for (uint8 i = EFFECT_0; i <= EFFECT_2; i++)
                         {
-                            if (!aura.second->GetBase()->GetEffect(i))
+                            if (!aura->second->GetBase()->GetEffect(i))
                                 continue;
-                            if (aura.second->GetBase()->GetEffect(i)->GetAuraType() == SPELL_AURA_PERIODIC_DAMAGE
-                                || aura.second->GetBase()->GetEffect(i)->GetAuraType() == SPELL_AURA_PERIODIC_DAMAGE_PERCENT
-                                || aura.second->GetBase()->GetEffect(i)->GetAuraType() == SPELL_AURA_PERIODIC_LEECH)
+                            if (aura->second->GetBase()->GetEffect(i)->GetAuraType() == SPELL_AURA_PERIODIC_DAMAGE
+                                || aura->second->GetBase()->GetEffect(i)->GetAuraType() == SPELL_AURA_PERIODIC_DAMAGE_PERCENT
+                                || aura->second->GetBase()->GetEffect(i)->GetAuraType() == SPELL_AURA_PERIODIC_LEECH)
                             {
-                                aura.second->GetBase()->Remove();
+                                toRemove.push_back(aura->second->GetBase()->GetId());
+                                continue;
                             }
                         }
                     }
+                    for(auto aura : toRemove)
+                        unit->RemoveAurasDueToSpellByDispel(aura,
+                            GetSpellInfo()->Id,
+                            player->GetGUID(),
+                            player);
                 }
             }
         }
@@ -390,19 +398,13 @@ class spell_gla_demonic_enhancements : public SpellScript
         return ValidateSpellInfo({ SPELL_WARLOCK_DOOM });
     }
 
-    SpellCastResult CheckCast()
+    void CheckCast()
     {
-        if (GetCaster()->GetCurrentSpell(CURRENT_GENERIC_SPELL))
-        {
-            TriggerCastFlags flags = TRIGGERED_IGNORE_CAST_IN_PROGRESS;
-            GetCaster()->CastSpell(GetCaster(), GetSpellInfo()->Id, flags);
-        }
-        return SPELL_CAST_OK;
+        GetSpell()->AddTriggeredCastFlags(TRIGGERED_FULL_MASK);
     }
-
     void Register() override
     {
-        OnCheckCast += SpellCheckCastFn(spell_gla_demonic_enhancements::CheckCast);
+        BeforeCastTime += SpellCastFn(spell_gla_demonic_enhancements::CheckCast);
     }
 };
 
@@ -450,8 +452,8 @@ class spell_gla_bane_of_portals : public AuraScript
     }
     void Remove(AuraEffect const* aurEff, AuraEffectHandleModes mode)
     {
-        if (GetTarget() && GetUnitOwner())
-            GetUnitOwner()->CastSpell(GetTarget(), SPELL_WARLOCK_BANE_OF_PORTALS_DUMMY, true);
+        if (GetTarget() && GetCaster())
+            GetCaster()->CastSpell(GetTarget(), SPELL_WARLOCK_BANE_OF_PORTALS_DUMMY, true);
     }
 
 
@@ -480,8 +482,8 @@ class spell_gla_cripple : public AuraScript
             if (amount < 0)
             {
                 amount += 10;
-                GetAura()->GetEffect(EFFECT_1)->SetAmount(amount);
-                GetAura()->GetEffect(EFFECT_2)->SetAmount(amount);
+                GetAura()->GetEffect(EFFECT_1)->ChangeAmount(amount, false);
+                GetAura()->GetEffect(EFFECT_2)->ChangeAmount(amount, false);
             }
         }
         tick = !tick;
@@ -498,7 +500,7 @@ class spell_gla_devour_magic : public SpellScript
 
     bool Validate(SpellInfo const* /*spellInfo*/) override
     {
-        return ValidateSpellInfo({ SPELL_WARLOCK_RITUAL_STRIKE });
+        return ValidateSpellInfo({ SPELL_WARLOCK_DEVOUR_MAGIC });
     }
 
     void Hit(SpellMissInfo missInfo)
@@ -506,26 +508,33 @@ class spell_gla_devour_magic : public SpellScript
         uint32 damage = GetHitDamage();
         Unit* unit = GetCaster();
         uint8 debuffs = 0;
-        for (auto aura : GetHitUnit()->GetAppliedAuras())
+        std::vector<int32> toRemove = {};
+        for (auto aura = GetHitUnit()->GetAppliedAuras().begin(); aura != GetHitUnit()->GetAppliedAuras().end(); ++aura)
         {
-            if (aura.second->GetBase()->GetOwner() != unit
-                || aura.second->GetBase()->GetSpellInfo()->GetSchoolMask() != SPELL_SCHOOL_MASK_SHADOW)
+            if (aura->second->GetBase()->GetCaster() != unit
+                || aura->second->GetBase()->GetSpellInfo()->GetSchoolMask() != SPELL_SCHOOL_MASK_SHADOW)
                 continue;
             for (uint8 i = EFFECT_0; i <= EFFECT_2; i++)
             {
-                if (!aura.second->GetBase()->GetEffect(i))
+                if (!aura->second->GetBase()->GetEffect(i))
                     continue;
-                if (aura.second->GetBase()->GetEffect(i)->GetAuraType() == SPELL_AURA_PERIODIC_DAMAGE
-                    || aura.second->GetBase()->GetEffect(i)->GetAuraType() == SPELL_AURA_PERIODIC_DAMAGE_PERCENT
-                    || aura.second->GetBase()->GetEffect(i)->GetAuraType() == SPELL_AURA_PERIODIC_LEECH)
+                if (aura->second->GetBase()->GetEffect(i)->GetAuraType() == SPELL_AURA_PERIODIC_DAMAGE
+                    || aura->second->GetBase()->GetEffect(i)->GetAuraType() == SPELL_AURA_PERIODIC_DAMAGE_PERCENT
+                    || aura->second->GetBase()->GetEffect(i)->GetAuraType() == SPELL_AURA_PERIODIC_LEECH)
                 {
-                    aura.second->GetBase()->Remove();
                     debuffs++;
+                    toRemove.push_back(aura->second->GetBase()->GetId());
+                    continue;
                 }
             }
         }
+        for (auto aura : toRemove)
+            GetHitUnit()->RemoveAurasDueToSpellByDispel(aura,
+                GetSpellInfo()->Id,
+                unit->GetGUID(),
+                unit);
         SetHitDamage(damage * debuffs);
-        HealInfo heal(unit, unit, float(unit->GetMaxHealth()) * float(GetSpellInfo()->Effects[EFFECT_1].CalcValue(unit, nullptr, GetHitUnit())) / 100.f, GetSpellInfo(), GetSpellInfo()->GetSchoolMask());
+        HealInfo heal(unit, unit, float(debuffs) * float(unit->GetMaxHealth()) * float(GetSpellInfo()->Effects[EFFECT_1].CalcValue(unit, nullptr, GetHitUnit())) / 100.f, GetSpellInfo(), GetSpellInfo()->GetSchoolMask());
         unit->HealBySpell(heal, false);
     }
 
@@ -565,7 +574,7 @@ class spell_gla_wither : public SpellScript
 
     bool Validate(SpellInfo const* /*spellInfo*/) override
     {
-        return ValidateSpellInfo({ SPELL_WARLOCK_RITUAL_STRIKE });
+        return ValidateSpellInfo({ SPELL_WARLOCK_WITHER });
     }
 
     void Hit(SpellMissInfo missInfo)
@@ -600,8 +609,8 @@ class spell_gla_curse_of_imprudence : public AuraScript
     void Absorb(AuraEffect* /*aurEff*/, DamageInfo& dmgInfo, uint32& absorbAmount)
     {
         absorbAmount = 0;
-        if (dmgInfo.GetAttacker() == GetUnitOwner() || dmgInfo.GetAttacker()->GetOwner() == GetUnitOwner())
-            dmgInfo.ModifyDamage(float(dmgInfo.GetDamage()) * 1.f + float(GetAura()->GetEffect(EFFECT_0)->GetAmount()) / 100);
+        if (dmgInfo.GetAttacker() == GetCaster() || dmgInfo.GetAttacker()->GetOwner() == GetCaster())
+            dmgInfo.ModifyDamage(float(dmgInfo.GetDamage()) * (float(GetAura()->GetEffect(EFFECT_0)->GetAmount()) / 100.f));
     }
 
     void Register() override
@@ -626,7 +635,7 @@ class spell_gla_ritual_strike : public SpellScript
         uint32 bonus = GetSpellInfo()->Effects[EFFECT_1].CalcValue(unit, nullptr, GetHitUnit());
         for (auto aura : GetHitUnit()->GetAppliedAuras())
         {
-            if (aura.second->GetBase()->GetOwner() != unit)
+            if (aura.second->GetBase()->GetCaster() != unit)
                 continue;
             for (uint8 i = EFFECT_0; i <= EFFECT_2; i++)
             {
@@ -707,8 +716,8 @@ class spell_gla_bane_of_despair : public AuraScript
             break;
         }
         newAura->SetDuration(GetAura()->GetDuration());
-        newAura->GetEffect(EFFECT_0)->SetAmount(GetAura()->GetEffect(EFFECT_0)->GetAmount());
-        newAura->GetEffect(EFFECT_1)->SetAmount(GetAura()->GetEffect(EFFECT_1)->GetAmount());
+        newAura->GetEffect(EFFECT_0)->ChangeAmount(GetAura()->GetEffect(EFFECT_0)->GetAmount(), false);
+        newAura->GetEffect(EFFECT_1)->ChangeAmount(GetAura()->GetEffect(EFFECT_1)->GetAmount(), false);
         GetAura()->Remove();
 
     }
@@ -838,7 +847,7 @@ class spell_gla_banish_aura : public AuraScript
     void Apply(AuraEffect const* aurEff, AuraEffectHandleModes mode)
     {
         if (GetTarget())
-            GetTarget()->AddAura(SPELL_WARLOCK_BANISH_AURA_DUMMY, GetUnitOwner());
+            GetTarget()->AddAura(SPELL_WARLOCK_BANISH_AURA_DUMMY, GetCaster());
     }
     void Remove(AuraEffect const* aurEff, AuraEffectHandleModes mode)
     {

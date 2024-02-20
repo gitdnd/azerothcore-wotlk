@@ -3460,11 +3460,18 @@ SpellCastResult Spell::prepare(SpellCastTargets const* targets, AuraEffect const
 
     InitExplicitTargets(*targets);
 
+
     if (!sScriptMgr->CanPrepare(this, targets, triggeredByAura))
     {
         finish(false);
         return SPELL_FAILED_UNKNOWN;
     }
+
+    LoadScripts();
+
+    CallScriptBeforeCastTimeHandlers();
+
+
 
     // Fill aura scaling information
     if (sScriptMgr->CanScalingEverything(this) || m_caster->IsTotem() || (m_caster->IsControlledByPlayer() && !m_spellInfo->IsPassive() && m_spellInfo->SpellLevel && !m_spellInfo->IsChanneled() && !(_triggeredCastFlags & TRIGGERED_IGNORE_AURA_SCALING)))
@@ -3490,7 +3497,6 @@ SpellCastResult Spell::prepare(SpellCastTargets const* targets, AuraEffect const
     }
 
     m_spellState = SPELL_STATE_PREPARING;
-
     if (triggeredByAura)
     {
         m_triggeredByAuraSpell.Init(triggeredByAura);
@@ -3514,8 +3520,6 @@ SpellCastResult Spell::prepare(SpellCastTargets const* targets, AuraEffect const
         finish(false);
         return SPELL_FAILED_SPELL_IN_PROGRESS;
     }
-
-    LoadScripts();
 
     OnSpellLaunch();
 
@@ -8475,6 +8479,18 @@ void Spell::LoadScripts()
     }
 }
 
+void Spell::CallScriptBeforeCastTimeHandlers()
+{
+    for (std::list<SpellScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
+    {
+        (*scritr)->_PrepareScriptCall(SPELL_SCRIPT_HOOK_BEFORE_CAST_TIME);
+        std::list<SpellScript::CastHandler>::iterator hookItrEnd = (*scritr)->BeforeCastTime.end(), hookItr = (*scritr)->BeforeCastTime.begin();
+        for (; hookItr != hookItrEnd; ++hookItr)
+            (*hookItr).Call(*scritr);
+
+        (*scritr)->_FinishScriptCall();
+    }
+}
 void Spell::CallScriptBeforeCastHandlers()
 {
     for (std::list<SpellScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
