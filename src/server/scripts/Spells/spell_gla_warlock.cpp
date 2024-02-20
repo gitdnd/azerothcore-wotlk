@@ -735,9 +735,9 @@ class spell_gla_drain_life : public SpellScript
         {
             if (caster->IsFriendlyTo(target))
             {
-                int32 bp1 = -1 * GetEffectValue();
+                int32 bp1 = GetEffectValue();
                 int32 bp2 = GetEffectValue();
-                caster->CastCustomSpell(target, SPELL_WARLOCK_DRAIN_LIFE_ENEMY, &bp1, &bp2, nullptr, true);
+                caster->CastCustomSpell(target, SPELL_WARLOCK_DRAIN_LIFE_ALLY, &bp1, &bp2, nullptr, true);
             }
             else
             {
@@ -755,7 +755,7 @@ class spell_gla_drain_life : public SpellScript
                 return SPELL_FAILED_UNIT_NOT_INFRONT;
 
             if (target->IsFriendlyTo(caster))
-                return SPELL_FAILED_BAD_TARGETS;
+                return SPELL_CAST_OK;
         }
         else
             return SPELL_FAILED_BAD_TARGETS;
