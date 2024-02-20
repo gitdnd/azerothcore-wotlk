@@ -16,4 +16,4 @@ INSERT IGNORE INTO spell_bonus_data(entry, direct_bonus, dot_bonus, ap_bonus, ap
 (110056, 0.2, 0, 0, 0, "Warlock - Shield"),
 (110059, 0.43, 0, 0, 0, "Warlock - Bane of Portals"),
 (110060, 0, 1.2, 0, 0, "Warlock - DOOM"),
-(110079, 0, 1, 0, 0, "Warlock - Blood Boil");
+(110079, 0, 0.1, 0, 0, "Warlock - Blood Boil");
