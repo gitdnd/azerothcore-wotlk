@@ -154,9 +154,9 @@ class spell_gla_enrage : public AuraScript
         int32 minHp = int32(GetTarget()->CountPctFromMaxHealth(GetAura()->GetEffect(EFFECT_1)->CalculateAmount(GetCaster())));
 
         if (remainingHp < minHp)
-            GetAura()->GetEffect(EFFECT_2)->ChangeAmount(GetAura()->GetEffect(EFFECT_1)->CalculateAmount(GetCaster()), false);
+            GetAura()->GetEffect(EFFECT_2)->ChangeAmount(GetAura()->GetEffect(EFFECT_1)->CalculateAmount(GetCaster()));
         else
-            GetAura()->GetEffect(EFFECT_2)->ChangeAmount(0, false);
+            GetAura()->GetEffect(EFFECT_2)->ChangeAmount(0);
         absorbAmount = 0;
     }
 
@@ -716,8 +716,8 @@ class spell_gla_bane_of_despair : public AuraScript
             break;
         }
         newAura->SetDuration(GetAura()->GetDuration());
-        newAura->GetEffect(EFFECT_0)->ChangeAmount(GetAura()->GetEffect(EFFECT_0)->GetAmount(), false);
-        newAura->GetEffect(EFFECT_1)->ChangeAmount(GetAura()->GetEffect(EFFECT_1)->GetAmount(), false);
+        newAura->GetEffect(EFFECT_0)->ChangeAmount(GetAura()->GetEffect(EFFECT_0)->GetAmount());
+        newAura->GetEffect(EFFECT_1)->ChangeAmount(GetAura()->GetEffect(EFFECT_1)->GetAmount());
         GetAura()->Remove();
 
     }
