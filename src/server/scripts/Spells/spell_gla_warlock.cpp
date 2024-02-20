@@ -219,7 +219,7 @@ class spell_gla_blood_boil : public SpellScript
         if (Unit* pet = GetCaster()->GetGuardianPet())
         {
             GetCaster()->DealDamage(GetCaster(), pet, (float)pet->GetMaxHealth() * float(GetSpellInfo()->Effects[EFFECT_0].CalcValue(GetCaster(), nullptr, pet)) / 100.f);
-            pet->CastSpell(pet, SPELL_WARLOCK_BLOOD_BOIL_DUMMY, true);
+            pet->AddAura(SPELL_WARLOCK_BLOOD_BOIL_DUMMY, pet);
         }
     }
 
@@ -481,9 +481,9 @@ class spell_gla_cripple : public AuraScript
             int32 amount = GetAura()->GetEffect(EFFECT_1)->GetAmount();
             if (amount < 0)
             {
-                amount += 10;
-                GetAura()->GetEffect(EFFECT_1)->ChangeAmount(amount, false);
-                GetAura()->GetEffect(EFFECT_2)->ChangeAmount(amount, false);
+                amount += 20;
+                GetAura()->GetEffect(EFFECT_1)->ChangeAmount(amount);
+                GetAura()->GetEffect(EFFECT_2)->ChangeAmount(amount);
             }
         }
         tick = !tick;
