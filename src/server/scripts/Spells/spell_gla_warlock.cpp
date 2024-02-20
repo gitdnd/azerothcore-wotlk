@@ -391,25 +391,6 @@ class spell_gla_demonic_sacrifice : public SpellScript
     }
 };
 
-class spell_gla_demonic_enhancements : public SpellScript
-{
-    PrepareSpellScript(spell_gla_demonic_enhancements);
-
-    bool Validate(SpellInfo const* /*spellInfo*/) override
-    {
-        return ValidateSpellInfo({ SPELL_WARLOCK_DOOM });
-    }
-
-    void CheckCast()
-    {
-        GetSpell()->AddTriggeredCastFlags(TRIGGERED_FULL_MASK);
-    }
-    void Register() override
-    {
-        BeforeCastTime += SpellCastFn(spell_gla_demonic_enhancements::CheckCast);
-    }
-};
-
 class spell_gla_soul_fragments_hit : public SpellScript
 {
     PrepareSpellScript(spell_gla_soul_fragments_hit);
@@ -440,18 +421,6 @@ class spell_gla_bane_of_portals : public AuraScript
     {
         return ValidateSpellInfo({ SPELL_WARLOCK_BANE_OF_PORTALS, SPELL_WARLOCK_BANE_OF_PORTALS_DUMMY });
     }
-
-    void Proc(ProcEventInfo& eventInfo)
-    {
-        if (Player* player = eventInfo.GetActor()->ToPlayer(); player)
-        {
-            if (eventInfo.GetProcSpell())
-            {   
-                uint32 id = eventInfo.GetProcSpell()->GetSpellInfo()->Id;
-                player->ModifySpellCooldown(id, GetAura()->GetEffect(EFFECT_1)->GetAmplitude());
-            }
-        }
-    }
     void Remove(AuraEffect const* aurEff, AuraEffectHandleModes mode)
     {
         if (GetTarget() && GetCaster())
@@ -461,7 +430,6 @@ class spell_gla_bane_of_portals : public AuraScript
 
     void Register() override
     {
-        AfterProc += AuraProcFn(spell_gla_bane_of_portals::Proc);
         AfterEffectRemove += AuraEffectRemoveFn(spell_gla_bane_of_portals::Remove, EFFECT_1, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
     }
 };
@@ -475,20 +443,15 @@ class spell_gla_cripple : public AuraScript
         return ValidateSpellInfo({ SPELL_WARLOCK_CRIPPLE });
     }
 
-    bool tick = false;
     void Apply(AuraEffect const* aurEff)
     {
-        if (tick)
+        int32 amount = GetAura()->GetEffect(EFFECT_1)->GetAmount();
+        if (amount < 0)
         {
-            int32 amount = GetAura()->GetEffect(EFFECT_1)->GetAmount();
-            if (amount < 0)
-            {
-                amount += 20;
-                GetAura()->GetEffect(EFFECT_1)->ChangeAmount(amount);
-                GetAura()->GetEffect(EFFECT_2)->ChangeAmount(amount);
-            }
+            amount += 10;
+            GetAura()->GetEffect(EFFECT_1)->ChangeAmount(amount);
+            GetAura()->GetEffect(EFFECT_2)->ChangeAmount(amount);
         }
-        tick = !tick;
     }
     void Register() override
     {
@@ -658,77 +621,7 @@ class spell_gla_ritual_strike : public SpellScript
     }
 };
 
-class spell_gla_bane_of_despair : public AuraScript
-{
-    PrepareAuraScript(spell_gla_bane_of_despair);
 
-    bool Validate(SpellInfo const* /*spellInfo*/) override
-    {
-        return ValidateSpellInfo({ SPELL_WARLOCK_BANE_OF_DESPAIR,
-        SPELL_WARLOCK_BANE_OF_DESPAIR_WARRIOR,
-        SPELL_WARLOCK_BANE_OF_DESPAIR_PALADIN,
-        SPELL_WARLOCK_BANE_OF_DESPAIR_HUNTER,
-        SPELL_WARLOCK_BANE_OF_DESPAIR_ROGUE,
-        SPELL_WARLOCK_BANE_OF_DESPAIR_PRIEST,
-        SPELL_WARLOCK_BANE_OF_DESPAIR_DEATH_KNIGHT,
-        SPELL_WARLOCK_BANE_OF_DESPAIR_SHAMAN,
-        SPELL_WARLOCK_BANE_OF_DESPAIR_MAGE,
-        SPELL_WARLOCK_BANE_OF_DESPAIR_WARLOCK,
-        SPELL_WARLOCK_BANE_OF_DESPAIR_DRUID
-            });
-    }
-
-    void Apply(AuraEffect const* aurEff, AuraEffectHandleModes mode)
-    {
-        Aura* newAura;
-        switch (GetTarget()->getClass())
-        {
-        case CLASS_WARRIOR:
-            newAura = GetCaster()->AddAura(SPELL_WARLOCK_BANE_OF_DESPAIR_WARRIOR, GetTarget());
-            break;
-        case CLASS_PALADIN:
-            newAura = GetCaster()->AddAura(SPELL_WARLOCK_BANE_OF_DESPAIR_PALADIN, GetTarget());
-            break;
-        case CLASS_HUNTER:
-            newAura = GetCaster()->AddAura(SPELL_WARLOCK_BANE_OF_DESPAIR_HUNTER, GetTarget());
-            break;
-        case CLASS_ROGUE:
-            newAura = GetCaster()->AddAura(SPELL_WARLOCK_BANE_OF_DESPAIR_ROGUE, GetTarget());
-            break;
-        case CLASS_PRIEST:
-            newAura = GetCaster()->AddAura(SPELL_WARLOCK_BANE_OF_DESPAIR_PRIEST, GetTarget());
-            break;
-        case CLASS_DEATH_KNIGHT:
-            newAura = GetCaster()->AddAura(SPELL_WARLOCK_BANE_OF_DESPAIR_DEATH_KNIGHT, GetTarget());
-            break;
-        case CLASS_SHAMAN:
-            newAura = GetCaster()->AddAura(SPELL_WARLOCK_BANE_OF_DESPAIR_SHAMAN, GetTarget());
-            break;
-        case CLASS_MAGE:
-            newAura = GetCaster()->AddAura(SPELL_WARLOCK_BANE_OF_DESPAIR_MAGE, GetTarget());
-            break;
-        case CLASS_WARLOCK:
-            newAura = GetCaster()->AddAura(SPELL_WARLOCK_BANE_OF_DESPAIR_WARLOCK, GetTarget());
-            break;
-        case CLASS_DRUID:
-            newAura = GetCaster()->AddAura(SPELL_WARLOCK_BANE_OF_DESPAIR_DRUID, GetTarget());
-            break;
-        default:
-            return;
-            break;
-        }
-        newAura->SetDuration(GetAura()->GetDuration());
-        newAura->GetEffect(EFFECT_0)->ChangeAmount(GetAura()->GetEffect(EFFECT_0)->GetAmount());
-        newAura->GetEffect(EFFECT_1)->ChangeAmount(GetAura()->GetEffect(EFFECT_1)->GetAmount());
-        GetAura()->Remove();
-
-    }
-    void Register() override
-    {
-        AfterEffectApply += AuraEffectApplyFn(spell_gla_bane_of_despair::Apply, EFFECT_1, SPELL_AURA_ADD_PCT_MODIFIER, AURA_EFFECT_HANDLE_REAL);
-
-    }
-};
 
 class spell_gla_drain_life : public SpellScript
 {
@@ -922,10 +815,8 @@ void AddSC_gla_warlock_spell_scripts()
     RegisterSpellScript(spell_gla_demonic_circle_imprison);
     RegisterSpellScript(spell_gla_felgaurds_persistence); 
     RegisterSpellScript(spell_gla_demonic_sacrifice);
-    RegisterSpellScript(spell_gla_demonic_enhancements);
     RegisterSpellScript(spell_gla_death_and_decay);
     RegisterSpellScript(spell_gla_bane_of_portals);
-    RegisterSpellScript(spell_gla_bane_of_despair);
     RegisterSpellScript(spell_gla_cripple);
     RegisterSpellScript(spell_gla_devour_magic);
     RegisterSpellScript(spell_gla_ritual_of_tower);
