@@ -823,10 +823,7 @@ class spell_gla_death_and_decay : public AuraScript
     {
         if (float(GetAura()->GetSpellInfo()->GetEffect(EFFECT_1).CalcValue(GetCaster())) > float(rand() / 100))
         {
-            std::list<Unit*> units = {};
-            aurEff->GetTargetList(units);
-            for (Unit* unit : units)
-                GetCaster()->AddAura(SPELL_WARLOCK_CORRUPTION, unit);
+            GetCaster()->AddAura(SPELL_WARLOCK_CORRUPTION, GetTarget());
         }
 
     }
