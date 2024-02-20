@@ -18,6 +18,7 @@ REPLACE INTO `spell_script_names` (`spell_id`, `ScriptName`) VALUES
     (110025 , 'spell_gla_ritual_of_tower'),
     (110022 , 'spell_gla_wither'),
     (110020 , 'spell_gla_curse_of_imprudence'),
+    (110021 , 'spell_gla_death_and_decay'),
     (110019 , 'spell_gla_ritual_strike'),
     (110018 , 'spell_gla_bane_of_despair'),
     (110013 , 'spell_gla_drain_life'),

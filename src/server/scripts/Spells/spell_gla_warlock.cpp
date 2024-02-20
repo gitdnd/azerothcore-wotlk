@@ -31,6 +31,7 @@
 enum GlaWarlockSpells
 {
     SPELL_WARLOCK_DEMONIC_CIRCLE_SUMMON     = 48018,
+    SPELL_WARLOCK_CORRUPTION                = 56898,
 
     SPELL_WARLOCK_FINGER_OF_DEATH           = 110001,
     SPELL_WARLOCK_FINGER_OF_DEATH_AURA      = 110002,
@@ -44,6 +45,7 @@ enum GlaWarlockSpells
     SPELL_WARLOCK_DRAIN_LIFE_ALLY           = 110016,
     SPELL_WARLOCK_RITUAL_STRIKE             = 110019,
     SPELL_WARLOCK_CURSE_OF_IMPRUDENCE       = 110020,
+    SPELL_WARLOCK_DEATH_AND_DECAY           = 110021,
     SPELL_WARLOCK_WITHER                    = 110022,
     SPELL_WARLOCK_RITUAL_OF_TOWER           = 110027,
     SPELL_WARLOCK_DRAIN_SOUL_SLOW           = 110029,
@@ -808,6 +810,31 @@ class spell_gla_agony : public AuraScript
     }
 };
 
+class spell_gla_death_and_decay : public AuraScript
+{
+    PrepareAuraScript(spell_gla_death_and_decay);
+
+    bool Validate(SpellInfo const* /*spellInfo*/) override
+    {
+        return ValidateSpellInfo({ SPELL_WARLOCK_DEATH_AND_DECAY, SPELL_WARLOCK_CORRUPTION });
+    }
+
+    void Calc(AuraEffect const* aurEff)
+    {
+        if (float(GetAura()->GetSpellInfo()->GetEffect(EFFECT_1).CalcValue(GetCaster())) > float(rand() / 100))
+        {
+            std::list<Unit*> units = {};
+            aurEff->GetTargetList(units);
+            for (Unit* unit : units)
+                GetCaster()->AddAura(SPELL_WARLOCK_CORRUPTION, unit);
+        }
+
+    }
+    void Register() override
+    {
+        OnEffectPeriodic += AuraEffectPeriodicFn(spell_gla_death_and_decay::Calc, EFFECT_0, SPELL_AURA_PERIODIC_DAMAGE);
+    }
+};
 class spell_gla_bane_of_havoc : public AuraScript
 {
     PrepareAuraScript(spell_gla_bane_of_havoc);
@@ -847,7 +874,7 @@ class spell_gla_banish_aura : public AuraScript
     void Apply(AuraEffect const* aurEff, AuraEffectHandleModes mode)
     {
         if (GetTarget())
-            GetTarget()->AddAura(SPELL_WARLOCK_BANISH_AURA_DUMMY, GetCaster());
+            GetCaster()->AddAura(SPELL_WARLOCK_BANISH_AURA_DUMMY, GetTarget());
     }
     void Remove(AuraEffect const* aurEff, AuraEffectHandleModes mode)
     {
@@ -896,9 +923,10 @@ void AddSC_gla_warlock_spell_scripts()
     RegisterSpellScript(spell_gla_blood_boil);
     RegisterSpellScript(spell_gla_demonic_circle_demonport);
     RegisterSpellScript(spell_gla_demonic_circle_imprison);
-    RegisterSpellScript(spell_gla_felgaurds_persistence);
+    RegisterSpellScript(spell_gla_felgaurds_persistence); 
     RegisterSpellScript(spell_gla_demonic_sacrifice);
     RegisterSpellScript(spell_gla_demonic_enhancements);
+    RegisterSpellScript(spell_gla_death_and_decay);
     RegisterSpellScript(spell_gla_bane_of_portals);
     RegisterSpellScript(spell_gla_bane_of_despair);
     RegisterSpellScript(spell_gla_cripple);
