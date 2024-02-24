@@ -25,6 +25,7 @@
 #include "GridNotifiers.h"
 #include "ScriptMgr.h"
 #include "SpellAuraEffects.h"
+#include "ScriptedCreature.h"
 #include "SpellMgr.h"
 #include "SpellScript.h"
 
@@ -48,6 +49,9 @@ enum GlaWarlockSpells
     SPELL_WARLOCK_DEATH_AND_DECAY           = 110021,
     SPELL_WARLOCK_WITHER                    = 110022,
     SPELL_WARLOCK_RITUAL_OF_TOWER           = 110027,
+    SPELL_WARLOCK_DRAIN_SOUL                = 110028,
+    SPELL_WARLOCK_SOUL_FRAGMENTS            = 110030,
+    SPELL_WARLOCK_TRUE_SIGHT                = 110032,
     SPELL_WARLOCK_DRAIN_SOUL_SLOW           = 110029,
     SPELL_WARLOCK_SOUL_FRAGMENTS_HIT        = 110031,
     SPELL_WARLOCK_DEVOUR_MAGIC              = 110033,
@@ -804,6 +808,63 @@ class spell_gla_finger_of_death_aura : public AuraScript
     }
 };
 
+class warlock_gla_tower : public CreatureScript
+{
+public:
+    warlock_gla_tower() : CreatureScript("warlock_gla_tower") { }
+
+    CreatureAI* GetAI(Creature* creature) const override
+    {
+        return new warlock_gla_towerAI(creature);
+    }
+
+    struct warlock_gla_towerAI : public ScriptedAI
+    {
+        warlock_gla_towerAI(Creature* creature) : ScriptedAI(creature)
+        {
+            creature->AddAura(SPELL_WARLOCK_TRUE_SIGHT, creature);
+        }
+        enum Events
+        {
+            CAST_SOUL_FRAGMENTS,
+            CAST_DRAIN_SOUL
+        };
+        void JustEngagedWith(Unit* /*who*/) override
+        {
+            events.ScheduleEvent(CAST_SOUL_FRAGMENTS, 2000ms);
+            events.ScheduleEvent(CAST_DRAIN_SOUL, 3000ms);
+        }
+
+        void UpdateAI(uint32 diff) override
+        {
+            if (!UpdateVictim())
+                return;
+
+
+            events.Update(diff);
+            switch (events.ExecuteEvent())
+            {
+            case CAST_SOUL_FRAGMENTS:
+                me->CastSpell(me, SPELL_WARLOCK_SOUL_FRAGMENTS, true);
+                events.ScheduleEvent(CAST_SOUL_FRAGMENTS, 2000ms);
+                break;
+            case CAST_DRAIN_SOUL:
+                events.ScheduleEvent(CAST_DRAIN_SOUL, 3000ms);
+                if (me->HasUnitState(UNIT_STATE_CASTING))
+                {
+                    return;
+                }
+                me->CastSpell(me->GetVictim(), SPELL_WARLOCK_DRAIN_SOUL, false);
+            }
+        }
+        void Reset() override
+        {
+            events.Reset();
+        }
+    };
+};
+
+
 void AddSC_gla_warlock_spell_scripts()
 {
 
@@ -829,4 +890,6 @@ void AddSC_gla_warlock_spell_scripts()
     RegisterSpellScript(spell_gla_banish_aura);
     RegisterSpellScript(spell_gla_finger_of_death_aura); 
     RegisterSpellScript(spell_gla_soul_fragments_hit);
+
+    new warlock_gla_tower();
 }
