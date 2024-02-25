@@ -44,7 +44,6 @@ REPLACE INTO `spell_script_names` (`spell_id`, `ScriptName`) VALUES
 	(150057, 'spell_elk_dark_wave'), 
 	(150058, 'spell_elk_black_wave'), 
 	(150059, 'spell_elk_black_space'),
-	(150060, 'spell_elk_way_to_hellfire'), 
 	(1000000, 'spell_extension_system'),
 	(1000001, 'spell_elk_crusader_strike'),
 	(1000002, 'spell_elk_exorcism'),
@@ -68,4 +67,6 @@ REPLACE INTO `spell_script_names` (`spell_id`, `ScriptName`) VALUES
 	(1400001, 'spell_elk_force_of_nature'),
 	(1500001, 'spell_elk_spin_fury'),
 	(1700001, 'spell_elk_pin_down_aura'),
-	(1800001, 'spell_elk_healing_reach_aura'); 
+	(1800001, 'spell_elk_healing_reach_aura'),
+	(2000007, 'spell_elk_fire_wave_aura'),
+	(2000009, 'spell_elk_fire_wave_aura'); 

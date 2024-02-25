@@ -236,86 +236,6 @@ class spell_elk_black_space : public SpellScript
 };
 
 
-class spell_elk_way_to_hellfire_aura : public AuraScript
-{
-    friend class spell_elk_way_to_hellfire;
-    PrepareAuraScript(spell_elk_way_to_hellfire_aura);
-
-    struct WaveTargets
-    {
-        WaveTargets() {};
-        Position pos;
-        uint8 ticks = 0;
-        float normX;
-        float normY;
-        float normZ;
-        float normO;
-    };
-    std::vector< WaveTargets> targets;
-
-    void OnAdd(Unit* target)
-    {
-        WaveTargets wt;
-        wt.pos = GetOwner()->GetPosition();
-        wt.pos.m_positionZ += GetUnitOwner()->GetCollisionHeight();
-        Position pos2 = target->GetPosition();
-        float dist = wt.pos.GetExactDist(pos2);
-        wt.normX = (wt.pos.m_positionX - pos2.m_positionX) / dist;
-        wt.normY = (wt.pos.m_positionY - pos2.m_positionY) / dist;
-        wt.normZ = (wt.pos.m_positionZ - (pos2.m_positionZ + target->GetCollisionHeight() / 2)) / dist;
-        targets.push_back(wt);
-    }
-    void Periodic(AuraEffect const* aurEff)
-    {
-        if (!GetUnitOwner())
-            return;
-        for (std::vector<WaveTargets>::iterator target = targets.begin(); target != targets.end(); )
-        {
-            target->ticks++;
-            if (target->ticks < 5)
-                return;
-            Position pos2 = target->pos;
-            pos2.m_positionX -= target->normX * target->ticks;
-            pos2.m_positionY -= target->normY * target->ticks;
-            pos2.m_positionZ -= target->normZ * target->ticks;
-
-            if (!GetUnitOwner()->GetMap()->isInLineOfSight(target->pos.m_positionX, target->pos.m_positionY, target->pos.m_positionZ, pos2.m_positionX, pos2.m_positionY, pos2.m_positionZ, GetUnitOwner()->GetPhaseMask(), LINEOFSIGHT_ALL_CHECKS, VMAP::ModelIgnoreFlags::Nothing))
-            {
-                if (target->ticks < 10)
-                    target = targets.erase(target);
-                else
-                {
-                    if (GetUnitOwner()->GetVictim())
-                    {
-                        target->ticks = 0;
-                        pos2.m_positionX += target->normX * target->ticks;
-                        pos2.m_positionY += target->normY * target->ticks;
-                        pos2.m_positionZ += target->normZ * target->ticks;
-                        target->pos = pos2;
-                        pos2 = GetUnitOwner()->GetVictim()->GetPosition();
-                        float dist = target->pos.GetExactDist(pos2);
-                        target->normX = (target->pos.m_positionX - pos2.m_positionX) / dist;
-                        target->normY = (target->pos.m_positionY - pos2.m_positionY) / dist;
-                        target->normZ = (target->pos.m_positionZ - (pos2.m_positionZ + GetUnitOwner()->GetVictim()->GetCollisionHeight() / 2)) / dist;
-                        GetUnitOwner()->CastSpell(pos2.m_positionX, pos2.m_positionY, pos2.m_positionZ, 150047, true);
-                        ++target;
-                    }
-                    else
-                        target = targets.erase(target);
-                }
-            }
-            else
-            {
-                GetUnitOwner()->CastSpell(pos2.m_positionX, pos2.m_positionY, pos2.m_positionZ, 150049, true);
-                ++target;
-            }
-        }
-    }
-    void Register() override
-    {
-        OnEffectPeriodic += AuraEffectPeriodicFn(spell_elk_way_to_hellfire_aura::Periodic, EFFECT_1, SPELL_AURA_PERIODIC_DUMMY);
-    }
-};
 
 
 class spell_elk_fire_wave_aura : public AuraScript
@@ -326,42 +246,39 @@ class spell_elk_fire_wave_aura : public AuraScript
 
     Position posNext;
     Position posPrev;
+
+    float dist;
     void PeriodicWrap(AuraEffect const* aurEff, AuraEffectHandleModes mode)
     {
         posNext = GetOwner()->GetPosition();
         posPrev = posNext;
+        dist = GetSpellInfo()->GetEffect(EFFECT_0).BasePoints;
+        dist /= 10.f;
         Periodic(aurEff);
     }
     void Periodic(AuraEffect const* aurEff)
     {
-        GetUnitOwner()->MovePositionToFirstCollision(posNext, 1.5f, posNext.m_orientation);
-        float dist = posNext.GetExactDist(posPrev);
-        if (dist < 0.8 || dist > 1.2)
+        GetCaster()->MovePositionToFirstCollision(posNext, dist, -1 * GetOwner()->GetOrientation() + posNext.m_orientation);
+        posNext.m_orientation = posPrev.m_orientation;
+        float distance = posNext.GetExactDist(posPrev);
+        if (distance < dist - 0.3f || distance > dist + 0.3f)
         {
             return;
         }
         else
         {
             posPrev = posNext;
-            GetUnitOwner()->CastSpell(posNext.m_positionX, posNext.m_positionY, posNext.m_positionZ, 2000008, true);
+            GetCaster()->CastSpell(posNext.m_positionX, posNext.m_positionY, posNext.m_positionZ, 2000008, true);
         }
     }
     void Register() override
     {
-        AfterEffectApply += AuraEffectApplyFn(spell_elk_fire_wave_aura::PeriodicWrap, EFFECT_1, SPELL_AURA_PERIODIC_DUMMY);
+        AfterEffectApply += AuraEffectApplyFn(spell_elk_fire_wave_aura::PeriodicWrap, EFFECT_1, SPELL_AURA_PERIODIC_DUMMY, AURA_EFFECT_HANDLE_REAL);
         OnEffectPeriodic += AuraEffectPeriodicFn(spell_elk_fire_wave_aura::Periodic, EFFECT_1, SPELL_AURA_PERIODIC_DUMMY);
     }
 };
 
-class spell_elk_fire_wave : public SpellScript
-{
-    PrepareSpellScript(spell_elk_fire_wave);
 
-    void Register() override
-    {
-        OnEffectHitTarget += SpellEffectFn(spell_elk_fire_wave::Hit, EFFECT_2, SPELL_EFFECT_DUMMY);
-    }
-};
 
 
 void AddSC_elk_creature_100_scripts()
@@ -370,6 +287,5 @@ void AddSC_elk_creature_100_scripts()
     RegisterSpellAndAuraScriptPair(spell_elk_dark_wave, spell_elk_dark_wave_aura);
     RegisterSpellAndAuraScriptPair(spell_elk_black_wave, spell_elk_black_wave_aura);
     RegisterSpellAndAuraScriptPair(spell_elk_black_space, spell_elk_black_space_aura);
-    RegisterSpellAndAuraScriptPair(spell_elk_way_to_hellfire, spell_elk_way_to_hellfire_aura);
-    RegisterSpellAndAuraScriptPair(spell_elk_fire_wave, spell_elk_fire_wave_aura);
+    RegisterSpellScript(spell_elk_fire_wave_aura);
 }

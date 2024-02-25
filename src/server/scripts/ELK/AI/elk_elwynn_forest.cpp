@@ -254,6 +254,38 @@ public:
     }
 };
 
+class rogue_wizard : public ELKCreatureScript
+{
+public:
+    rogue_wizard() : ELKCreatureScript("rogue_wizard") {}
+    CreatureAI* GetAI(Creature* creature) const override
+    {
+        return new rogue_wizardAI(creature, this);
+    }
+    struct rogue_wizardAI : public ELKAI
+    {
+        rogue_wizardAI(Creature* creature, const ELKCreatureScript* script) : ELKAI(creature, script)
+        {
+
+        };
+        void EnterCombatCustom(Unit* /*who*/) override
+        {
+
+            events.ScheduleEvent(REGULAR_CHECK, regularCheck);
+        }
+        void ResetExtra() override
+        {
+        }
+        void UpdateAI(uint32 diff) override
+        {
+            ELKCUpdateAI();
+            DoEvents();
+        }
+
+
+
+    };
+};
 class hogger : public ELKCreatureScript
 {
 public:
@@ -304,7 +336,7 @@ void AddSC_elk_elwynn_forest_mobs()
     new defias();
     new padfoot();
     new hogger();
-
+    new rogue_wizard();
     new cutpurse();
 }
 
