@@ -31,7 +31,7 @@ public:
             if (me->IsWithinMeleeRange(me->GetVictim()))
                 chanceAtk = script->chanceAtk;
             else
-                chanceAtk = 0;
+                chanceAtk = 1;
             DoEvents();
         }
 
@@ -70,7 +70,7 @@ public:
             if (me->IsWithinMeleeRange(me->GetVictim()))
                 chanceAtk = script->chanceAtk;
             else
-                chanceAtk = 0;
+                chanceAtk = 1;
             DoEvents();
         }
 
@@ -108,7 +108,7 @@ public:
             if (me->IsWithinMeleeRange(me->GetVictim()))
                 chanceAtk = script->chanceAtk;
             else
-                chanceAtk = 0;
+                chanceAtk = 1;
             DoEvents();
         }
 
@@ -145,7 +145,7 @@ public:
             if (me->IsWithinMeleeRange(me->GetVictim()))
                 chanceAtk = script->chanceAtk;
             else
-                chanceAtk = 0;
+                chanceAtk = 1;
             DoEvents();
         }
 
@@ -183,7 +183,7 @@ public:
             if (me->IsWithinMeleeRange(me->GetVictim()))
                 chanceAtk = script->chanceAtk;
             else
-                chanceAtk = 0;
+                chanceAtk = 1;
             DoEvents();
         }
 
@@ -221,7 +221,7 @@ public:
             if (me->IsWithinMeleeRange(me->GetVictim()))
                 chanceAtk = script->chanceAtk;
             else
-                chanceAtk = 0;
+                chanceAtk = 1;
             DoEvents();
         }
 
@@ -254,6 +254,46 @@ public:
     }
 };
 
+class hogger : public ELKCreatureScript
+{
+public:
+    hogger() : ELKCreatureScript("hogger") {}
+    CreatureAI* GetAI(Creature* creature) const override
+    {
+        return new hoggerAI(creature, this);
+    }
+    struct hoggerAI : public ELKAI
+    {
+        hoggerAI(Creature* creature, const ELKCreatureScript* script) : ELKAI(creature, script)
+        {
+
+        };
+        void EnterCombatCustom(Unit* /*who*/) override
+        {
+
+            events.ScheduleEvent(REGULAR_CHECK, regularCheck);
+        }
+        void ResetExtra() override
+        {
+        }
+        void UpdateAI(uint32 diff) override
+        {
+            ELKCUpdateAI();
+
+
+            if (me->IsWithinMeleeRange(me->GetVictim()))
+                chanceAtk = script->chanceAtk;
+            else
+                chanceAtk = 1;
+            DoEvents();
+        }
+        virtual void OnMutate() override
+        {
+            me->RemoveAura(2000004);
+        }
+
+    };
+};
 
 void AddSC_elk_elwynn_forest_mobs()
 {
@@ -263,6 +303,7 @@ void AddSC_elk_elwynn_forest_mobs()
     new night_prowler();
     new defias();
     new padfoot();
+    new hogger();
 
     new cutpurse();
 }

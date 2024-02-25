@@ -649,7 +649,7 @@ public:
                 {
                     if (me->GetDistance(me->GetVictim()) >= act.min_dist && (me->GetDistance(me->GetVictim()) < act.max_dist || act.max_dist == 0))
                     {
-                        Position pos = me->GetFirstCollisionPosition(me->GetDistance(me->GetVictim()), me->GetRelativeAngle(me->GetVictim()) + act.angle);
+                        Position pos = me->GetFirstCollisionPosition(me->GetDistance(me->GetVictim()) + act.distance, me->GetRelativeAngle(me->GetVictim()) + act.angle);
                         if (act.on_mutate)
                             currentCombo.typeMove = ELKActionMoveType::LEAPING;
                         JumpTowards(pos, act.speedXY, act.speedZ, me->GetVictim());
@@ -714,8 +714,10 @@ public:
             DamageTakenExtra(doneby, damage, type, school);
             regularCheck = script->regularCheck + me->GetHealthPct() * script->regularCheckHP;
         }
+        virtual void OnMutate() {};
         void sOnMutate() override
         {
+            OnMutate();
             if (!me->GetVictim() || !me->CanFreeMove())
             {
                 if (currentCombo.typeMove == ELKActionMoveType::DYNAMIC_MOVEMENT)

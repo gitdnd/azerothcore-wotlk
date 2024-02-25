@@ -452,9 +452,74 @@
     "gruff_swiftbite": {
 
     },
-    "hogger": {
+  "hogger": {
+    "name": "hogger",
+    "chanceAtk": 4,
+    "chanceDef": 0,
+    "chanceSpell": 0,
+    "regularCheck": 1500,
+    "regularCheckHP": 10,
 
+    "DMmoveTime": 500,
+    "DMangleBase": 0,
+    "DMangleRaw": 0.5,
+    "DMdist": 100,
+    "DModds": 3,
+    "DMsprintPre": 600,
+
+    "reinforcementCall": 2,
+    "ACTIONS": {
+      "0": {
+        "index": 0,
+        "id": "JUMP",
+        "target": "VICTIM",
+        "angle": 0,
+        "speedXY": 1,
+        "speedZ": 8,
+        "distance": 2,
+        "next_mutate": 1
+      },
+      "1": {
+        "index": 1,
+        "id": "JUMP",
+        "target": "VICTIM",
+        "angle": 0,
+        "distance": 2,
+        "speedXY": 1,
+        "speedZ": 12,
+        "next_mutate": 1
+      },
+      "2": {
+        "index": 2,
+        "max_dist": 12,
+        "id": "JUMP",
+        "target": "VICTIM",
+        "angle": 0,
+        "speedXY": 0.6,
+        "speedZ": 3,
+        "distance": 10,
+        "next_mutate": 1
+      },
+      "3": {
+        "index": 3,
+        "id": "2000004",
+        "target": "VICTIM",
+        "delay": 1000
+      },
+      "4": {
+        "index": 4,
+        "id": "2000006",
+        "target": "VICTIM",
+        "delay": 0
+      }
     },
+    "ATTACK": {
+      "JUMP": [ 0, 4, 0, 4, 1, 4],
+      "SPIN": [3, 2]
+    },
+    "DEFEND": {},
+    "SPELL": {}
+  },
     "fedfennel": {
 
     },
@@ -470,9 +535,9 @@
     "ruklar_the_trapper": {
 
     },
-    "narg_the_taskmaster": {
+  "narg_the_taskmaster": {
 
-    },
+  },
     "goldtooth": {
 
     },

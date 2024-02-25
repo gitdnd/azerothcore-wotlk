@@ -317,31 +317,52 @@ class spell_elk_way_to_hellfire_aura : public AuraScript
     }
 };
 
-class spell_elk_way_to_hellfire : public SpellScript
-{
-    PrepareSpellScript(spell_elk_way_to_hellfire);
 
-    void Hit(SpellEffIndex effIndex)
+class spell_elk_fire_wave_aura : public AuraScript
+{
+    friend class spell_elk_fire_wave;
+
+    PrepareAuraScript(spell_elk_fire_wave_aura);
+
+    Position posNext;
+    Position posPrev;
+    void PeriodicWrap(AuraEffect const* aurEff, AuraEffectHandleModes mode)
     {
-        if (!GetHitUnit())
+        posNext = GetOwner()->GetPosition();
+        posPrev = posNext;
+        Periodic(aurEff);
+    }
+    void Periodic(AuraEffect const* aurEff)
+    {
+        GetUnitOwner()->MovePositionToFirstCollision(posNext, 1.5f, posNext.m_orientation);
+        float dist = posNext.GetExactDist(posPrev);
+        if (dist < 0.8 || dist > 1.2)
+        {
             return;
-        Unit* caster = GetCaster();
-        if (!caster)
-            return;
-        Aura* aura = caster->GetAura(150060);
-        if (!aura)
-            aura = caster->AddAura(150060, caster);
-        if (!aura)
-            return;
-        spell_elk_way_to_hellfire_aura* script = dynamic_cast<spell_elk_way_to_hellfire_aura*>(aura->GetScriptByName("spell_elk_way_to_hellfire"));
-        if (script)
-            script->OnAdd(GetHitUnit());
+        }
+        else
+        {
+            posPrev = posNext;
+            GetUnitOwner()->CastSpell(posNext.m_positionX, posNext.m_positionY, posNext.m_positionZ, 2000008, true);
+        }
     }
     void Register() override
     {
-        OnEffectHitTarget += SpellEffectFn(spell_elk_way_to_hellfire::Hit, EFFECT_2, SPELL_EFFECT_DUMMY);
+        AfterEffectApply += AuraEffectApplyFn(spell_elk_fire_wave_aura::PeriodicWrap, EFFECT_1, SPELL_AURA_PERIODIC_DUMMY);
+        OnEffectPeriodic += AuraEffectPeriodicFn(spell_elk_fire_wave_aura::Periodic, EFFECT_1, SPELL_AURA_PERIODIC_DUMMY);
     }
 };
+
+class spell_elk_fire_wave : public SpellScript
+{
+    PrepareSpellScript(spell_elk_fire_wave);
+
+    void Register() override
+    {
+        OnEffectHitTarget += SpellEffectFn(spell_elk_fire_wave::Hit, EFFECT_2, SPELL_EFFECT_DUMMY);
+    }
+};
+
 
 void AddSC_elk_creature_100_scripts()
 {
@@ -350,4 +371,5 @@ void AddSC_elk_creature_100_scripts()
     RegisterSpellAndAuraScriptPair(spell_elk_black_wave, spell_elk_black_wave_aura);
     RegisterSpellAndAuraScriptPair(spell_elk_black_space, spell_elk_black_space_aura);
     RegisterSpellAndAuraScriptPair(spell_elk_way_to_hellfire, spell_elk_way_to_hellfire_aura);
+    RegisterSpellAndAuraScriptPair(spell_elk_fire_wave, spell_elk_fire_wave_aura);
 }
