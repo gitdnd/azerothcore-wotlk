@@ -22,36 +22,40 @@ namespace fs = std::filesystem;
 using json = nlohmann::json;
 
 
-void ReadELKAIArray(std::string category, const json& js, ELKCreatureScript* script)
+void ReadELKAIArray(const json& js, ELKCreatureScript* script)
 {
-    ELKActionType type;
-    if (category == "ATTACK")
-        type = ELKActionType::ATTACK;
-    else if (category == "DEFEND")
-        type = ELKActionType::DEFEND;
-    else if (category == "SPELL")
-        type = ELKActionType::SPELL;
+    ELKCCombo combo;
+    ExtractJson(combo.probability, js, "PROBABILITY");
+    script->CombosTotal += combo.probability;
 
-    script->Combos[type].clear();
-    std::vector<uint8> combo = {};
-    for (const auto& moves : js[category]) {
-        combo = moves.get<std::vector<uint8>>();
-        ELKCCombo cCombo;
-        cCombo.actions = combo;
-        for (uint8 i = 0; i < combo.size(); i++)
-            if (auto action = script->Actions.find(combo[i]); action != script->Actions.end())
+
+    if (js.find("PROBABILITY_AURA") != js.end())
+        for (const auto& [k, v] : js["PROBABILITY_AURA"].items())
+        {
+            combo.probabilityAura.push_back({ (int32)k.c_str(), (bool)v });
+        }
+
+    for (const auto& moves : js["SEQUENCE"]) {
+        std::vector<uint8> sequence = {};
+        sequence = moves.get<std::vector<uint8>>();
+        ELKCSequence cSequence;
+        cSequence.actions = sequence;
+        for (uint8 i = 0; i < sequence.size(); i++)
+            if (sequence[i] < script->Actions.size())
             {
-                if (action->second.runeCost > 0)
+                auto action = script->Actions[sequence[i]];
+                if (action.runeCost > 0)
                 {
-                    cCombo.runeCost += script->Actions[i].runeCost;
+                    cSequence.runeCost += script->Actions[i].runeCost;
                 }
-                if (action->second.cooldown > 0 && cCombo.cooldown < action->second.cooldown)
-                    cCombo.cooldown = action->second.cooldown;
+                if (action.cooldown > 0 && cSequence.cooldown < action.cooldown)
+                    cSequence.cooldown = action.cooldown;
             }
             else
                 continue;
-        script->Combos[type].push_back(cCombo);
+        combo.sequences.push_back(cSequence);
     }
+    script->Combos.push_back(combo);
 }
 void AddELKAICreatureJson()
 {
@@ -95,12 +99,12 @@ void AddELKAICreatureJson()
                             uint8 next_mutate = 0;
                             it->second->Actions.clear();
                             if (creature.find("ACTIONS") != creature.end())
-                                for (const auto& itA : creature["ACTIONS"])
+                                for (const auto& [k, v] : creature["ACTIONS"].items())
                                 {
 
                                     ELKCAction action;
                                     std::string tempId = "";
-                                    ExtractJson(tempId, itA, "id");
+                                    ExtractJson(tempId, v, "id");
                                     if (tempId == "JUMP")
                                     {
                                         action.type = ELKCAType::JUMP;
@@ -123,7 +127,7 @@ void AddELKAICreatureJson()
                                         }
                                     }
                                     std::string tempTarget = "";
-                                    ExtractJson(tempTarget, itA, "target");
+                                    ExtractJson(tempTarget, v, "target");
                                     if (tempTarget == "VICTIM")
                                     {
                                         action.target = ELKCATarget::VICTIM;
@@ -132,28 +136,32 @@ void AddELKAICreatureJson()
                                     {
                                         action.target = ELKCATarget::VICTIMAWAY;
                                     }
-                                    ExtractJson(action.delay, itA, "delay");
-                                    ExtractJson(action.max_dist, itA, "max_dist");
-                                    ExtractJson(action.angle, itA, "angle");
-                                    ExtractJson(action.speedXY, itA, "speedXY");
-                                    ExtractJson(action.speedZ, itA, "speedZ");
-                                    ExtractJson(action.min_dist, itA, "min_dist");
-                                    ExtractJson(action.distance, itA, "distance");
-                                    ExtractJson(action.cooldown, itA, "cooldown");
-                                    ExtractJson(next_mutate, itA, "next_mutate");
+                                    ExtractJson(action.delay, v, "delay");
+                                    ExtractJson(action.max_dist, v, "max_dist");
+                                    ExtractJson(action.angle, v, "angle");
+                                    ExtractJson(action.speedXY, v, "speedXY");
+                                    ExtractJson(action.speedZ, v, "speedZ");
+                                    ExtractJson(action.min_dist, v, "min_dist");
+                                    ExtractJson(action.distance, v, "distance");
+                                    ExtractJson(action.cooldown, v, "cooldown");
+                                    ExtractJson(action.min_hp, v, "min_hp");
+                                    ExtractJson(action.max_hp, v, "max_hp");
+                                    ExtractJson(next_mutate, v, "next_mutate");
+
                                     if (next_mutate)
                                         action.on_mutate = true;
-                                    uint8 index = 0;
-                                    ExtractJson(index, itA, "index");
-                                    it->second->Actions[index] = action;
+
+                                    it->second->Actions[(int8)k.c_str()] = action;
                                 }
 
-                            if (creature.find("ATTACK") != creature.end())
-                                ReadELKAIArray("ATTACK", creature, it->second);
-                            if (creature.find("DEFEND") != creature.end())
-                                ReadELKAIArray("DEFEND", creature, it->second);
-                            if (creature.find("SPELL") != creature.end())
-                                ReadELKAIArray("SPELL", creature, it->second);
+                            it->second->Combos.clear();
+
+                            if (creature.find("COMBOS") != creature.end())
+                                for (const auto& itA : creature["COMBOS"])
+                                {
+                                    if (creature.find("SEQUENCE") != creature.end())
+                                        ReadELKAIArray(itA, it->second);
+                                }
                         }
                     }
                     file.close();

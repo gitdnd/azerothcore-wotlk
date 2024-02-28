@@ -68,7 +68,6 @@ struct ELKCAction
     uint8 min_dist = 0;
     uint8 max_dist = 0;
     uint16 delay = 0;
-    uint8 weight = 0;
     float angle = 0.f;
     float speedXY = 0.f;
     float speedZ = 0.f;
@@ -79,24 +78,25 @@ struct ELKCAction
     bool on_mutate = false;
     uint8 runeCost = false;
     uint32 cooldown = 0;
+    int8 max_hp = 101;
+    int8 min_hp = -1;
 };
-struct ELKCCombo
+struct ELKCSequence
 {
+    std::string name = "";
     uint8 runeCost = 0;
     std::vector<uint8> actions = {};
     uint32 cooldown = 0;
 };
+struct ELKCCombo
+{
+    std::vector< ELKCSequence> sequences = {};
+    int16 probability = 0;
+    std::vector<std::pair<int32, bool>> probabilityAura = {};
+};
 
 struct ELKAI;
 
-enum class ELKActionType : uint8
-{
-    NONE,
-    ATTACK,
-    DEFEND,
-    SPELL,
-    MOVEMENT,
-};
 enum class ELKActionMoveType : uint8
 {
     NONE,
@@ -119,12 +119,10 @@ class ELKCreatureScript : public CreatureScript
 {
 public:
 #pragma region ELKCMain
-    std::map<ELKActionType, std::vector<ELKCCombo>> Combos = {
-        {ELKActionType::ATTACK, {}},
-        {ELKActionType::DEFEND, {}},
-        {ELKActionType::SPELL, {}}
-    };
-    std::map<uint8, ELKCAction> Actions = {};
+    std::vector<ELKCCombo> Combos = {};
+    int16 CombosTotal = 0;
+
+    std::vector<ELKCAction> Actions = {};
 
     uint8 reinforcementCall = 0;
     uint8 chanceAtk = 1;
@@ -366,6 +364,8 @@ public:
             reinforcementEntries.push_back(me->GetEntry());
             script = s;
             ResetExtra();
+            for (auto& seq : script->Combos)
+                sequenceCooldown.emplace({});
         }
         const ELKCreatureScript* script;
         EventMap events;
@@ -486,19 +486,7 @@ public:
             EnterCombatCustom(who);
             ReinforcementCall();
         }
-        uint8 RandomOrder()
-        {
-            uint8 result = rand() % (chanceAtk + chanceDef + chanceSpell);
-            if (result < chanceAtk)
-                return 1;
-            result -= chanceAtk;
-            if (result < chanceDef)
-                return 2;
-            result -= chanceDef;
-            if (result < chanceSpell)
-                return 3;
-            return 0;
-        }
+
         virtual void MovementInform(uint32 type, uint32 point)
         {
             if (type != POINT_MOTION_TYPE)
@@ -507,79 +495,45 @@ public:
 
         void RandomAction()
         {
-            uint8 action = RandomOrder();
-
-            switch (action)
+            std::vector<uint8> indexesPassed = {};
+            int16 count = rand() % script->CombosTotal;
+            int16 countPassed = 0;
+            while (indexesPassed.size() < script->Combos.size())
             {
-            case 1:
-            {
-                uint8 option = script->Combos.find(ELKActionType::ATTACK)->second.size();
+                int8 category = -1;
+                while (count >= 0)
+                {
+                    category++;
+                    for (uint8 passed : indexesPassed)
+                    {
+                        if (category == passed)
+                            goto ContinueCombos;
+                    }
+                    count -= script->Combos[category].probability;
+                    ContinueCombos:
+                }
+           
+                uint8 option = script->Combos[category].sequences.size();
+                countPassed += script->Combos[category].probability;
                 if (!option)
-                    break;
+                    continue;
                 uint8 rnd = rand() % option;
                 for (uint8 i = 0; i < option; i++)
                 {
                     uint8 choice = (i + rnd) % (option);
-                    if (action == lastCategory && lastChoice == choice)
+                    if (category == lastCategory && lastChoice == choice)
                         continue;
                     bool exit = false;
-                    RandomCombo({ ELKActionType::ATTACK, choice }, exit);
+                    RandomCombo({ category, choice }, exit);
                     if (exit)
                     {
-                        lastCategory = action;
+                        lastCategory = category;
                         lastChoice = choice;
-                        break;
+                        return;
                     }
                 }
-                break;
-            }
-            case 2:
-            {
-                uint8 option = script->Combos.find(ELKActionType::DEFEND)->second.size();
-                if (!option)
-                    break;
-                uint8 rnd = rand() % option;
-                for (uint8 i = 0; i < option; i++)
-                {
-                    uint8 choice = (i + rnd) % (option);
-                    if (action == lastCategory && lastChoice == choice)
-                        continue;
-                    bool exit = false;
-                    RandomCombo({ ELKActionType::DEFEND, choice }, exit);
-                    if (exit)
-                    {
-                        lastCategory = action;
-                        lastChoice = choice;
-                        break;
-                    }
-                }
-                break;
-            }
-            case 3:
-            {
-                uint8 option = script->Combos.find(ELKActionType::SPELL)->second.size();
-                if (!option)
-                    break;
-                uint8 rnd = rand() % option;
-                for (uint8 i = 0; i < option; i++)
-                {
-                    uint8 choice = (i + rnd) % (option);
-                    if (action == lastCategory && lastChoice == choice)
-                        continue;
-
-                    bool exit = false;
-                    RandomCombo({ ELKActionType::SPELL, choice }, exit);
-                    if (exit)
-                    {
-                        lastCategory = action;
-                        lastChoice = choice;
-                        break;
-                    }
-                }
-                break;
-            }
-            default:
-                break;
+                indexesPassed.push_back(category);
+                int16 count = rand() % script->CombosTotal - countPassed;
             }
         }
 
@@ -597,18 +551,19 @@ public:
 
             me->GetMotionMaster()->MoveJumpOriented(pos.m_positionX, pos.m_positionY, pos.m_positionZ, speedXY, speedZ, me->GetVictim());
         }
-        void RandomCombo(std::pair<ELKActionType, uint8> combo, bool& exit)
+        void RandomCombo(std::pair<int16, uint8> combo, bool& exit)
         {
-            if (comboCooldown[combo.first][combo.second] > 0)
+            if (sequenceCooldown[combo.first][combo.second] > 0)
                 return;
-            const ELKCCombo& com = (script->Combos.find(combo.first))->second[combo.second];
-            const ELKCAction& act = script->Actions.find(com.actions[0])->second;
-            if (com.runeCost <= me->GetAvailableRunes())
+            const ELKCSequence& seq = script->Combos[combo.first].sequences[combo.second];
+            const ELKCAction& act = script->Actions[seq.actions[0]];
+            int8 healthPct = me->GetHealthPct();
+            if (seq.runeCost <= me->GetAvailableRunes() && act.min_hp < healthPct && act.max_hp >= healthPct)
             {
                 exit = DoELKAIAction(act);
                 if (exit)
                 {
-                    comboCooldown[combo.first][combo.second] = com.cooldown;
+                    sequenceCooldown[combo.first][combo.second] = seq.cooldown;
                     currentCombo.type = combo.first;
                     currentCombo.combo = combo.second;
                     currentCombo.action = 0;
@@ -661,11 +616,11 @@ public:
         }
         bool ContinueCombo()
         {
-            const ELKCCombo& com = (script->Combos.find(currentCombo.type))->second[currentCombo.combo];
+            const ELKCSequence& seq = script->Combos[currentCombo.type].sequences[currentCombo.combo];
 
-            if (com.actions.size() > currentCombo.action + 1)
+            if (seq.actions.size() > currentCombo.action + 1)
             {
-                const ELKCAction& act = script->Actions.find(com.actions[currentCombo.action + 1])->second;
+                const ELKCAction& act = script->Actions[seq.actions[currentCombo.action + 1]];
                 if (DoELKAIAction(act))
                 {
                     currentCombo.action++;
@@ -679,23 +634,21 @@ public:
         }
         struct CurrentCombo
         {
-            ELKActionType type = ELKActionType::NONE;
+            int8 type = -1;
             uint8 combo = 0;
             uint8 action = 0;
             ELKActionMoveType typeMove = ELKActionMoveType::NONE;
             void Reset()
             {
-                type = ELKActionType::NONE;
+                type = -1;
                 combo = 0;
                 action = 0;
                 typeMove = ELKActionMoveType::NONE;
             }
         };
         CurrentCombo currentCombo;
-        std::map<ELKActionType, std::map<uint8, uint16>> comboCooldown = {
-            {ELKActionType::ATTACK, {}},
-            {ELKActionType::DEFEND, {}},
-            {ELKActionType::SPELL, {}}
+        std::vector<std::map<uint8, uint16>> sequenceCooldown = {
+
         };
 
         bool ResetCombo()
@@ -758,9 +711,9 @@ public:
         bool ELKUpdateAI(uint32 diff)
         {
             events.Update(diff);
-            for (auto& cdCat : comboCooldown)
+            for (auto& cdCat : sequenceCooldown)
             {
-                for (auto cC = cdCat.second.begin(); cC != cdCat.second.end(); )
+                for (auto cC = cdCat.begin(); cC != cdCat.end(); )
                 {
                     if (cC->second > diff)
                     {
@@ -768,7 +721,7 @@ public:
                         cC++;
                     }
                     else
-                        cdCat.second.erase(cC++);
+                        cdCat.erase(cC++);
                 }
             }
             if (me->isMoving())
@@ -837,7 +790,7 @@ public:
             me->GetMotionMaster()->SetDynamicMovement(true);
 
             currentCombo.typeMove = ELKActionMoveType::DYNAMIC_MOVEMENT;
-            currentCombo.type = ELKActionType::MOVEMENT;
+            currentCombo.type = -2;                                                 // UNIQUE
             dynamicMovement.moveTime = script->dynamicMovement.moveTime;
             int8 posneg = (rand() % 2);
             if (posneg == 0)
@@ -867,7 +820,7 @@ public:
                 break;
             case REGULAR_CHECK:
                 events.ScheduleEvent(REGULAR_CHECK, regularCheck);
-                if (currentCombo.type != ELKActionType::NONE)
+                if (currentCombo.type != -1)
                 {
                     DoEvents();
                     break;

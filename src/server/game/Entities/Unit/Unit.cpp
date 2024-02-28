@@ -4096,16 +4096,13 @@ bool Unit::IsMovementPreventedByCasting() const
         return false;
     }
 
-    // channeled spells during channel stage (after the initial cast timer) allow movement with a specific spell attribute
-    if (Spell* spell = m_currentSpells[CURRENT_CHANNELED_SPELL])
+    Spell* spell = m_currentSpells[CURRENT_CHANNELED_SPELL];
+    if (!spell)
+        spell = m_currentSpells[CURRENT_GENERIC_SPELL];
+
+    if (spell && spell->getState() != SPELL_STATE_FINISHED && (spell->IsChannelActive() || HasUnitState(UNIT_STATE_CASTING)) && (spell->GetSpellInfo()->IsMoveAllowedChannel() || spell->GetSpellInfo()->IsActionAllowedChannel() || !(spell->GetSpellInfo()->InterruptFlags & SPELL_INTERRUPT_FLAG_MOVEMENT)))
     {
-        if (spell->getState() != SPELL_STATE_FINISHED && spell->IsChannelActive())
-        {
-            if (spell->GetSpellInfo()->IsActionAllowedChannel())
-            {
-                return false;
-            }
-        }
+        return false;
     }
 
     // prohibit movement for all other spell casts
