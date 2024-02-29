@@ -22,9 +22,10 @@ namespace fs = std::filesystem;
 using json = nlohmann::json;
 
 
-void ReadELKAIArray(const json& js, ELKCreatureScript* script)
+void ReadELKAIArray(std::string name, const json& js, ELKCreatureScript* script)
 {
     ELKCCombo combo;
+    combo.name = name;
     ExtractJson(combo.probability, js, "PROBABILITY");
     script->CombosTotal += combo.probability;
 
@@ -32,7 +33,8 @@ void ReadELKAIArray(const json& js, ELKCreatureScript* script)
     if (js.find("PROBABILITY_AURA") != js.end())
         for (const auto& [k, v] : js["PROBABILITY_AURA"].items())
         {
-            combo.probabilityAura.push_back({ (int32)k.c_str(), (bool)v });
+            combo.probabilityAura.push_back({ atoi(k.c_str()), atoi(k.c_str()) });
+            script->AuraProbabilityTotal[atoi(k.c_str())] += atoi(k.c_str());
         }
 
     for (const auto& moves : js["SEQUENCE"]) {
@@ -76,7 +78,7 @@ void AddELKAICreatureJson()
                         std::string name = "";
                         ExtractJson(name, creature, "name");
 
-                            if (auto it = ELKCreatureScript::ELKCreatureScripts.find(name); it != ELKCreatureScript::ELKCreatureScripts.end())
+                        if (auto it = ELKCreatureScript::ELKCreatureScripts.find(name); it != ELKCreatureScript::ELKCreatureScripts.end())
                         {
                             ExtractJson(it->second->reinforcementCall, creature, "reinforcementCall");
                             ExtractJson(it->second->chanceAtk, creature, "chanceAtk");
@@ -151,16 +153,18 @@ void AddELKAICreatureJson()
                                     if (next_mutate)
                                         action.on_mutate = true;
 
-                                    it->second->Actions[(int8)k.c_str()] = action;
+                                    int16 index = atoi(k.c_str());
+                                    if (it->second->Actions.size() <= index)
+                                        it->second->Actions.resize(index + 1);
+                                    it->second->Actions[index] = action;
                                 }
 
                             it->second->Combos.clear();
 
                             if (creature.find("COMBOS") != creature.end())
-                                for (const auto& itA : creature["COMBOS"])
+                                for (const auto& [k, v] : creature["COMBOS"].items())
                                 {
-                                    if (creature.find("SEQUENCE") != creature.end())
-                                        ReadELKAIArray(itA, it->second);
+                                    ReadELKAIArray(k, v, it->second);
                                 }
                         }
                     }

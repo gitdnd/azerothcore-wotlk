@@ -25,6 +25,9 @@ if (me->HasUnitState(UNIT_STATE_CASTING))       \
     return;                                     \
 }
 
+#define ELKCActionType_NONE -1
+#define ELKCActionType_MOVE -2
+
 enum Events : uint16
 {
     NONE,
@@ -90,9 +93,10 @@ struct ELKCSequence
 };
 struct ELKCCombo
 {
+    std::string name = "";
     std::vector< ELKCSequence> sequences = {};
     int16 probability = 0;
-    std::vector<std::pair<int32, bool>> probabilityAura = {};
+    std::vector<std::pair<int32, int8>> probabilityAura = {};
 };
 
 struct ELKAI;
@@ -120,6 +124,7 @@ class ELKCreatureScript : public CreatureScript
 public:
 #pragma region ELKCMain
     std::vector<ELKCCombo> Combos = {};
+    std::map<int32, int8> AuraProbabilityTotal = {};
     int16 CombosTotal = 0;
 
     std::vector<ELKCAction> Actions = {};
@@ -365,7 +370,7 @@ public:
             script = s;
             ResetExtra();
             for (auto& seq : script->Combos)
-                sequenceCooldown.emplace({});
+                sequenceCooldown.push_back(std::map<uint8, uint16>());
         }
         const ELKCreatureScript* script;
         EventMap events;
@@ -496,44 +501,67 @@ public:
         void RandomAction()
         {
             std::vector<uint8> indexesPassed = {};
-            int16 count = rand() % script->CombosTotal;
+            int16 countBase = script->CombosTotal;
+            int16 random = rand();
+            for (auto aura : script->AuraProbabilityTotal)
+            {
+                if (me->HasAura(aura.first))
+                    countBase += aura.second;
+            }
+            int16 count = random % countBase;
+
             int16 countPassed = 0;
-            while (indexesPassed.size() < script->Combos.size())
+            while (true)
             {
                 int8 category = -1;
                 while (count >= 0)
                 {
                     category++;
+                    if (category >= script->Combos.size())
+                        category -= script->Combos.size();
+
                     for (uint8 passed : indexesPassed)
                     {
                         if (category == passed)
                             goto ContinueCombos;
                     }
                     count -= script->Combos[category].probability;
-                    ContinueCombos:
+                    for (auto aura : script->Combos[category].probabilityAura)
+                    {
+                        if (me->HasAura(aura.first))
+                            count -= aura.second;
+                    }
+                ContinueCombos:
+                    continue;
                 }
-           
                 uint8 option = script->Combos[category].sequences.size();
                 countPassed += script->Combos[category].probability;
+
                 if (!option)
-                    continue;
-                uint8 rnd = rand() % option;
-                for (uint8 i = 0; i < option; i++)
+                    goto NextAction;
                 {
-                    uint8 choice = (i + rnd) % (option);
-                    if (category == lastCategory && lastChoice == choice)
-                        continue;
-                    bool exit = false;
-                    RandomCombo({ category, choice }, exit);
-                    if (exit)
+                    uint8 rnd = random % option;
+                    for (uint8 i = 0; i < option; i++)
                     {
-                        lastCategory = category;
-                        lastChoice = choice;
-                        return;
+                        uint8 choice = (i + rnd) % (option);
+                        if (category == lastCategory && lastChoice == choice)
+                            goto NextAction;
+                        bool exit = false;
+                        RandomCombo({ category, choice }, exit);
+                        if (exit)
+                        {
+                            lastCategory = category;
+                            lastChoice = choice;
+                            return;
+                        }
                     }
                 }
+            NextAction:
                 indexesPassed.push_back(category);
-                int16 count = rand() % script->CombosTotal - countPassed;
+                if (indexesPassed.size() < script->Combos.size())
+                    count = random % (countBase - countPassed);
+                else
+                    return;
             }
         }
 
@@ -634,13 +662,13 @@ public:
         }
         struct CurrentCombo
         {
-            int8 type = -1;
+            int8 type = ELKCActionType_NONE;
             uint8 combo = 0;
             uint8 action = 0;
             ELKActionMoveType typeMove = ELKActionMoveType::NONE;
             void Reset()
             {
-                type = -1;
+                type = ELKCActionType_NONE;
                 combo = 0;
                 action = 0;
                 typeMove = ELKActionMoveType::NONE;
@@ -790,7 +818,7 @@ public:
             me->GetMotionMaster()->SetDynamicMovement(true);
 
             currentCombo.typeMove = ELKActionMoveType::DYNAMIC_MOVEMENT;
-            currentCombo.type = -2;                                                 // UNIQUE
+            currentCombo.type = ELKCActionType_MOVE;                                                 // UNIQUE
             dynamicMovement.moveTime = script->dynamicMovement.moveTime;
             int8 posneg = (rand() % 2);
             if (posneg == 0)

@@ -95,7 +95,7 @@ public:
         {
             ELKCUpdateAI();
 
-            if (currentCombo.type == ELKActionType::NONE)
+            if (currentCombo.type == ELKCActionType_NONE)
                 if (Aura* aura = me->GetAura(uint32(ELKSpells::COMBO_COUNT)); aura && aura->GetStackAmount() > 4)
                     if (EasyCast(uint32(SpellsC::CRUSHING_WAVE)))
                         return;
