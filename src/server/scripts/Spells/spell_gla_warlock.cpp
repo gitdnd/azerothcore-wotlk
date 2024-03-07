@@ -939,6 +939,7 @@ public:
                     return;
                 }
                 me->CastSpell(me->GetVictim(), SPELL_WARLOCK_DRAIN_SOUL, false);
+                return;
             }
         }
         void Reset() override
@@ -1019,6 +1020,7 @@ public:
                     events.ScheduleEvent(CAST_SPELL, Spell1Recovery);
                 else
                     events.ScheduleEvent(CAST_SPELL, 1000ms);
+                return;
                 break;
             }
             DoMeleeAttackIfReady();
@@ -1076,6 +1078,7 @@ public:
                     events.ScheduleEvent(CAST_SPELL, Spell1Recovery);
                 else
                     events.ScheduleEvent(CAST_SPELL, 1000ms);
+                return;
                 break;
             }
             DoMeleeAttackIfReady();
@@ -1133,6 +1136,7 @@ public:
                     events.ScheduleEvent(CAST_SPELL, Spell1Recovery);
                 else
                     events.ScheduleEvent(CAST_SPELL, 1000ms);
+                return;
             break;
             }
             DoMeleeAttackIfReady();
@@ -1190,6 +1194,7 @@ public:
                     events.ScheduleEvent(CAST_SPELL, Spell1Recovery);
                 else
                     events.ScheduleEvent(CAST_SPELL, 1000ms);
+                return;
                 break;
             }
             DoMeleeAttackIfReady();
