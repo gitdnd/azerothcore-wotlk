@@ -1,5 +1,7 @@
 REPLACE INTO `spell_script_names` (`spell_id`, `ScriptName`) VALUES
 
+    (110098 , 'spell_gla_nether_tear_summon_demon_aura'),
+    (110096 , 'spell_gla_nether_tear_aura'),
     (110091 , 'spell_gla_feral_demon'),
     (110090 , 'spell_gla_enrage'),
     (110087 , 'spell_gla_hardened_skin'),

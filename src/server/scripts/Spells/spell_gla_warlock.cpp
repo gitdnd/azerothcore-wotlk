@@ -76,6 +76,19 @@ enum GlaWarlockSpells
     SPELL_WARLOCK_BEHOLDERS_CRUELTY         = 110093,
     SPELL_WARLOCK_TYRANTS_VITALITY          = 110094,
     SPELL_WARLOCK_VILEFIENDS_ALACRITY       = 110095,
+    SPELL_WARLOCK_NT_TALENT                 = 110096,
+    SPELL_WARLOCK_NT_SUMMON_TEAR            = 110097,
+    SPELL_WARLOCK_NT_SUMMON_DEMON           = 110098,
+    SPELL_WARLOCK_NT_COOLDOWN               = 110099,
+    SPELL_WARLOCK_NT_UNSTABLE_SUMMONING     = 110100,
+    SPELL_WARLOCK_SHIVARRA_EVASION          = 110081,
+    SPELL_WARLOCK_SHIVARRA_BLADESTORM       = 110082,
+    SPELL_WARLOCK_BEHOLDER_PRECIPICE_GAZE   = 110086,
+    SPELL_WARLOCK_BEHOLDER_AVOIDANCE        = 110085,
+    SPELL_WARLOCK_TYRANT_SUBJUGATE          = 110088,
+    SPELL_WARLOCK_TYRANT_HARDENED_SKIN      = 110087,
+    SPELL_WARLOCK_VILEFIEND_VILE_SWOOP      = 110089,
+    SPELL_WARLOCK_VILEFIEND_ENRAGE          = 110090,
 
 };
 enum GlaWarlockUnits
@@ -90,6 +103,7 @@ enum GlaWarlockUnits
     BEHOLDER                                = 1000003,
     TYRANT                                  = 1000004,
     VILEFIEND                               = 1000005,
+    NETEHER_TEAR                            = 1000006,
 };
 
 class spell_gla_feral_demon : public AuraScript
@@ -103,7 +117,7 @@ class spell_gla_feral_demon : public AuraScript
     }
     void Proc(ProcEventInfo& eventInfo)
     {
-        switch (eventInfo.GetActor()->GetEntry())
+        switch (GetUnitOwner()->GetEntry())
         {
         case SHIVARRA:
             eventInfo.GetActor()->AddAura(SPELL_WARLOCK_SHIVARRAS_WRATH, eventInfo.GetActor());
@@ -509,7 +523,7 @@ class spell_gla_ritual_of_tower : public SpellScript
     }
     void HandleDummy(SpellEffIndex /*effIndex*/)
     {
-        TempSummon* summon = GetCaster()->SummonCreature(WARLOCK_TOWER, GetCaster()->GetPosition(), TEMPSUMMON_TIMED_OR_CORPSE_DESPAWN, 100000, 0, sSummonPropertiesStore.LookupEntry(36070));
+        TempSummon* summon = GetCaster()->SummonCreature(WARLOCK_TOWER, GetCaster()->GetPosition(), TEMPSUMMON_TIMED_OR_CORPSE_DESPAWN, 250000, 0, sSummonPropertiesStore.LookupEntry(36070));
         summon->SetFaction(GetCaster()->GetFaction());
         summon->SetOwnerGUID(GetCaster()->GetGUID());
         GetCaster()->m_Controlled.insert(summon);
@@ -794,6 +808,92 @@ class spell_gla_finger_of_death_aura : public AuraScript
     }
 };
 
+class spell_gla_nether_tear_aura : public AuraScript
+{
+    PrepareAuraScript(spell_gla_nether_tear_aura);
+
+
+    bool Validate(SpellInfo const* /*spellInfo*/) override
+    {
+        return ValidateSpellInfo({ SPELL_WARLOCK_NT_TALENT,
+            SPELL_WARLOCK_NT_SUMMON_TEAR,
+            SPELL_WARLOCK_NT_SUMMON_DEMON,
+            SPELL_WARLOCK_NT_COOLDOWN,
+            SPELL_WARLOCK_NT_UNSTABLE_SUMMONING
+            });
+    }
+
+    void Handle(ProcEventInfo& eventInfo)
+    {
+        if (!GetCaster()->HasAura(SPELL_WARLOCK_NT_COOLDOWN))
+        {
+            GetCaster()->CastSpell(GetCaster(), SPELL_WARLOCK_NT_SUMMON_TEAR, true);
+            GetCaster()->AddAura(SPELL_WARLOCK_NT_COOLDOWN, GetCaster());
+        }
+    }
+
+    void Register() override
+    {
+        AfterProc += AuraProcFn(spell_gla_nether_tear_aura::Handle);
+    }
+};
+
+class spell_gla_nether_tear_summon_demon_aura : public AuraScript
+{
+    PrepareAuraScript(spell_gla_nether_tear_summon_demon_aura);
+
+    void Handle(AuraEffect const* aurEff)
+    {
+        int32 unit = 0;
+        switch (rand() % 4)
+        {
+        case 0:
+            unit = SHIVARRA;
+            break;
+        case 1:
+            unit = BEHOLDER;
+            break;
+        case 2:
+            unit = TYRANT;
+            break;
+        case 3:
+            unit = VILEFIEND;
+            break;
+        default:
+            break;
+        }
+
+        Unit* caster = GetCaster()->GetOwner();
+
+        if (!caster)
+            caster = GetCaster();
+        Position pos = GetCaster()->GetPosition();
+        SummonPropertiesEntry const* properties = sSummonPropertiesStore.LookupEntry(687);
+        TempSummon* summon = caster->GetMap()->SummonCreature(unit, pos, properties, GetAura()->GetSpellInfo()->GetEffect(EFFECT_1).CalcValue(caster), caster, SPELL_WARLOCK_NT_SUMMON_DEMON, 0, false);
+        if (!summon)
+            return;
+        summon->SetLevel(caster->GetLevel());
+        Aura* aura = caster->GetAuraOfRankedSpell(SPELL_WARLOCK_NT_UNSTABLE_SUMMONING);
+
+        if (aura && rand() % 100 <  aura->GetSpellInfo()->ProcChance)
+        {
+            caster->m_Controlled.erase(summon);
+            summon->SetFaction(73);
+            summon->SetOwnerGUID(ObjectGuid::Empty);
+            summon->SetCreatorGUID(summon->GetGUID());
+            summon->AddAura(SPELL_WARLOCK_KILL_ME, summon);
+            return;
+        }
+        summon->SetCreatorGUID(caster->GetGUID());
+        summon->SetFaction(caster->GetFaction());
+
+    }
+
+    void Register() override
+    {
+        OnEffectPeriodic += AuraEffectPeriodicFn(spell_gla_nether_tear_summon_demon_aura::Handle, EFFECT_0, SPELL_AURA_PERIODIC_DUMMY);
+    }
+};
 class warlock_gla_tower : public CreatureScript
 {
 public:
@@ -809,15 +909,14 @@ public:
         warlock_gla_towerAI(Creature* creature) : ScriptedAI(creature)
         {
             creature->AddAura(SPELL_WARLOCK_TRUE_SIGHT, creature);
+            creature->AddAura(SPELL_WARLOCK_SOUL_FRAGMENTS, creature);
         }
         enum Events
         {
-            CAST_SOUL_FRAGMENTS,
             CAST_DRAIN_SOUL
         };
         void JustEngagedWith(Unit* /*who*/) override
         {
-            events.ScheduleEvent(CAST_SOUL_FRAGMENTS, 2000ms);
             events.ScheduleEvent(CAST_DRAIN_SOUL, 3000ms);
         }
 
@@ -825,18 +924,17 @@ public:
         {
             if (!UpdateVictim())
                 return;
-
+            if (me->GetCurrentSpell(CURRENT_GENERIC_SPELL) || me->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
+            {
+                return;
+            }
 
             events.Update(diff);
             switch (events.ExecuteEvent())
             {
-            case CAST_SOUL_FRAGMENTS:
-                me->CastSpell(me, SPELL_WARLOCK_SOUL_FRAGMENTS, true);
-                events.ScheduleEvent(CAST_SOUL_FRAGMENTS, 2000ms);
-                break;
             case CAST_DRAIN_SOUL:
                 events.ScheduleEvent(CAST_DRAIN_SOUL, 3000ms);
-                if (me->HasUnitState(UNIT_STATE_CASTING))
+                if (me->GetCurrentSpell(CURRENT_GENERIC_SPELL) || me->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
                 {
                     return;
                 }
@@ -850,10 +948,263 @@ public:
     };
 };
 
+class warlock_gla_nether_tear : public CreatureScript
+{
+public:
+    warlock_gla_nether_tear() : CreatureScript("warlock_gla_nether_tear") { }
+
+    CreatureAI* GetAI(Creature* creature) const override
+    {
+        return new warlock_gla_nether_tearAI(creature);
+    }
+
+    struct warlock_gla_nether_tearAI : public ScriptedAI
+    {
+        warlock_gla_nether_tearAI(Creature* creature) : ScriptedAI(creature)
+        {
+            creature->AddAura(SPELL_WARLOCK_NT_SUMMON_DEMON, creature);
+        }
+
+        void UpdateAI(uint32 diff) override
+        {
+
+        }
+    };
+};
+
+
+
+class warlock_gla_shivarra : public CreatureScript
+{
+public:
+    warlock_gla_shivarra() : CreatureScript("warlock_gla_shivarra")
+    {
+    }
+    CreatureAI* GetAI(Creature* creature) const override
+    {
+        return new warlock_gla_shivarraAI(creature);
+    }
+
+    struct warlock_gla_shivarraAI : public ScriptedAI
+    {
+        warlock_gla_shivarraAI(Creature* creature) : ScriptedAI(creature)
+        {
+            Spell1Recovery = sSpellMgr->GetSpellInfo(SPELL_WARLOCK_SHIVARRA_BLADESTORM)->RecoveryTime;
+            creature->AddAura(SPELL_WARLOCK_SHIVARRA_EVASION, creature);
+        }
+        int32 Spell1Recovery;
+        enum Events
+        {
+            CAST_SPELL = 1,
+        };
+        void JustEngagedWith(Unit* /*who*/) override
+        {
+            events.ScheduleEvent(CAST_SPELL, 100ms);
+        }
+
+        void UpdateAI(uint32 diff) override
+        {
+            if (!UpdateVictim())
+                return;
+            if (me->HasUnitState(UNIT_STATE_CASTING))
+            {
+                return;
+            }
+
+            events.Update(diff);
+            switch (events.ExecuteEvent())
+            {
+            case CAST_SPELL:
+                if(SPELL_CAST_OK == me->CastSpell(me->GetVictim(), SPELL_WARLOCK_SHIVARRA_BLADESTORM, false))
+                    events.ScheduleEvent(CAST_SPELL, Spell1Recovery);
+                else
+                    events.ScheduleEvent(CAST_SPELL, 1000ms);
+                break;
+            }
+            DoMeleeAttackIfReady();
+        }
+        void Reset() override
+        {
+            events.Reset();
+        }
+    };
+};
+
+class warlock_gla_beholder : public CreatureScript
+{
+public:
+    warlock_gla_beholder() : CreatureScript("warlock_gla_beholder")
+    {
+    }
+    CreatureAI* GetAI(Creature* creature) const override
+    {
+        return new warlock_gla_beholderAI(creature);
+    }
+
+    struct warlock_gla_beholderAI : public ScriptedAI
+    {
+        warlock_gla_beholderAI(Creature* creature) : ScriptedAI(creature)
+        {
+            Spell1Recovery = sSpellMgr->GetSpellInfo(SPELL_WARLOCK_BEHOLDER_PRECIPICE_GAZE)->RecoveryTime;
+            creature->AddAura(SPELL_WARLOCK_BEHOLDER_AVOIDANCE, creature);
+        }
+        int32 Spell1Recovery;
+        enum Events
+        {
+            CAST_SPELL = 1,
+        };
+        void JustEngagedWith(Unit* /*who*/) override
+        {
+            events.ScheduleEvent(CAST_SPELL, 100ms);
+        }
+
+        void UpdateAI(uint32 diff) override
+        {
+            if (!UpdateVictim())
+                return;
+            if (me->GetCurrentSpell(CURRENT_GENERIC_SPELL) || me->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
+            {
+                return;
+            }
+
+
+            events.Update(diff);
+            switch (events.ExecuteEvent())
+            {
+            case CAST_SPELL:
+                if (SPELL_CAST_OK == me->CastSpell(me->GetVictim(), SPELL_WARLOCK_BEHOLDER_PRECIPICE_GAZE, false))
+                    events.ScheduleEvent(CAST_SPELL, Spell1Recovery);
+                else
+                    events.ScheduleEvent(CAST_SPELL, 1000ms);
+                break;
+            }
+            DoMeleeAttackIfReady();
+        }
+        void Reset() override
+        {
+            events.Reset();
+        }
+    };
+};
+
+class warlock_gla_tyrant : public CreatureScript
+{
+public:
+    warlock_gla_tyrant() : CreatureScript("warlock_gla_tyrant")
+    {
+    }
+    CreatureAI* GetAI(Creature* creature) const override
+    {
+        return new warlock_gla_tyrantAI(creature);
+    }
+
+    struct warlock_gla_tyrantAI : public ScriptedAI
+    {
+        warlock_gla_tyrantAI(Creature* creature) : ScriptedAI(creature)
+        {
+            Spell1Recovery = sSpellMgr->GetSpellInfo(SPELL_WARLOCK_TYRANT_SUBJUGATE)->RecoveryTime;
+            creature->AddAura(SPELL_WARLOCK_TYRANT_HARDENED_SKIN, creature);
+        }
+        int32 Spell1Recovery;
+        enum Events
+        {
+            CAST_SPELL = 1,
+        };
+        void JustEngagedWith(Unit* /*who*/) override
+        {
+            events.ScheduleEvent(CAST_SPELL, 100ms);
+        }
+
+        void UpdateAI(uint32 diff) override
+        {
+            if (!UpdateVictim())
+                return;
+            if (me->GetCurrentSpell(CURRENT_GENERIC_SPELL) || me->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
+            {
+                return;
+            }
+
+
+            events.Update(diff);
+            switch (events.ExecuteEvent())
+            {
+            case CAST_SPELL:
+                if (SPELL_CAST_OK == me->CastSpell(me->GetVictim(), SPELL_WARLOCK_TYRANT_SUBJUGATE, false))
+                    events.ScheduleEvent(CAST_SPELL, Spell1Recovery);
+                else
+                    events.ScheduleEvent(CAST_SPELL, 1000ms);
+            break;
+            }
+            DoMeleeAttackIfReady();
+        }
+        void Reset() override
+        {
+            events.Reset();
+        }
+    };
+};
+class warlock_gla_vilefiend : public CreatureScript
+{
+public:
+    warlock_gla_vilefiend() : CreatureScript("warlock_gla_vilefiend")
+    {
+        
+    }
+    CreatureAI* GetAI(Creature* creature) const override
+    {
+        return new warlock_gla_vilefiendAI(creature);
+    }
+
+    struct warlock_gla_vilefiendAI : public ScriptedAI
+    {
+        warlock_gla_vilefiendAI(Creature* creature) : ScriptedAI(creature)
+        {
+            Spell1Recovery = sSpellMgr->GetSpellInfo(SPELL_WARLOCK_VILEFIEND_VILE_SWOOP)->RecoveryTime;
+            creature->AddAura(SPELL_WARLOCK_VILEFIEND_ENRAGE, creature);
+        }
+        int32 Spell1Recovery;
+        enum Events
+        {
+            CAST_SPELL = 1,
+        };
+        void JustEngagedWith(Unit* /*who*/) override
+        {
+            events.ScheduleEvent(CAST_SPELL, 100ms);
+        }
+
+        void UpdateAI(uint32 diff) override
+        {
+            if (!UpdateVictim())
+                return;
+            if (me->GetCurrentSpell(CURRENT_GENERIC_SPELL) || me->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
+            {
+                return;
+            }
+
+
+            events.Update(diff);
+            switch (events.ExecuteEvent())
+            {
+            case CAST_SPELL:
+                if (SPELL_CAST_OK == me->CastSpell(me->GetVictim(), SPELL_WARLOCK_VILEFIEND_VILE_SWOOP, false))
+                    events.ScheduleEvent(CAST_SPELL, Spell1Recovery);
+                else
+                    events.ScheduleEvent(CAST_SPELL, 1000ms);
+                break;
+            }
+            DoMeleeAttackIfReady();
+        }
+        void Reset() override
+        {
+            events.Reset();
+        }
+    };
+};
 
 void AddSC_gla_warlock_spell_scripts()
 {
-
+    RegisterSpellScript(spell_gla_nether_tear_summon_demon_aura);
+    RegisterSpellScript(spell_gla_nether_tear_aura);
     RegisterSpellScript(spell_gla_feral_demon);
     RegisterSpellScript(spell_gla_enrage);
     RegisterSpellScript(spell_gla_hardened_skin);
@@ -878,4 +1229,9 @@ void AddSC_gla_warlock_spell_scripts()
     RegisterSpellScript(spell_gla_soul_fragments_hit);
 
     new warlock_gla_tower();
+    new warlock_gla_nether_tear();
+    new warlock_gla_shivarra();
+    new warlock_gla_beholder();
+    new warlock_gla_tyrant();
+    new warlock_gla_vilefiend();
 }

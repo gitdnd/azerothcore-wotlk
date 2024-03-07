@@ -77,7 +77,7 @@ public:
                 return;
 
             events.Update(diff);
-            if (me->HasUnitState(UNIT_STATE_CASTING))
+            if (me->GetCurrentSpell(CURRENT_GENERIC_SPELL) || me->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
                 return;
 
             switch (events.ExecuteEvent())

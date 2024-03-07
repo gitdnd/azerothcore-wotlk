@@ -1,5 +1,7 @@
 REPLACE INTO `spell_script_names` (`spell_id`, `ScriptName`) VALUES
 
+    (110098 , 'spell_gla_nether_tear_summon_demon_aura'),
+    (110096 , 'spell_gla_nether_tear_aura'),
     (110091 , 'spell_gla_feral_demon'),
     (110090 , 'spell_gla_enrage'),
     (110087 , 'spell_gla_hardened_skin'),
@@ -8,7 +10,6 @@ REPLACE INTO `spell_script_names` (`spell_id`, `ScriptName`) VALUES
     (110076 , 'spell_gla_demonic_circle_imprison'),
     (110075 , 'spell_gla_felgaurds_persistence'),
     (110070 , 'spell_gla_demonic_sacrifice'),
-    (110058 , 'spell_gla_bane_of_portals'),
     (110034 , 'spell_gla_cripple'),
     (110033 , 'spell_gla_devour_magic'),
     (110031 , 'spell_gla_soul_fragments_hit'),
@@ -17,6 +18,7 @@ REPLACE INTO `spell_script_names` (`spell_id`, `ScriptName`) VALUES
     (110020 , 'spell_gla_curse_of_imprudence'),
     (110021 , 'spell_gla_death_and_decay'),
     (110019 , 'spell_gla_ritual_strike'),
+    (110018 , 'spell_gla_bane_of_despair'),
     (110013 , 'spell_gla_drain_life'),
     (110014 , 'spell_gla_agony'),
     (110007 , 'spell_gla_bane_of_havoc'),
